@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -10,7 +11,7 @@ import Import
 
 getProfileR :: Handler Html
 getProfileR = do
-    (_, user) <- requireAuthPair
+    (_, User{userStellarAddress}) <- requireAuthPair
     defaultLayout $ do
-        setTitle . toHtml $ userIdent user <> "'s User page"
+        setTitle . toHtml $ userStellarAddress <> "'s User page"
         $(widgetFile "profile")

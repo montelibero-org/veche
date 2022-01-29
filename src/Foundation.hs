@@ -1,7 +1,9 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -253,20 +255,19 @@ instance YesodAuth App where
     redirectToReferer :: App -> Bool
     redirectToReferer _ = True
 
+    -- Perform authentication based on the given credentials
     authenticate
         :: (MonadHandler m, HandlerSite m ~ App)
         => Creds App -> m (AuthenticationResult App)
-    authenticate creds = liftHandler $ runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> pure $ Authenticated uid
-            Nothing ->
-                Authenticated <$>
-                    insert
-                        User
-                            { userIdent = credsIdent creds
-                            , userPassword = Nothing
-                            }
+    authenticate Creds{credsIdent = stellarAddress} =
+        liftHandler $
+        runDB do
+            mExistingUser <- getBy $ UniqueUser stellarAddress
+            case mExistingUser of
+                Just (Entity uid _) -> pure $ Authenticated uid
+                Nothing ->
+                    Authenticated <$>
+                        insert User{userStellarAddress = stellarAddress}
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
@@ -293,7 +294,8 @@ instance RenderMessage App FormMessage where
 
 -- Useful when writing code that is re-usable outside of the Handler context.
 -- An example is background jobs that send email.
--- This can also be useful for writing code that works across multiple Yesod applications.
+-- This can also be useful for writing code that works across multiple Yesod
+-- applications.
 instance HasHttpManager App where
     getHttpManager :: App -> Manager
     getHttpManager = appHttpManager

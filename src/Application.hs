@@ -1,9 +1,7 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-} -- instance YesodDispatch App
 
@@ -60,35 +58,32 @@ makeFoundation appSettings = do
     -- subsite.
     appHttpManager <- getGlobalManager
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
-    appStatic <-
-        (if appMutableStatic appSettings then staticDevel else static)
-            (appStaticDir appSettings)
+    appStatic <- (if appMutableStatic then staticDevel else static) appStaticDir
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
     -- logging function. To get out of this loop, we initially create a
     -- temporary foundation without a real connection pool, get a log function
     -- from there, and then create the real foundation.
-    let mkFoundation appConnPool = App {..}
-        -- The App {..} syntax is an example of record wild cards. For more
-        -- information, see:
-        -- https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html
+    let mkFoundation appConnPool =
+            App{appSettings, appStatic, appConnPool, appHttpManager, appLogger}
         tempFoundation =
             mkFoundation $ error "connPool forced in tempFoundation"
         logFunc = messageLoggerSource tempFoundation appLogger
 
     -- Create the database connection pool
-    pool <-
-        (`runLoggingT` logFunc) $
-            createSqlitePool
-                (sqlDatabase $ appDatabaseConf appSettings)
-                (sqlPoolSize $ appDatabaseConf appSettings)
+    pool <- (`runLoggingT` logFunc) $ createSqlitePool database poolSize
 
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
 
     -- Return the foundation
     pure $ mkFoundation pool
+
+  where
+    AppSettings{appMutableStatic, appStaticDir, appDatabaseConf} = appSettings
+    database = sqlDatabase appDatabaseConf
+    poolSize = sqlPoolSize appDatabaseConf
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
@@ -119,17 +114,20 @@ makeLogWare foundation =
 warpSettings :: App -> Settings
 warpSettings foundation =
     defaultSettings
-    & setPort (appPort $ appSettings foundation)
-    & setHost (appHost $ appSettings foundation)
+    & setHost appHost
+    & setPort appPort
     & setOnException
         (\_req e ->
-            when (defaultShouldDisplayException e) $ messageLoggerSource
-                foundation
-                (appLogger foundation)
-                $(qLocation >>= liftLoc)
-                "yesod"
-                LevelError
-                (toLogStr $ "Exception from Warp: " ++ show e))
+            when (defaultShouldDisplayException e) $
+                messageLoggerSource
+                    foundation
+                    appLogger
+                    $(qLocation >>= liftLoc)
+                    "yesod"
+                    LevelError
+                    (toLogStr $ "Exception from Warp: " ++ show e))
+  where
+    App{appLogger, appSettings = AppSettings{appPort, appHost}} = foundation
 
 -- | For yesod devel, pure the Warp settings and WAI Application.
 getApplicationDev :: IO (Settings, Application)
@@ -151,12 +149,14 @@ develMain = develMainHelper getApplicationDev
 appMain :: IO ()
 appMain = do
     -- Get the settings from all relevant sources
-    settings <- loadYamlSettingsArgs
-        -- fall back to compile-time values, set to [] to require values at runtime
-        [configSettingsYmlValue]
+    settings <-
+        loadYamlSettingsArgs
+            -- fall back to compile-time values, set to [] to require values
+            -- at runtime
+            [configSettingsYmlValue]
 
-        -- allow environment variables to override
-        useEnv
+            -- allow environment variables to override
+            useEnv
 
     -- Generate the foundation from the settings
     foundation <- makeFoundation settings
