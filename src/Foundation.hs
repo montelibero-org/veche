@@ -20,7 +20,7 @@ import Data.Text.Encoding qualified as TE
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
-import Yesod.Auth.OpenId (IdentifierType (Claimed), authOpenId)
+import Yesod.Auth.Stellar (authStellar)
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
@@ -271,7 +271,7 @@ instance YesodAuth App where
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
-    authPlugins app = authOpenId Claimed [] : extraAuthPlugins
+    authPlugins app = authStellar : extraAuthPlugins
       where
         -- Enable authDummy login if enabled.
         extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
