@@ -1,0 +1,7 @@
+resolver: lts-17.10
+
+# packages:
+#   - .
+
+extra-deps:
+  - classy-prelude-yesod-1.5.0
