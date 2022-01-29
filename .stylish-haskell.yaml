@@ -1,0 +1,13 @@
+steps:
+  - imports:
+      pad_module_names: false
+      post_qualify: true
+  - language_pragmas:
+      align: false
+  - trailing_whitespace: {}
+language_extensions:
+  - DataKinds
+  - ExistentialQuantification
+  - ExplicitNamespaces
+  - FlexibleContexts
+  - MultiParamTypeClasses

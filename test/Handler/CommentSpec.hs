@@ -1,9 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Handler.CommentSpec (spec) where
 
-import TestImport
 import Data.Aeson
+
+import TestImport
 
 spec :: Spec
 spec = withApp $ do
@@ -44,4 +46,3 @@ spec = withApp $ do
                 addRequestHeader ("Content-Type", "application/json")
 
             statusIs 400
-

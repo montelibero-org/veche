@@ -1,27 +1,30 @@
-{-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude     #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Foundation where
 
-import           Control.Monad.Logger (LogSource)
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding   as TE
-import           Database.Persist.Sql (ConnectionPool, runSqlPool)
-import           Import.NoFoundation
-import           Text.Hamlet          (hamletFile)
-import           Text.Jasmine         (minifym)
-import           Yesod.Auth.OpenId    (IdentifierType (Claimed), authOpenId)
-import           Yesod.Core.Types     (Logger)
-import qualified Yesod.Core.Unsafe    as Unsafe
-import           Yesod.Default.Util   (addStaticContentExternal)
+import Import.NoFoundation
+
+import Control.Monad.Logger (LogSource)
+import Data.CaseInsensitive qualified as CI
+import Data.Text.Encoding qualified as TE
+import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Text.Hamlet (hamletFile)
+import Text.Jasmine (minifym)
+import Yesod.Auth.OpenId (IdentifierType (Claimed), authOpenId)
+import Yesod.Core.Types (Logger)
+import Yesod.Core.Unsafe qualified as Unsafe
+import Yesod.Default.Util (addStaticContentExternal)
 
 -- Used only when in "auth-dummy-login" setting is enabled.
-import           Yesod.Auth.Dummy
+import Yesod.Auth.Dummy
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -63,8 +66,7 @@ mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
 
 -- | A convenient synonym for database access functions.
-type DB a =
-    forall (m :: Type -> Type). (MonadUnliftIO m) => ReaderT SqlBackend m a
+type DB a = forall m. (MonadUnliftIO m) => ReaderT SqlBackend m a
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
@@ -80,9 +82,11 @@ instance Yesod App where
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
     makeSessionBackend :: App -> IO (Maybe SessionBackend)
-    makeSessionBackend _ = Just <$> defaultClientSessionBackend
-        120    -- timeout in minutes
-        "config/client_session_key.aes"
+    makeSessionBackend _ =
+        Just <$>
+            defaultClientSessionBackend
+                120  -- timeout in minutes
+                "config/client_session_key.aes"
 
     -- Yesod Middleware allows you to run code before and after each handler function.
     -- The defaultYesodMiddleware adds the response header "Vary: Accept, Accept-Language" and performs authorization checks.
@@ -129,11 +133,13 @@ instance Yesod App where
                     }
                 ]
 
-        let navbarLeftMenuItems = [x | NavbarLeft x <- menuItems]
+        let navbarLeftMenuItems  = [x | NavbarLeft  x <- menuItems]
         let navbarRightMenuItems = [x | NavbarRight x <- menuItems]
 
-        let navbarLeftFilteredMenuItems = [x | x <- navbarLeftMenuItems, menuItemAccessCallback x]
-        let navbarRightFilteredMenuItems = [x | x <- navbarRightMenuItems, menuItemAccessCallback x]
+        let navbarLeftFilteredMenuItems =
+                [x | x <- navbarLeftMenuItems, menuItemAccessCallback x]
+        let navbarRightFilteredMenuItems =
+                [x | x <- navbarRightMenuItems, menuItemAccessCallback x]
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -141,9 +147,10 @@ instance Yesod App where
         -- value passed to hamletToRepHtml cannot be a widget, this allows
         -- you to use normal widget features in default-layout.
 
-        pc <- widgetToPageContent $ do
-            addStylesheet $ StaticR css_bootstrap_css
-            $(widgetFile "default-layout")
+        pc <-
+            widgetToPageContent $ do
+                addStylesheet $ StaticR css_bootstrap_css
+                $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 
     -- The page to be redirected to when authentication is required.
@@ -157,16 +164,17 @@ instance Yesod App where
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
     -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _   = return Authorized
-    isAuthorized CommentR _    = return Authorized
-    isAuthorized HomeR _       = return Authorized
-    isAuthorized FaviconR _    = return Authorized
-    isAuthorized RobotsR _     = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-
-    -- the profile route requires that the user is authenticated, so we
-    -- delegate to that function
-    isAuthorized ProfileR _    = isAuthenticated
+    isAuthorized route _isWrite =
+        case route of
+            AuthR _     -> pure Authorized
+            CommentR    -> pure Authorized
+            HomeR       -> pure Authorized
+            FaviconR    -> pure Authorized
+            RobotsR     -> pure Authorized
+            StaticR _   -> pure Authorized
+            -- the profile route requires that the user is authenticated, so we
+            -- delegate to that function
+            ProfileR    -> isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -184,7 +192,7 @@ instance Yesod App where
             minifym
             genFileName
             staticDir
-            (StaticR . flip StaticRoute [])
+            (StaticR . (`StaticRoute` []))
             ext
             mime
             content
@@ -196,13 +204,13 @@ instance Yesod App where
     -- in development, and warnings and errors in production.
     shouldLogIO :: App -> LogSource -> LogLevel -> IO Bool
     shouldLogIO app _source level =
-        return $
-        appShouldLogAll (appSettings app)
+        pure $
+            appShouldLogAll (appSettings app)
             || level == LevelWarn
             || level == LevelError
 
     makeLogger :: App -> IO Logger
-    makeLogger = return . appLogger
+    makeLogger = pure . appLogger
 
 -- Define breadcrumbs.
 instance YesodBreadcrumbs App where
@@ -212,10 +220,11 @@ instance YesodBreadcrumbs App where
     breadcrumb
         :: Route App  -- ^ The route the user is visiting currently.
         -> Handler (Text, Maybe (Route App))
-    breadcrumb HomeR     = return ("Home", Nothing)
-    breadcrumb (AuthR _) = return ("Login", Just HomeR)
-    breadcrumb ProfileR  = return ("Profile", Just HomeR)
-    breadcrumb  _        = return ("home", Nothing)
+    breadcrumb = \case
+        HomeR     -> pure ("Home",    Nothing)
+        (AuthR _) -> pure ("Login",   Just HomeR)
+        ProfileR  -> pure ("Profile", Just HomeR)
+        _         -> pure ("home",    Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where
@@ -235,35 +244,42 @@ instance YesodAuth App where
     -- Where to send a user after successful login
     loginDest :: App -> Route App
     loginDest _ = HomeR
+
     -- Where to send a user after logout
     logoutDest :: App -> Route App
     logoutDest _ = HomeR
+
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer :: App -> Bool
     redirectToReferer _ = True
 
-    authenticate :: (MonadHandler m, HandlerSite m ~ App)
-                 => Creds App -> m (AuthenticationResult App)
+    authenticate
+        :: (MonadHandler m, HandlerSite m ~ App)
+        => Creds App -> m (AuthenticationResult App)
     authenticate creds = liftHandler $ runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
-            Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
-                }
+            Just (Entity uid _) -> pure $ Authenticated uid
+            Nothing ->
+                Authenticated <$>
+                    insert
+                        User
+                            { userIdent = credsIdent creds
+                            , userPassword = Nothing
+                            }
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins app = authOpenId Claimed [] : extraAuthPlugins
+      where
         -- Enable authDummy login if enabled.
-        where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+        extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
-    return $ case muid of
+    pure $ case muid of
         Nothing -> Unauthorized "You must login to access this page"
         Just _  -> Authorized
 

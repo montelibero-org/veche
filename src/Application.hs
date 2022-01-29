@@ -1,11 +1,12 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-} -- instance YesodDispatch App
+
 module Application
     ( getApplicationDev
     , appMain
@@ -20,30 +21,29 @@ module Application
     , db
     ) where
 
-import Control.Monad.Logger                 (liftLoc, runLoggingT)
-import Database.Persist.Sqlite              (createSqlitePool, runSqlPool,
-                                             sqlDatabase, sqlPoolSize)
 import Import
-import Language.Haskell.TH.Syntax           (qLocation)
-import Network.HTTP.Client.TLS              (getGlobalManager)
+
+import Control.Monad.Logger (liftLoc, runLoggingT)
+import Database.Persist.Sqlite (createSqlitePool, runSqlPool, sqlDatabase,
+                                sqlPoolSize)
+import Language.Haskell.TH.Syntax (qLocation)
+import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Middleware)
-import Network.Wai.Handler.Warp             (Settings, defaultSettings,
-                                             defaultShouldDisplayException,
-                                             runSettings, setHost,
-                                             setOnException, setPort, getPort)
+import Network.Wai.Handler.Warp (Settings, defaultSettings,
+                                 defaultShouldDisplayException, getPort,
+                                 runSettings, setHost, setOnException, setPort)
 import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
-import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
-                                             toLogStr)
+import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
-import Handler.Common
-import Handler.Home
-import Handler.Comment
-import Handler.Profile
+import Handler.Comment (postCommentR)
+import Handler.Common (getFaviconR, getRobotsR)
+import Handler.Home (getHomeR, postHomeR)
+import Handler.Profile (getProfileR)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -62,7 +62,7 @@ makeFoundation appSettings = do
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
-        (appStaticDir appSettings)
+            (appStaticDir appSettings)
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -73,19 +73,22 @@ makeFoundation appSettings = do
         -- The App {..} syntax is an example of record wild cards. For more
         -- information, see:
         -- https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html
-        tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
+        tempFoundation =
+            mkFoundation $ error "connPool forced in tempFoundation"
         logFunc = messageLoggerSource tempFoundation appLogger
 
     -- Create the database connection pool
-    pool <- flip runLoggingT logFunc $ createSqlitePool
-        (sqlDatabase $ appDatabaseConf appSettings)
-        (sqlPoolSize $ appDatabaseConf appSettings)
+    pool <-
+        (`runLoggingT` logFunc) $
+            createSqlitePool
+                (sqlDatabase $ appDatabaseConf appSettings)
+                (sqlPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
 
     -- Return the foundation
-    return $ mkFoundation pool
+    pure $ mkFoundation pool
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
@@ -94,45 +97,48 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    pure $ logWare $ defaultMiddlewaresNoLogging appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
-    mkRequestLogger def
-        { outputFormat =
-            if appDetailedRequestLogging $ appSettings foundation
-                then Detailed True
-                else Apache
-                        (if appIpFromHeader $ appSettings foundation
-                            then FromFallback
-                            else FromSocket)
-        , destination = Logger $ loggerSet $ appLogger foundation
-        }
+    mkRequestLogger
+        def { outputFormat =
+                if appDetailedRequestLogging $ appSettings foundation then
+                    Detailed True
+                else
+                    Apache $
+                        if appIpFromHeader $ appSettings foundation then
+                            FromFallback
+                        else
+                            FromSocket
+            , destination = Logger $ loggerSet $ appLogger foundation
+            }
 
 
 -- | Warp settings for the given foundation value.
 warpSettings :: App -> Settings
 warpSettings foundation =
-      setPort (appPort $ appSettings foundation)
-    $ setHost (appHost $ appSettings foundation)
-    $ setOnException (\_req e ->
-        when (defaultShouldDisplayException e) $ messageLoggerSource
-            foundation
-            (appLogger foundation)
-            $(qLocation >>= liftLoc)
-            "yesod"
-            LevelError
-            (toLogStr $ "Exception from Warp: " ++ show e))
-      defaultSettings
+    defaultSettings
+    & setPort (appPort $ appSettings foundation)
+    & setHost (appHost $ appSettings foundation)
+    & setOnException
+        (\_req e ->
+            when (defaultShouldDisplayException e) $ messageLoggerSource
+                foundation
+                (appLogger foundation)
+                $(qLocation >>= liftLoc)
+                "yesod"
+                LevelError
+                (toLogStr $ "Exception from Warp: " ++ show e))
 
--- | For yesod devel, return the Warp settings and WAI Application.
+-- | For yesod devel, pure the Warp settings and WAI Application.
 getApplicationDev :: IO (Settings, Application)
 getApplicationDev = do
     settings <- getAppSettings
     foundation <- makeFoundation settings
     wsettings <- getDevSettings $ warpSettings foundation
     app <- makeApplication foundation
-    return (wsettings, app)
+    pure (wsettings, app)
 
 getAppSettings :: IO AppSettings
 getAppSettings = loadYamlSettings [configSettingsYml] [] useEnv
@@ -171,10 +177,10 @@ getApplicationRepl = do
     foundation <- makeFoundation settings
     wsettings <- getDevSettings $ warpSettings foundation
     app1 <- makeApplication foundation
-    return (getPort wsettings, foundation, app1)
+    pure (getPort wsettings, foundation, app1)
 
 shutdownApp :: App -> IO ()
-shutdownApp _ = return ()
+shutdownApp _ = pure ()
 
 
 ---------------------------------------------
@@ -183,7 +189,7 @@ shutdownApp _ = return ()
 
 -- | Run a handler
 handler :: Handler a -> IO a
-handler h = getAppSettings >>= makeFoundation >>= flip unsafeHandler h
+handler h = getAppSettings >>= makeFoundation >>= (`unsafeHandler` h)
 
 -- | Run DB queries
 db :: ReaderT SqlBackend Handler a -> IO a

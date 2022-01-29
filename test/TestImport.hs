@@ -6,26 +6,25 @@ module TestImport
     , module X
     ) where
 
-import           ClassyPrelude           as X hiding (Handler, delete, deleteBy)
-import           Control.Monad.Logger    (runLoggingT)
-import           Database.Persist        as X hiding (get)
-import           Database.Persist.Sql    (SqlPersistM, connEscapeName,
-                                          rawExecute, rawSql,
-                                          runSqlPersistMPool, unSingle)
-import           Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
-                                          mkSqliteConnectionInfo, sqlDatabase)
-import           Lens.Micro              (set)
-import           Test.Hspec              as X
-import           Yesod.Auth              as X
-import           Yesod.Core              (messageLoggerSource)
-import           Yesod.Core.Unsafe       (fakeHandlerGetLogger)
-import           Yesod.Default.Config2   (loadYamlSettings, useEnv)
-import           Yesod.Test              as X
+import ClassyPrelude as X hiding (Handler, delete, deleteBy)
+import Control.Monad.Logger (runLoggingT)
+import Database.Persist as X hiding (get)
+import Database.Persist.Sql (SqlPersistM, connEscapeName, rawExecute, rawSql,
+                             runSqlPersistMPool, unSingle)
+import Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
+                                mkSqliteConnectionInfo, sqlDatabase)
+import Lens.Micro (set)
+import Test.Hspec as X
+import Yesod.Auth as X
+import Yesod.Core (messageLoggerSource)
+import Yesod.Core.Unsafe (fakeHandlerGetLogger)
+import Yesod.Default.Config2 (loadYamlSettings, useEnv)
+import Yesod.Test as X
 
-import           Application             (makeFoundation, makeLogWare)
-import           Foundation              as X
-import           Model                   as X
-import           Settings                (appDatabaseConf)
+import Application (makeFoundation, makeLogWare)
+import Foundation as X
+import Model as X
+import Settings (appDatabaseConf)
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
@@ -68,7 +67,7 @@ wipeDB app = do
 
     pool <- runLoggingT (createSqlitePoolFromInfo connInfo 1) logFunc
 
-    flip runSqlPersistMPool pool $ do
+    (`runSqlPersistMPool` pool) $ do
         tables <- getTables
         sqlBackend <- ask
         let queries =

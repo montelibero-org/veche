@@ -1,13 +1,15 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+
 module Handler.Home where
 
 import Import
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
+
 import Text.Julius (RawJS (..))
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
 
 -- Define our data that will be used for creating the form.
 data FileForm = FileForm
@@ -51,11 +53,15 @@ postHomeR = do
         $(widgetFile "homepage")
 
 sampleForm :: Form FileForm
-sampleForm = renderBootstrap3 BootstrapBasicForm $ FileForm
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField textSettings Nothing
+sampleForm =
+    renderBootstrap3 BootstrapBasicForm $
+        FileForm
+        <$> fileAFormReq "Choose a file"
+        <*> areq textField textSettings Nothing
+  where
     -- Add attributes like the placeholder and CSS classes.
-    where textSettings = FieldSettings
+    textSettings =
+        FieldSettings
             { fsLabel = "What's on the file?"
             , fsTooltip = Nothing
             , fsId = Nothing

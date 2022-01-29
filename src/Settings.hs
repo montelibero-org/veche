@@ -1,8 +1,10 @@
-{-# LANGUAGE CPP               #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 -- | Settings are centralized, as much as possible, into this file. This
 -- includes database connection settings, static file locations, etc.
 -- In addition, you can configure a number of different aspects of Yesod
@@ -11,17 +13,17 @@
 module Settings where
 
 import ClassyPrelude.Yesod
-import qualified Control.Exception as Exception
-import Data.Aeson                  (Result (..), fromJSON, withObject, (.!=),
-                                    (.:?))
-import Data.FileEmbed              (embedFile)
-import Data.Yaml                   (decodeEither')
-import Database.Persist.Sqlite     (SqliteConf)
-import Language.Haskell.TH.Syntax  (Exp, Name, Q)
-import Network.Wai.Handler.Warp    (HostPreference)
-import Yesod.Default.Config2       (applyEnvValue, configSettingsYml)
-import Yesod.Default.Util          (WidgetFileSettings, widgetFileNoReload,
-                                    widgetFileReload)
+
+import Control.Exception qualified as Exception
+import Data.Aeson (Result (..), fromJSON, withObject, (.!=), (.:?))
+import Data.FileEmbed (embedFile)
+import Data.Yaml (decodeEither')
+import Database.Persist.Sqlite (SqliteConf)
+import Language.Haskell.TH.Syntax (Exp, Name, Q)
+import Network.Wai.Handler.Warp (HostPreference)
+import Yesod.Default.Config2 (applyEnvValue, configSettingsYml)
+import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
+                           widgetFileReload)
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -64,34 +66,35 @@ data AppSettings = AppSettings
     }
 
 instance FromJSON AppSettings where
-    parseJSON = withObject "AppSettings" $ \o -> do
-        let defaultDev =
+    parseJSON =
+        withObject "AppSettings" $ \o -> do
+            let defaultDev =
 #ifdef DEVELOPMENT
-                True
+                    True
 #else
-                False
+                    False
 #endif
-        appStaticDir              <- o .: "static-dir"
-        appDatabaseConf           <- o .: "database"
-        appRoot                   <- o .:? "approot"
-        appHost                   <- fromString <$> o .: "host"
-        appPort                   <- o .: "port"
-        appIpFromHeader           <- o .: "ip-from-header"
+            appStaticDir              <- o .: "static-dir"
+            appDatabaseConf           <- o .: "database"
+            appRoot                   <- o .:? "approot"
+            appHost                   <- fromString <$> o .: "host"
+            appPort                   <- o .: "port"
+            appIpFromHeader           <- o .: "ip-from-header"
 
-        dev                       <- o .:? "development"      .!= defaultDev
+            dev                       <- o .:? "development"      .!= defaultDev
 
-        appDetailedRequestLogging <- o .:? "detailed-logging" .!= dev
-        appShouldLogAll           <- o .:? "should-log-all"   .!= dev
-        appReloadTemplates        <- o .:? "reload-templates" .!= dev
-        appMutableStatic          <- o .:? "mutable-static"   .!= dev
-        appSkipCombining          <- o .:? "skip-combining"   .!= dev
+            appDetailedRequestLogging <- o .:? "detailed-logging" .!= dev
+            appShouldLogAll           <- o .:? "should-log-all"   .!= dev
+            appReloadTemplates        <- o .:? "reload-templates" .!= dev
+            appMutableStatic          <- o .:? "mutable-static"   .!= dev
+            appSkipCombining          <- o .:? "skip-combining"   .!= dev
 
-        appCopyright              <- o .:  "copyright"
-        appAnalytics              <- o .:? "analytics"
+            appCopyright              <- o .:  "copyright"
+            appAnalytics              <- o .:? "analytics"
 
-        appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+            appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
 
-        return AppSettings {..}
+            return AppSettings{..}
 
 -- | Settings for 'widgetFile', such as which template languages to support and
 -- default Hamlet settings.
@@ -110,10 +113,13 @@ combineSettings = def
 -- user.
 
 widgetFile :: String -> Q Exp
-widgetFile = (if appReloadTemplates compileTimeAppSettings
-                then widgetFileReload
-                else widgetFileNoReload)
-              widgetFileSettings
+widgetFile =
+    (   if appReloadTemplates compileTimeAppSettings then
+            widgetFileReload
+        else
+            widgetFileNoReload
+    )
+        widgetFileSettings
 
 -- | Raw bytes at compile time of @config/settings.yml@
 configSettingsYmlBS :: ByteString
@@ -121,8 +127,8 @@ configSettingsYmlBS = $(embedFile configSettingsYml)
 
 -- | @config/settings.yml@, parsed to a @Value@.
 configSettingsYmlValue :: Value
-configSettingsYmlValue = either Exception.throw id
-                       $ decodeEither' configSettingsYmlBS
+configSettingsYmlValue =
+    either Exception.throw id $ decodeEither' configSettingsYmlBS
 
 -- | A version of @AppSettings@ parsed at compile time from @config/settings.yml@.
 compileTimeAppSettings :: AppSettings
@@ -138,11 +144,11 @@ compileTimeAppSettings =
 -- > $(combineStylesheets 'StaticR [style1_css, style2_css])
 
 combineStylesheets :: Name -> [Route Static] -> Q Exp
-combineStylesheets = combineStylesheets'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings
+combineStylesheets =
+    combineStylesheets'
+        (appSkipCombining compileTimeAppSettings)
+        combineSettings
 
 combineScripts :: Name -> [Route Static] -> Q Exp
-combineScripts = combineScripts'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings
+combineScripts =
+    combineScripts' (appSkipCombining compileTimeAppSettings) combineSettings
