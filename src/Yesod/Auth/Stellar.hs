@@ -26,18 +26,21 @@ type Method = Text
 
 type Piece = Text
 
+addressField :: Text
+addressField = "stellar_address"
+
 dispatch :: Method -> [Piece] -> AuthHandler master TypedContent
 dispatch _method _path = do
-    mAddress <- lookupGetParam "address"
+    mAddress <- lookupGetParam addressField
     routeToMaster <- getRouteToParent
     redirect
         ( routeToMaster LoginR
-        , [("address", address) | Just address <- [mAddress]]
+        , [(addressField, address) | Just address <- [mAddress]]
         )
 
 login :: (Route Auth -> Route master) -> WidgetFor master ()
 login routeToMaster = do
-    mAddress <- lookupGetParam "address"
+    mAddress <- lookupGetParam addressField
     case mAddress of
         Nothing -> do
             ident <- newIdent
@@ -45,7 +48,7 @@ login routeToMaster = do
                 <form method="get" action="@{routeToMaster pluginRoute}">
                     <label for="#{ident}">
                         Stellar public address (starts with G):
-                    <input id="#{ident}" type="text" name="address">
+                    <input id="#{ident}" type="text" name="#{addressField}">
                     <input type="submit" value="Next">
             |]
         Just address -> do
