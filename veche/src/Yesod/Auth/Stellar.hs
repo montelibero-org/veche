@@ -27,6 +27,13 @@ pluginName = "stellar"
 pluginRoute :: Route Auth
 pluginRoute = PluginR pluginName []
 
+-- | Flow:
+-- 1. 'login' shows 'addressForm'.
+-- 2. User enters address (public key).
+-- 3. 'login' shows 'challengeResponseForm' with challenge (dummy transaction)
+--    based on address.
+-- 4. User signs the transaction and enters signed envelope to the form.
+-- 4. 'dispatch' verifies the signature and assigns credentials.
 authStellar :: AuthPlugin app
 authStellar =
     AuthPlugin{apName = pluginName, apDispatch = dispatch, apLogin = login}
