@@ -13,6 +13,8 @@ import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text.Lazy qualified as TextL
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
+import Stellar (Account (..), Memo (..), Transaction (..), makeTransaction,
+                xdrSerialize)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
@@ -64,9 +66,8 @@ login routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
         Nothing -> addressForm
-        Just address -> do
-            challenge <- makeChallenge address
-            challengeResponseForm routeToMaster challenge
+        Just address ->
+            challengeResponseForm routeToMaster $ makeChallenge address
 
 addressForm :: WidgetFor app ()
 addressForm = do
@@ -102,16 +103,10 @@ challengeResponseForm routeToMaster challenge = do
             <input type="submit" value="Log in">
     |]
 
-makeChallenge :: MonadHandler m => Text -> m Text
-makeChallenge address = do
-    (exitCode, out, err) <-
-        liftIO $
-        readProcess $ proc "python3" [] & setStdin (byteStringInput program)
-    case exitCode of
-        ExitSuccess -> pure $ TextL.toStrict $ decodeUtf8 out
-        ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
-  where
-    program = encodeUtf8 $(stextFile "src/Yesod/Auth/challenge.py")
+makeChallenge :: Text -> Text
+makeChallenge address =
+    xdrSerialize $
+    (makeTransaction (Account address 0)){memo = MemoText "Logging into Veche"}
 
 -- | Returns address
 verifyResponse :: MonadHandler m => Text -> m Text

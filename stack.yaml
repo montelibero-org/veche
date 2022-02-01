@@ -1,7 +1,11 @@
 resolver: lts-17.10
 
 packages:
+  - stellar
   - veche
 
 extra-deps:
   - classy-prelude-yesod-1.5.0
+  - git: https://github.com/cblp/haskell-nfs
+    commit: 5689c136d30ae3fe078554f40ed8e1504126d8bb
+    subdirs: [rpc]

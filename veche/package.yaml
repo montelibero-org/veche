@@ -43,6 +43,8 @@ dependencies:
 - yesod-form >=1.6 && <1.7
 - yesod-static >=1.6 && <1.7
 
+- stellar
+
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
 library:
