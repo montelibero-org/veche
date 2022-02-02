@@ -1,11 +1,10 @@
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Stellar.Transaction where
 
 import Stellar.Account (Account (..))
 import Stellar.Memo (Memo (..))
+import Stellar.XDR (Transaction)
 
 data Transaction = Transaction{sourceAccount :: Account, memo :: Memo}
     deriving (Show)
