@@ -1,4 +1,4 @@
-resolver: lts-17.10
+resolver: lts-18.0
 
 packages:
   - stellar
@@ -6,6 +6,10 @@ packages:
 
 extra-deps:
   - classy-prelude-yesod-1.5.0
-  - git: https://github.com/cblp/haskell-nfs
-    commit: 5689c136d30ae3fe078554f40ed8e1504126d8bb
+  - git: https://github.com/dylex/haskell-nfs
+    commit:
+      33e8b9c7f20a05f91bb01e4c0a998ae749122a73
+      # Author: Dylan Simon <dylan@dylex.net>
+      # Date:   Tue Feb 1 17:10:04 2022 -0500
+      #   language updates for stackage lts 18
     subdirs: [rpc]

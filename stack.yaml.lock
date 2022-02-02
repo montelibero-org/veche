@@ -4,11 +4,11 @@
 #   https://docs.haskellstack.org/en/stable/lock_files
 
 snapshots:
-- original: lts-17.10
+- original: lts-18.0
   completed:
-    sha256: 321b3b9f0c7f76994b39e0dabafdc76478274b4ff74cc5e43d410897a335ad3b
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/10.yaml
-    size: 567241
+    sha256: c632012da648385b9fa3c29f4e0afd56ead299f1c5528ee789058be410e883c0
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/0.yaml
+    size: 585393
 packages:
 - original:
     hackage: classy-prelude-yesod-1.5.0
@@ -19,14 +19,14 @@ packages:
     hackage: classy-prelude-yesod-1.5.0@sha256:8f7e183bdfd6d2ea9674284c4f285294ab086aff60d9be4e5d7d2f3c1a2b05b7,1330
 - original:
     subdir: rpc
-    git: https://github.com/cblp/haskell-nfs
-    commit: 5689c136d30ae3fe078554f40ed8e1504126d8bb
+    git: https://github.com/dylex/haskell-nfs
+    commit: 33e8b9c7f20a05f91bb01e4c0a998ae749122a73
   completed:
     pantry-tree:
-      sha256: 92ca8a0bf321f5ef3229f808f30ea7dfcb83d0923e6cf04c75e1462b569e5c3e
+      sha256: c1341aacf02e91a6eda32c7b9d83bc172d8ceb1bf497558b527988fcec284a61
       size: 1725
     subdir: rpc
     version: '0.1'
-    git: https://github.com/cblp/haskell-nfs
+    git: https://github.com/dylex/haskell-nfs
     name: ONC-RPC
-    commit: 5689c136d30ae3fe078554f40ed8e1504126d8bb
+    commit: 33e8b9c7f20a05f91bb01e4c0a998ae749122a73
