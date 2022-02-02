@@ -1,7 +1,13 @@
 cabal-version: 2.2
 name:          stellar
 version:       0
-build-type:    Simple
+build-type:    Custom
+
+custom-setup
+  setup-depends:
+    , base
+    , Cabal
+    , ONC-RPC
 
 library
   build-depends:
@@ -17,6 +23,7 @@ library
     Stellar.Transaction
 
   hs-source-dirs:   lib
+  other-modules:    Stellar.XDR.Transaction
 
 test-suite test
   build-depends:

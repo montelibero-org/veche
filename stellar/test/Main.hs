@@ -8,10 +8,7 @@ import Stellar (Account (..), Memo (..), Transaction (..), makeTransaction,
                 xdrSerialize)
 
 main :: IO ()
-main =
-    defaultMain $
-    testCase "smoke" $
-    xdrSerialize tx @?= testUnsingedTx
+main = defaultMain $ testCase "smoke" $ xdrSerialize tx @?= testUnsingedTx
   where
     tx = (makeTransaction (Account testPublicKey 0)){memo = MemoText "log in"}
 
