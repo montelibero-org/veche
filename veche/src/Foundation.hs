@@ -175,6 +175,7 @@ instance Yesod App where
             -- Routes requiring authentication.
             CommentR    -> isAuthenticated
             ProfileR    -> isAuthenticated
+            TopicNewR   -> isAuthenticated
             TopicsR     -> isAuthenticated
 
     -- This function creates static content files in the static folder

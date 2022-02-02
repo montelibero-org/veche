@@ -1,4 +1,9 @@
-<div .container>
-    <ul>
-        $forall topic <- topics
-            <li>#{show topic}
+<div>
+    <a .btn .btn-default href="@{TopicNewR}">
+        New topic
+
+<ul>
+    $forall topic <- topics
+        <li>#{show topic}
+
+<div>(#{topicCount} topics)

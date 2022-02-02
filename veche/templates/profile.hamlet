@@ -9,4 +9,4 @@
 
     <p>
         Your data is protected with us
-        <strong><span class="username">#{userStellarAddress}</span></strong>!
+        <strong><span class=username>#{userStellarAddress}</span></strong>!

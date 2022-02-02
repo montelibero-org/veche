@@ -41,7 +41,7 @@ import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Profile (getProfileR)
-import Handler.Topic (getTopicsR)
+import Handler.Topic (getTopicNewR, getTopicsR)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
