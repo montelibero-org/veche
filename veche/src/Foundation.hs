@@ -109,13 +109,13 @@ instance Yesod App where
         mcurrentRoute <- getCurrentRoute
 
         -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
-        (title, parents) <- breadcrumbs
+        -- (title, parents) <- breadcrumbs
 
         -- Define the menu items of the header.
         let menuItems =
                 [ NavbarLeft $ MenuItem
-                    { menuItemLabel = "Home"
-                    , menuItemRoute = HomeR
+                    { menuItemLabel = "Topics"
+                    , menuItemRoute = TopicsR
                     , menuItemAccessCallback = True
                     }
                 , NavbarLeft $ MenuItem
@@ -165,18 +165,17 @@ instance Yesod App where
         :: Route App  -- ^ The route the user is visiting.
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
-    -- Routes not requiring authentication.
     isAuthorized route _isWrite =
         case route of
+            -- Routes not requiring authentication.
             AuthR _     -> pure Authorized
-            CommentR    -> pure Authorized
-            HomeR       -> pure Authorized
             FaviconR    -> pure Authorized
             RobotsR     -> pure Authorized
             StaticR _   -> pure Authorized
-            -- the profile route requires that the user is authenticated, so we
-            -- delegate to that function
+            -- Routes requiring authentication.
+            CommentR    -> isAuthenticated
             ProfileR    -> isAuthenticated
+            TopicsR     -> isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -223,10 +222,10 @@ instance YesodBreadcrumbs App where
         :: Route App  -- ^ The route the user is visiting currently.
         -> Handler (Text, Maybe (Route App))
     breadcrumb = \case
-        HomeR     -> pure ("Home",    Nothing)
-        (AuthR _) -> pure ("Login",   Just HomeR)
-        ProfileR  -> pure ("Profile", Just HomeR)
-        _         -> pure ("home",    Nothing)
+        -- HomeR     -> pure ("Home",    Nothing)
+        -- (AuthR _) -> pure ("Login",   Nothing)
+        -- ProfileR  -> pure ("Profile", Nothing)
+        _         -> pure ("",    Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where
@@ -245,11 +244,11 @@ instance YesodAuth App where
 
     -- Where to send a user after successful login
     loginDest :: App -> Route App
-    loginDest _ = HomeR
+    loginDest _ = TopicsR
 
     -- Where to send a user after logout
     logoutDest :: App -> Route App
-    logoutDest _ = HomeR
+    logoutDest _ = AuthR LoginR
 
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer :: App -> Bool

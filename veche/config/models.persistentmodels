@@ -2,14 +2,6 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 
-User
-    stellarAddress Text
-
-    UniqueUser stellarAddress
-
-    deriving Typeable
-
-
 -- Email
 --     email Text
 --     userId UserId Maybe
@@ -17,10 +9,28 @@ User
 --     UniqueEmail email
 
 
--- Adding "json" causes ToJSON and FromJSON instances to be derived
 Comment json
-    message Text
-    userId UserId Maybe
+    message         Text
+    userId          UserId
+    topic           TopicId
+    parentComment   CommentId Maybe
 
     deriving Eq
     deriving Show
+
+
+Topic
+    title   Text
+    body    Text
+    author  UserId
+    open    Bool
+
+    deriving Show
+
+
+User
+    stellarAddress Text
+
+    UniqueUser stellarAddress
+
+    deriving Typeable

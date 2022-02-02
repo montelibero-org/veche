@@ -1,11 +1,12 @@
 <div .ui.container>
 
-  <h1>
-    Access granted!
+    <h1>
+        Access granted!
 
-  <p>
-    This page is protected and access is allowed only for authenticated users.
+    <p>
+        This page is protected and access is allowed only for authenticated
+        users.
 
-  <p>
-    Your data is protected with us
-    <strong><span class="username">#{userStellarAddress}</span></strong>!
+    <p>
+        Your data is protected with us
+        <strong><span class="username">#{userStellarAddress}</span></strong>!

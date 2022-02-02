@@ -1,0 +1,4 @@
+<div .container>
+    <ul>
+        $forall topic <- topics
+            <li>#{show topic}
