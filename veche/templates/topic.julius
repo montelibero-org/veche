@@ -20,11 +20,7 @@ $(function() {
         topic: #{toJSON topicId},
       }),
       success: function (data) {
-        const newNode = $("<li></li>");
-        newNode.text(message);
-        console.log(data);
-        $("##{rawJS commentListId}").append(newNode);
-        commentTextarea.val(null);
+        $("##{rawJS commentListId}").html((_, old) => old + data);
       },
       error: function (data) {
         console.log("Error creating comment: " + data);

@@ -5,10 +5,10 @@
 
 <h3>Comments
 <ul ##{commentListId}>
-    $forall Comment{commentAuthor, commentMessage} <- allComments
+    $forall (Comment{commentMessage}, User{userStellarAddress}) <- commentsWithAuthors
         <li>
-            <h6>#{show commentAuthor}
-            #{commentMessage}
+            <div .comment_author>#{userStellarAddress}
+            <div .comment_message>#{commentMessage}
 <form .form-horizontal ##{commentFormId}>
     <div .field>
         <textarea rows="2" ##{commentTextareaId} placeholder="Your comment here..." required>

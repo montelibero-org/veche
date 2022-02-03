@@ -1,8 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -10,17 +12,23 @@ module Handler.Topic (getTopicR, getTopicsNewR, getTopicsR, postTopicsR) where
 
 import Import
 
+import Database.Persist.Sql (rawSql)
 import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    (Topic{topicTitle, topicBody}, allComments) <-
-        runDB $
-            (,)
-            <$> get404 topicId
-            <*> (map entityVal <$> selectList [CommentTopic ==. topicId] [])
+    (Topic{topicTitle, topicBody}, commentsWithAuthors) <-
+        runDB do
+            topic <- get404 topicId
+            commentsWithAuthors :: [(Entity Comment, Entity User)] <-
+                rawSql
+                    "SELECT ??, ??\
+                    \ FROM Comment, User ON Comment.author == User.id\
+                    \ WHERE Comment.topic == ?"
+                    [toPersistValue topicId]
+            pure (topic, map (bimap entityVal entityVal) commentsWithAuthors)
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent

@@ -1,30 +1,38 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Handler.Comment where
 
 import Import
 
+import Text.Blaze.Html.Renderer.Text (renderHtml)
+
 data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
     deriving (FromJSON, Generic)
+
+commentWidget :: User -> Comment -> Html
+commentWidget User{userStellarAddress} Comment{commentMessage} =
+    [shamlet|
+        <li>
+            <div .comment_author>#{userStellarAddress}
+            <div .comment_message>#{commentMessage}
+    |]
 
 postCommentR :: Handler Value
 postCommentR = do
     -- input
     CommentRequest{message, topic} <- requireCheckJsonBody
-    user <- requireAuthId
+    (userId, user) <- requireAuthPair
 
     -- put comment to database
-    let comment =
-            Comment
-                { commentAuthor = user
-                , commentMessage = message
-                , commentTopic = topic
-                , commentParentComment = Nothing
-                }
+    let comment = Comment
+            { commentAuthor = userId
+            , commentMessage = message
+            , commentTopic = topic
+            , commentParentComment = Nothing
+            }
     runDB $ insert_ comment
 
-    -- we don't need to return JSON here, but return anything just because of
-    -- comme il faut, because it should be JSON API on both ends
-    returnJson Null
+    returnJson $ renderHtml $ commentWidget user comment
