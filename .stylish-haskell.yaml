@@ -4,6 +4,7 @@ steps:
       post_qualify: true
   - language_pragmas:
       align: false
+      remove_redundant: false
   - trailing_whitespace: {}
 language_extensions:
   - DataKinds

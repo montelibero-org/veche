@@ -1,3 +1,3 @@
 <form role=form method=post action=@{TopicsR} enctype=#{formEnctype}>
     ^{formWidget}
-    <button type="submit" .btn .btn-default>Submit
+    <button type="submit" .btn .btn-default>Open new topic

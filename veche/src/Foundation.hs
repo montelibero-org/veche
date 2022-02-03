@@ -9,6 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Foundation where
 
@@ -175,7 +176,8 @@ instance Yesod App where
             -- Routes requiring authentication.
             CommentR    -> isAuthenticated
             ProfileR    -> isAuthenticated
-            TopicNewR   -> isAuthenticated
+            TopicR _    -> isAuthenticated
+            TopicsNewR  -> isAuthenticated
             TopicsR     -> isAuthenticated
 
     -- This function creates static content files in the static folder

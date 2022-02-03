@@ -1,9 +1,11 @@
 <div>
-    <a .btn .btn-default href="@{TopicNewR}">
+    <a .btn .btn-default href=@{TopicsNewR}>
         New topic
 
-<ul>
-    $forall topic <- topics
-        <li>#{show topic}
+<table .table .table-striped>
+    $forall Entity topicId Topic{topicTitle} <- topics
+        <tr>
+            <td>
+                <a href=@{TopicR topicId}>#{topicTitle}
 
-<div>(#{topicCount} topics)
+<div>#{inflect topicCount "topic" "topics"}

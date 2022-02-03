@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-} -- instance YesodDispatch App
 
@@ -41,7 +42,7 @@ import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Profile (getProfileR)
-import Handler.Topic (getTopicNewR, getTopicsR)
+import Handler.Topic (getTopicR, getTopicsNewR, getTopicsR, postTopicsR)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

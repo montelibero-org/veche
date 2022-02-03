@@ -1,7 +1,6 @@
-{-# LANGUAGE CPP #-}
-
 module Import.NoFoundation
     ( module Import
+    , inflect
     ) where
 
 import ClassyPrelude.Yesod as Import
@@ -14,3 +13,7 @@ import Yesod.Default.Config2 as Import
 import Model as Import
 import Settings as Import
 import Settings.StaticFiles as Import
+
+inflect :: Int -> String -> String -> String
+inflect 1 single _ = "1 " <> single
+inflect n _ plural = show n <> " " <> plural

@@ -1,11 +1,12 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/               TopicsR     GET
-/topic-new      TopicNewR   GET
-/auth           AuthR       Auth getAuth
-/comments       CommentR    POST
-/favicon.ico    FaviconR    GET
-/profile        ProfileR    GET
-/robots.txt     RobotsR     GET
-/static         StaticR     Static appStatic
+/                 TopicsR     GET POST
+/auth             AuthR       Auth getAuth
+/comments         CommentR    POST
+/favicon.ico      FaviconR    GET
+/profile          ProfileR    GET
+/robots.txt       RobotsR     GET
+/static           StaticR     Static appStatic
+/topics/new       TopicsNewR  GET
+!/topics/#TopicId TopicR      GET

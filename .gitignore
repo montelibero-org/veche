@@ -16,5 +16,4 @@ cabal-dev/
 cabal.sandbox.config
 dist*
 static/combined/
-veche.cabal
 yesod-devel/
