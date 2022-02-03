@@ -17,6 +17,8 @@ import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
+import Handler.Comment (commentWidget)
+
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
     (Topic{topicTitle, topicBody}, commentsWithAuthors) <-

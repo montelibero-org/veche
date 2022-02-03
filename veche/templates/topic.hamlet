@@ -5,10 +5,8 @@
 
 <h3>Comments
 <ul ##{commentListId}>
-    $forall (Comment{commentMessage}, User{userStellarAddress}) <- commentsWithAuthors
-        <li>
-            <div .comment_author>#{userStellarAddress}
-            <div .comment_message>#{commentMessage}
+    $forall (comment, user) <- commentsWithAuthors
+        ^{commentWidget user comment}
 <form .form-horizontal ##{commentFormId}>
     <div .field>
         <textarea rows="2" ##{commentTextareaId} placeholder="Your comment here..." required>
