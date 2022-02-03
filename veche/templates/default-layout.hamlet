@@ -1,4 +1,3 @@
-
 <!-- Static navbar -->
 <nav .navbar.navbar-default.navbar-static-top>
     <div .container>
@@ -23,6 +22,11 @@
 <!-- Page Contents -->
 
 <div .container>
+    <div .alert.alert-danger>
+        This is a demo version of the service.
+        Please don't use it unironically.
+
+<div .container>
     $# $if not $ Just HomeR == mcurrentRoute
     $#     <ul .breadcrumb>
     $#         $forall bc <- parents
@@ -31,15 +35,15 @@
     $#         <li .active>#{title}
 
     $maybe msg <- mmsg
-      <div .alert.alert-info #message>#{msg}
+        <div .alert.alert-info #message>#{msg}
 
 $# $if (Just HomeR == mcurrentRoute)
 $#     ^{widget}
 $# $else
-    <div .container>
-        <div .row>
-            <div .col-md-12>
-                ^{widget}
+<div .container>
+    <div .row>
+        <div .col-md-12>
+            ^{widget}
 
 <!-- Footer -->
 <footer .footer>
