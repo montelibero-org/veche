@@ -69,13 +69,12 @@ postTopicsR = do
     case result of
         FormSuccess NewTopic{title, body} -> do
             topicAuthor <- requireAuthId
-            let topic =
-                    Topic
-                        { topicTitle = title
-                        , topicBody = body
-                        , topicAuthor
-                        , topicOpen = True
-                        }
+            let topic = Topic
+                    { topicTitle = title
+                    , topicBody = body
+                    , topicAuthor
+                    , topicOpen = True
+                    }
             topicId <- runDB $ insert topic
             redirect $ TopicR topicId
         _ -> defaultLayout $(widgetFile "topics-new")
