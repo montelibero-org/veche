@@ -1,10 +1,9 @@
-document.getElementById(#{toJSON aDomId}).innerHTML = "This text was added by the Javascript part of the homepage widget.";
-
 $(function() {
   $("##{rawJS commentFormId}").submit(function(event) {
     event.preventDefault();
 
-    var message = $("##{rawJS commentTextareaId}").val();
+    const commentTextarea = $("##{rawJS commentTextareaId}");
+    const message = commentTextarea.val();
     // (Browsers that enforce the "required" attribute on the textarea won't see this alert)
     if (!message) {
       alert("Please fill out the comment form first.");
@@ -18,17 +17,18 @@ $(function() {
       contentType: "application/json",
       data: JSON.stringify({
         message: message,
+        topic: #{toJSON topicId},
       }),
       success: function (data) {
-        var newNode = $("<li></li>");
-        newNode.text(data.message);
+        const newNode = $("<li></li>");
+        newNode.text(message);
         console.log(data);
         $("##{rawJS commentListId}").append(newNode);
+        commentTextarea.val(null);
       },
       error: function (data) {
         console.log("Error creating comment: " + data);
       },
     });
-
   });
 });

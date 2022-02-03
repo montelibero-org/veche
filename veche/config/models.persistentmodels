@@ -9,9 +9,9 @@
 --     UniqueEmail email
 
 
-Comment json
+Comment
     message         Text
-    userId          UserId
+    author          UserId
     topic           TopicId
     parentComment   CommentId Maybe
 

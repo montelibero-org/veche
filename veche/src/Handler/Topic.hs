@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -9,12 +10,20 @@ module Handler.Topic (getTopicR, getTopicsNewR, getTopicsR, postTopicsR) where
 
 import Import
 
+import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    Topic{topicTitle, topicBody} <- runDB $ get404 topicId
+    (Topic{topicTitle, topicBody}, allComments) <-
+        runDB $
+            (,)
+            <$> get404 topicId
+            <*> (map entityVal <$> selectList [CommentTopic ==. topicId] [])
+    commentFormId <- newIdent
+    commentListId <- newIdent
+    commentTextareaId <- newIdent
     defaultLayout $(widgetFile "topic")
 
 data NewTopic = NewTopic{title, body :: Text}

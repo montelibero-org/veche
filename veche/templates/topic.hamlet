@@ -1,2 +1,16 @@
 <h1>#{topicTitle}
 <div>#{topicBody}
+
+<hr>
+
+<h3>Comments
+<ul ##{commentListId}>
+    $forall Comment{commentAuthor, commentMessage} <- allComments
+        <li>
+            <h6>#{show commentAuthor}
+            #{commentMessage}
+<form .form-horizontal ##{commentFormId}>
+    <div .field>
+        <textarea rows="2" ##{commentTextareaId} placeholder="Your comment here..." required>
+    <button .btn.btn-primary type=submit>
+        Create comment

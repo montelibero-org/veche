@@ -1,18 +1,30 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Handler.Comment where
 
 import Import
 
+data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
+    deriving (FromJSON, Generic)
+
 postCommentR :: Handler Value
 postCommentR = do
-    -- requireCheckJsonBody will parse the request body into the appropriate
-    -- type, or return a 400 status code if the request JSON is invalid.
-    -- (The ToJSON and FromJSON instances are derived in the config/models file)
-    comment <- requireCheckJsonBody
+    -- input
+    CommentRequest{message, topic} <- requireCheckJsonBody
+    user <- requireAuthId
 
-    -- The YesodAuth instance in Foundation.hs defines the UserId to be
-    -- the type used for authentication.
-    currentUserId <- requireAuthId
-    let comment' = comment{commentUserId = currentUserId}
+    -- put comment to database
+    let comment =
+            Comment
+                { commentAuthor = user
+                , commentMessage = message
+                , commentTopic = topic
+                , commentParentComment = Nothing
+                }
+    runDB $ insert_ comment
 
-    insertedComment <- runDB $ insertEntity comment'
-    returnJson insertedComment
+    -- we don't need to return JSON here, but return anything just because of
+    -- comme il faut, because it should be JSON API on both ends
+    returnJson Null
