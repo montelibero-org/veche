@@ -15,5 +15,6 @@
 cabal-dev/
 cabal.sandbox.config
 dist*
+release/
 static/combined/
 yesod-devel/
