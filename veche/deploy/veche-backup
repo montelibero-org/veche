@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# /etc/cron.hourly/veche-backup
+
+set -eux -o pipefail
+
+timestamp="$(date --utc +%F_%H-%M-%S)"
+source=/var/www/veche.sqlite3
+target=/var/www/veche.${timestamp}.sqlite3
+
+sudo -u www-data sqlite3 $source ".backup $target"

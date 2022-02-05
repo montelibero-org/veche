@@ -1,0 +1,9 @@
+[Service]
+ExecStart=/var/www/veche
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=veche
+
+[Install]
+WantedBy=multi-user.target

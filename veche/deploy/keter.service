@@ -1,0 +1,11 @@
+# /etc/systemd/system/keter.service
+[Unit]
+Description=Keter
+After=network.service
+
+[Service]
+Type=simple
+ExecStart=/opt/keter/bin/keter /opt/keter/etc/keter-config.yaml
+
+[Install]
+WantedBy=multi-user.target

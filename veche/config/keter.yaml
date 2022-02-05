@@ -1,7 +1,3 @@
-# After you've edited this file, remove the following line to allow
-# `yesod keter` to build your bundle.
-user-edited: false
-
 # A Keter app is composed of 1 or more stanzas. The main stanza will define our
 # web application. See the Keter documentation for more information on
 # available stanzas.
@@ -25,33 +21,13 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
-      - www.veche.com
+      - veche.cblp.su
+      - 134.209.228.146
+      - veche.montelibero.org
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
     requires-secure: false
-
-  # Static files.
-  - type: static-files
-    hosts:
-      - static.veche.com
-    root: ../static
-
-    # Uncomment to turn on directory listings.
-    # directory-listing: true
-
-  # Redirect plain domain name to www.
-  - type: redirect
-
-    hosts:
-      - veche.com
-    actions:
-      - host: www.veche.com
-        # secure: false
-        # port: 80
-
-    # Uncomment to switch to a non-permanent redirect.
-    # status: 303
 
 # Use the following to automatically copy your bundle upon creation via `yesod
 # keter`. Uses `scp` internally, so you can set it to a remote destination
