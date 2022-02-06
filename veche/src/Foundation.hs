@@ -119,7 +119,7 @@ instance Yesod App where
                     , menuItemRoute = TopicsR
                     , menuItemAccessCallback = True
                     }
-                , NavbarLeft $ MenuItem
+                , NavbarRight $ MenuItem
                     { menuItemLabel = "Profile"
                     , menuItemRoute = UserR
                     , menuItemAccessCallback = isJust muser
