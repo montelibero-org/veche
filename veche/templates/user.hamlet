@@ -1,12 +1,9 @@
-<div .ui.container>
+<h1>User profile
 
-    <h1>
-        Access granted!
-
-    <p>
-        This page is protected and access is allowed only for authenticated
-        users.
-
-    <p>
-        Your data is protected with us
-        <strong><span class=username>#{userStellarAddress}</span></strong>!
+<div .form-horizontal>
+    <div .form-group>
+        <label .col-sm-2 .control-label>Name
+        <div .col-sm-10 .form-control-static>#{fromMaybe "" userName}
+    <div .form-group>
+        <label .col-sm-2 .control-label>Stellar address
+        <div .col-sm-10 .form-control-static>#{userStellarAddress}

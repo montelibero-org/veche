@@ -11,7 +11,7 @@ import Import
 
 getUserR :: Handler Html
 getUserR = do
-    (_, User{userStellarAddress}) <- requireAuthPair
+    (_, User{userName, userStellarAddress}) <- requireAuthPair
     defaultLayout $ do
         setTitle . toHtml $ userStellarAddress <> "'s User page"
         $(widgetFile "user")

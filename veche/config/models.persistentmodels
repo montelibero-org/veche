@@ -29,7 +29,8 @@ Topic
 
 
 User
-    stellarAddress Text
+    name            Text Maybe
+    stellarAddress  Text
 
     UniqueUser stellarAddress
 

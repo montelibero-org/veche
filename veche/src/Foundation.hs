@@ -262,7 +262,11 @@ instance YesodAuth App where
                 Just (Entity uid _) -> pure $ Authenticated uid
                 Nothing ->
                     Authenticated <$>
-                        insert User{userStellarAddress = stellarAddress}
+                        insert
+                            User
+                                { userName = Nothing
+                                , userStellarAddress = stellarAddress
+                                }
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
