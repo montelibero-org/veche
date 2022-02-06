@@ -1,0 +1,36 @@
+$(function() {
+  const nameEdit        = $('#nameEdit');
+  const nameEditSave    = $('#nameEditSave');
+  const nameEditText    = $('#nameEditText');
+  const nameEditCancel  = $('#nameEditCancel');
+  const nameView        = $('#nameView');
+  const nameViewText    = $('#nameViewText');
+
+  nameView.click(function() {
+    nameView.hide();
+    nameEdit.show();
+  });
+
+  nameEditSave.click(function() {
+    const name = nameEditText.val();
+    $.ajax({
+      url: '@{UserR}',
+      type: 'PUT',
+      contentType: 'application/json',
+      data: JSON.stringify({'name': name}),
+      success: function (data) {
+        nameViewText.text(name);
+        nameView.show();
+        nameEdit.hide();
+      },
+      error: function (data) {
+        // TODO
+      },
+    });
+  });
+
+  nameEditCancel.click(function() {
+    nameView.show();
+    nameEdit.hide();
+  });
+});

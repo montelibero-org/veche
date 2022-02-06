@@ -1,9 +1,19 @@
 <h1>User profile
 
-<div .form-horizontal>
+<form .form-horizontal>
     <div .form-group>
         <label .col-sm-2 .control-label>Name
-        <div .col-sm-10 .form-control-static>#{fromMaybe "" userName}
+        <div .col-sm-10 #nameView>
+            <span #nameViewText>#{fromMaybe "" userName}
+            <button type=button .btn .btn-default>Edit
+        <div .col-sm-10 #nameEdit style="display: none">
+            <div .input-group>
+                <input type=text .form-control #nameEditText>
+                <div .input-group-btn>
+                    <button type=button .btn .btn-default #nameEditSave>
+                        Save
+                    <button type=button .btn .btn-default #nameEditCancel>
+                        Cancel
     <div .form-group>
         <label .col-sm-2 .control-label>Stellar address
         <div .col-sm-10 .form-control-static .user_stellar_address>
