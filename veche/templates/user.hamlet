@@ -6,4 +6,5 @@
         <div .col-sm-10 .form-control-static>#{fromMaybe "" userName}
     <div .form-group>
         <label .col-sm-2 .control-label>Stellar address
-        <div .col-sm-10 .form-control-static>#{userStellarAddress}
+        <div .col-sm-10 .form-control-static .user_stellar_address>
+            #{userStellarAddress}

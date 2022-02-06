@@ -96,4 +96,5 @@ authenticateAs (Entity _ u) = do
 -- checking is switched off in wipeDB for those database backends which need it.
 createUser :: Text -> YesodExample App (Entity User)
 createUser stellarAddress =
-    runDB $ insertEntity User{userStellarAddress = stellarAddress}
+    runDB $
+    insertEntity User{userName = Nothing, userStellarAddress = stellarAddress}

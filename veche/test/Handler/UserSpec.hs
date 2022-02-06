@@ -29,4 +29,5 @@ spec =
 
                 get UserR
                 let (Entity _ User{userStellarAddress}) = userEntity
-                htmlAnyContain ".username" $ unpack userStellarAddress
+                htmlAnyContain ".user_stellar_address" $
+                    unpack userStellarAddress
