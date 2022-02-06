@@ -43,6 +43,16 @@ spec = withApp do
                 get UserR
                 statusIs 200 -- authenticated
 
+                users <- runDB $ fmap entityVal <$> selectList [] []
+                assertEq
+                    "users after auth"
+                    users
+                    [ User
+                        { userName = Nothing
+                        , userStellarAddress = testPublicKey
+                        }
+                    ]
+
             it "doesn't authenticate when incorrect tx-response" do
                 request do
                     setMethod "POST"

@@ -34,4 +34,6 @@ User
 
     UniqueUser stellarAddress
 
+    deriving Eq
+    deriving Show
     deriving Typeable

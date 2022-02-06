@@ -11,6 +11,7 @@ module Yesod.Auth.Stellar (authStellar) where
 
 import Data.Function ((&))
 import Data.Text (Text)
+import Data.Text qualified as Text
 import Data.Text.Lazy qualified as TextL
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
@@ -120,7 +121,7 @@ verifyResponse envelope = do
         liftIO $
         readProcess $ proc "python3" [] & setStdin (byteStringInput program)
     case exitCode of
-        ExitSuccess -> pure $ TextL.toStrict $ decodeUtf8 out
+        ExitSuccess -> pure $ Text.strip $ TextL.toStrict $ decodeUtf8 out
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
   where
     program = encodeUtf8 $(stextFile "src/Yesod/Auth/verify.py")
