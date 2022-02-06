@@ -88,7 +88,7 @@ instance Yesod App where
     makeSessionBackend _ =
         Just <$>
             defaultClientSessionBackend
-                120  -- timeout in minutes
+                (8 * 24 * 60)  -- idle timeout in minutes = 1 week + 1 day
                 "config/client_session_key.aes"
 
     -- Yesod Middleware allows you to run code before and after each handler function.
