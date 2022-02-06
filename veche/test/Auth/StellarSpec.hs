@@ -36,7 +36,7 @@ spec = withApp do
             it "authenticates when correct tx-response" do
                 request do
                     setMethod "POST"
-                    setUrl (AuthR $ PluginR "stellar" [])
+                    setUrl $ AuthR $ PluginR "stellar" []
                     addPostParam "response" testSignedTx
                 statusIs 303 -- okay redirect
 
@@ -46,7 +46,7 @@ spec = withApp do
             it "doesn't authenticate when incorrect tx-response" do
                 request do
                     setMethod "POST"
-                    setUrl (AuthR $ PluginR "stellar" [])
+                    setUrl $ AuthR $ PluginR "stellar" []
                     addPostParam "response" testUnsingedTx
                 statusIs 400
 

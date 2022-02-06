@@ -21,9 +21,9 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
+      - veche.montelibero.org
       - veche.cblp.su
       - 134.209.228.146
-      - veche.montelibero.org
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
