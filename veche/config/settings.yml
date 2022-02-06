@@ -30,7 +30,7 @@ ip-from-header: "_env:YESOD_IP_FROM_HEADER:false"
 
 database:
   # See config/test-settings.yml for an override during tests
-  database: "/var/www/veche.sqlite3"
+  database: "_enc:VECHE_DATABASE:veche.sqlite3"
   poolsize: "_env:YESOD_SQLITE_POOLSIZE:10"
 
 copyright: © 2022 MTL Foundation

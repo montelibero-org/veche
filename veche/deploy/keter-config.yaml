@@ -31,8 +31,8 @@ setuid: www-data
 # external-https-port: 450
 
 # Set additional environment variables for all apps
-# env:
-#    key: value
+env:
+  VECHE_DATABASE: /var/www/veche.sqlite3
 
 # Connection time bound in milliseconds, set to 0 to have no time bound,
 # i.e. keep connections alive indefinitely. Default value is 5 minutes.
