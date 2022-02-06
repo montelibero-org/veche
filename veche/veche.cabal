@@ -19,8 +19,8 @@ library
     Foundation
     Handler.Comment
     Handler.Common
-    Handler.Profile
     Handler.Topic
+    Handler.User
     Import
     Import.NoFoundation
     Model
@@ -98,7 +98,7 @@ test-suite veche-test
   other-modules:
     Auth.StellarSpec
     Handler.CommonSpec
-    Handler.ProfileSpec
+    Handler.UserSpec
     TestImport
 
   hs-source-dirs:   test

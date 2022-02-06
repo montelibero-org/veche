@@ -5,13 +5,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Handler.Profile where
+module Handler.User where
 
 import Import
 
-getProfileR :: Handler Html
-getProfileR = do
+getUserR :: Handler Html
+getUserR = do
     (_, User{userStellarAddress}) <- requireAuthPair
     defaultLayout $ do
         setTitle . toHtml $ userStellarAddress <> "'s User page"
-        $(widgetFile "profile")
+        $(widgetFile "user")

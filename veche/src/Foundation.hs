@@ -121,7 +121,7 @@ instance Yesod App where
                     }
                 , NavbarLeft $ MenuItem
                     { menuItemLabel = "Profile"
-                    , menuItemRoute = ProfileR
+                    , menuItemRoute = UserR
                     , menuItemAccessCallback = isJust muser
                     }
                 , NavbarRight $ MenuItem
@@ -176,10 +176,10 @@ instance Yesod App where
             StaticR _   -> pure Authorized
             -- Routes requiring authentication.
             CommentR    -> isAuthenticated
-            ProfileR    -> isAuthenticated
             TopicR _    -> isAuthenticated
             TopicsNewR  -> isAuthenticated
             TopicsR     -> isAuthenticated
+            UserR       -> isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

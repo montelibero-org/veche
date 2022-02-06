@@ -5,7 +5,7 @@
 /auth             AuthR       Auth getAuth
 /comments         CommentR    POST
 /favicon.ico      FaviconR    GET
-/profile          ProfileR    GET
+/user             UserR       GET
 /robots.txt       RobotsR     GET
 /static           StaticR     Static appStatic
 /topics/new       TopicsNewR  GET

@@ -40,7 +40,7 @@ spec = withApp do
                     addPostParam "response" testSignedTx
                 statusIs 303 -- okay redirect
 
-                get ProfileR
+                get UserR
                 statusIs 200 -- authenticated
 
             it "doesn't authenticate when incorrect tx-response" do
