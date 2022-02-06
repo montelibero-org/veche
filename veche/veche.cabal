@@ -26,6 +26,7 @@ library
     Model
     Settings
     Settings.StaticFiles
+    User
     Yesod.Auth.Stellar
 
   hs-source-dirs:   src

@@ -1,8 +1,9 @@
 $(function() {
   const nameEdit        = $('#nameEdit');
+  const nameEditCancel  = $('#nameEditCancel');
+  const nameEditError   = $('#nameEditError');
   const nameEditSave    = $('#nameEditSave');
   const nameEditText    = $('#nameEditText');
-  const nameEditCancel  = $('#nameEditCancel');
   const nameView        = $('#nameView');
   const nameViewText    = $('#nameViewText');
 
@@ -10,6 +11,13 @@ $(function() {
     nameView.hide();
     nameEdit.show();
   });
+
+  function dismissEditForm() {
+    nameView.show();
+    nameEdit.removeClass('has-error');
+    nameEditError.text(null);
+    nameEdit.hide();
+  }
 
   nameEditSave.click(function() {
     const name = nameEditText.val();
@@ -20,17 +28,14 @@ $(function() {
       data: JSON.stringify({'name': name}),
       success: function (data) {
         nameViewText.text(name);
-        nameView.show();
-        nameEdit.hide();
+        dismissEditForm();
       },
-      error: function (data) {
-        // TODO
+      error: function (xhr) {
+        nameEdit.addClass('has-error');
+        nameEditError.text(xhr.responseJSON.error);
       },
     });
   });
 
-  nameEditCancel.click(function() {
-    nameView.show();
-    nameEdit.hide();
-  });
+  nameEditCancel.click(dismissEditForm);
 });

@@ -9,14 +9,16 @@ import Import
 
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
+import User (userNameWidget)
+
 data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
     deriving (FromJSON, Generic)
 
 commentWidget :: User -> Comment -> Html
-commentWidget User{userStellarAddress} Comment{commentMessage} =
+commentWidget user Comment{commentMessage} =
     [shamlet|
         <li>
-            <div .comment_author>#{userStellarAddress}
+            <div .comment_author>#{userNameWidget user}
             <div .comment_message>#{commentMessage}
     |]
 

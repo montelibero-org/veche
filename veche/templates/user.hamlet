@@ -14,6 +14,7 @@
                         Save
                     <button type=button .btn .btn-default #nameEditCancel>
                         Cancel
+            <div .help-block #nameEditError>
     <div .form-group>
         <label .col-sm-2 .control-label>Stellar address
         <div .col-sm-10 .form-control-static .user_stellar_address>
