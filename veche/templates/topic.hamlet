@@ -1,14 +1,13 @@
 <h1>#{topicTitle}
-<div>#{topicBody}
-
-<hr>
+<div>Author: #{userNameWidget author}
+<blockquote>#{topicBody}
 
 <h3>Comments
 <ul ##{commentListId}>
-    $forall (comment, user) <- commentsWithAuthors
-        ^{commentWidget user comment}
+    $forall comment <- comments
+        ^{commentWidget comment}
 <form .form-horizontal ##{commentFormId}>
     <div .field>
-        <textarea rows="2" ##{commentTextareaId} placeholder="Your comment here..." required>
+        <textarea rows=2 ##{commentTextareaId} placeholder="Your comment here..." required>
     <button .btn.btn-primary type=submit>
         Create comment

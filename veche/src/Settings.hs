@@ -33,6 +33,7 @@ data AppSettings = AppSettings
     -- ^ Directory from which to serve static files.
     , appDatabaseConf           :: SqliteConf
     -- ^ Configuration settings for accessing the database.
+    , appDatabaseMigrate        :: Bool
     , appRoot                   :: Maybe Text
     -- ^ Base for all generated URLs. If @Nothing@, determined
     -- from the request headers.
@@ -76,6 +77,7 @@ instance FromJSON AppSettings where
 #endif
             appStaticDir              <- o .: "static-dir"
             appDatabaseConf           <- o .: "database"
+            appDatabaseMigrate        <- o .:? "database-migrate" .!= False
             appRoot                   <- o .:? "approot"
             appHost                   <- fromString <$> o .: "host"
             appPort                   <- o .: "port"

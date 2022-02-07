@@ -24,7 +24,8 @@ module Application
 import Import
 
 import Control.Monad.Logger (liftLoc, runLoggingT)
-import Database.Persist.Sqlite (createSqlitePool, sqlDatabase, sqlPoolSize)
+import Database.Persist.Sqlite (createSqlitePool, runSqlPool, sqlDatabase,
+                                sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Middleware)
@@ -76,13 +77,16 @@ makeFoundation appSettings = do
     pool <- (`runLoggingT` logFunc) $ createSqlitePool database poolSize
 
     -- Perform database migration using our application's logging settings.
-    -- (`runLoggingT` logFunc) $ (`runSqlPool` pool) $ runMigration migrateAll
+    when appDatabaseMigrate $
+        (`runLoggingT` logFunc) $ (`runSqlPool` pool) $ runMigration migrateAll
 
     -- Return the foundation
     pure $ mkFoundation pool
 
   where
-    AppSettings{appMutableStatic, appStaticDir, appDatabaseConf} = appSettings
+    AppSettings
+        {appDatabaseMigrate, appDatabaseConf, appMutableStatic, appStaticDir} =
+            appSettings
     database = sqlDatabase appDatabaseConf
     poolSize = sqlPoolSize appDatabaseConf
 

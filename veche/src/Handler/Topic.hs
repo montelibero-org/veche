@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,20 +18,39 @@ import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
-import Handler.Comment (commentWidget)
+import Handler.Comment (CommentMaterialized (..), commentWidget)
+import User (userNameWidget)
+
+data TopicMaterialized = TopicMaterialized
+    { topic     :: Topic
+    , author    :: User
+    , comments  :: [CommentMaterialized]
+    }
+
+loadTopicComments :: TopicId -> SqlPersistT Handler [CommentMaterialized]
+loadTopicComments topicId = do
+    comments <-
+        rawSql
+            "SELECT ??, ??\
+            \ FROM Comment, User ON Comment.author == User.id\
+            \ WHERE Comment.topic == ?"
+            [toPersistValue topicId]
+    pure
+        [ CommentMaterialized{..}
+        | (Entity _ comment, Entity _ author) <- comments
+        ]
+
+loadTopic :: TopicId -> SqlPersistT Handler TopicMaterialized
+loadTopic topicId = do
+    topic@Topic{topicAuthor} <- get404 topicId
+    author <- get404 topicAuthor
+    comments <- loadTopicComments topicId
+    pure TopicMaterialized{..}
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    (Topic{topicTitle, topicBody}, commentsWithAuthors) <-
-        runDB do
-            topic <- get404 topicId
-            commentsWithAuthors :: [(Entity Comment, Entity User)] <-
-                rawSql
-                    "SELECT ??, ??\
-                    \ FROM Comment, User ON Comment.author == User.id\
-                    \ WHERE Comment.topic == ?"
-                    [toPersistValue topicId]
-            pure (topic, map (bimap entityVal entityVal) commentsWithAuthors)
+    TopicMaterialized{author, comments, topic = Topic{topicTitle, topicBody}} <-
+        runDB $ loadTopic topicId
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent
