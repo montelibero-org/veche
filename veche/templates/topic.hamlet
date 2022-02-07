@@ -7,7 +7,7 @@
 <div .panel .panel-default>
     <div .panel-heading>
         <div>Author: #{userNameWidget author}
-    <div .panel-body>#{topicBody}
+    <div .panel-body>#{topicVersionBody}
 
 <h3>Comments
 <ul ##{commentListId}>

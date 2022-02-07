@@ -309,3 +309,7 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+constraintFail :: Text -> Handler a
+constraintFail msg =
+    sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg

@@ -20,12 +20,23 @@ Comment
 
 
 Topic
-    title   Text
-    body    Text
-    author  UserId
-    open    Bool
+    title           Text
+    author          UserId
+    open            Bool
+
+    -- denormalized fields to avoid extra requests for min and max versions
+    created         UTCTime -- must be equal to min version
+    currentVersion  TopicVersionId Maybe    -- must be equal to max version
+                                            -- must be Just
 
     deriving Show
+
+
+TopicVersion
+    topic   TopicId
+    body    Text
+    author  UserId
+    created UTCTime
 
 
 User
