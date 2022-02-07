@@ -78,8 +78,14 @@ getTopicsNewR = do
 
 getTopicsR :: Handler Html
 getTopicsR = do
-    (topicCount, topics) <-
-        runDB $ (,) <$> count @_ @_ @Topic [] <*> selectList @Topic [] []
+    mRequestedState <- lookupGetParam "state"
+    let requestedStateOpen = mRequestedState /= Just "closed"
+    (openTopicCount, closedTopicCount, topics) <-
+        runDB $
+            (,,)
+            <$> count [TopicOpen ==. True]
+            <*> count [TopicOpen ==. False]
+            <*> selectList [TopicOpen ==. requestedStateOpen] []
     defaultLayout $(widgetFile "topics")
 
 postTopicsR :: Handler Html

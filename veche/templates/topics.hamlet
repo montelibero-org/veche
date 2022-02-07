@@ -1,4 +1,9 @@
-<div>
+<div .pull-left>
+    <a .btn .btn-success href=@{TopicsR}>
+        #{openTopicCount} open
+    <a .btn .btn-danger href=@?{(TopicsR, [("state", "closed")])}>
+        #{closedTopicCount} closed
+<div .pull-right>
     <a .btn .btn-success href=@{TopicsNewR}>
         New topic
 
@@ -7,5 +12,3 @@
         <tr>
             <td>
                 <a href=@{TopicR topicId}>#{topicTitle}
-
-<div>#{inflect topicCount "topic" "topics"}
