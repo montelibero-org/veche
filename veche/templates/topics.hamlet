@@ -1,7 +1,7 @@
-<div .pull-left>
-    <a .btn .btn-success href=@{TopicsR}>
+<div .pull-left .btn-group role=group>
+    <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-default href=@{TopicsR}>
         #{openTopicCount} open
-    <a .btn .btn-danger href=@?{(TopicsR, [("state", "closed")])}>
+    <a .btn :stateOpen:.btn-default :not stateOpen:.btn-primary href=@?{(TopicsR, [("state", "closed")])}>
         #{closedTopicCount} closed
 <div .pull-right>
     <a .btn .btn-success href=@{TopicsNewR}>
