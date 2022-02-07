@@ -120,22 +120,18 @@ postTopicsR = do
 
   where
 
-    newTopic :: Text -> UserId -> UTCTime -> Topic
-    newTopic topicTitle topicAuthor topicCreated =
-        Topic
-            { topicTitle
-            , topicAuthor
-            , topicOpen = True
-            , topicCreated
-            , topicCurrentVersion = Nothing
-            }
-
     addTopic :: NewTopic -> Handler TopicId
     addTopic NewTopic{title, body} = do
         now <- liftIO getCurrentTime
         user <- requireAuthId
         runDB do
-            let topic = newTopic title user now
+            let topic = Topic
+                    { topicTitle = title
+                    , topicAuthor = user
+                    , topicOpen = True
+                    , topicCreated = now
+                    , topicCurrentVersion = Nothing
+                    }
             topicId <- insert topic
             let version = TopicVersion
                     { topicVersionTopic     = topicId
