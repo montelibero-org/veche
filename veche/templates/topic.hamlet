@@ -1,6 +1,13 @@
 <h1>#{topicTitle}
-<div>Author: #{userNameWidget author}
-<blockquote>#{topicBody}
+<h2>
+    $if topicOpen
+        <span .label .label-success>Open
+    $else
+        <span .label .label-danger>Closed
+<div .panel .panel-default>
+    <div .panel-heading>
+        <div>Author: #{userNameWidget author}
+    <div .panel-body>#{topicBody}
 
 <h3>Comments
 <ul ##{commentListId}>

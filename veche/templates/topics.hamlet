@@ -1,5 +1,5 @@
 <div>
-    <a .btn .btn-default href=@{TopicsNewR}>
+    <a .btn .btn-success href=@{TopicsNewR}>
         New topic
 
 <table .table .table-striped>

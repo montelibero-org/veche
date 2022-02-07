@@ -49,8 +49,8 @@ loadTopic topicId = do
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    TopicMaterialized{author, comments, topic = Topic{topicTitle, topicBody}} <-
-        runDB $ loadTopic topicId
+    TopicMaterialized{author, comments, topic} <- runDB $ loadTopic topicId
+    let Topic{topicTitle, topicBody, topicOpen} = topic
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent
