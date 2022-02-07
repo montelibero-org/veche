@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -24,8 +25,8 @@ module Application
 import Import
 
 import Control.Monad.Logger (liftLoc, runLoggingT)
-import Database.Persist.Sqlite (createSqlitePool, runSqlPool, sqlDatabase,
-                                sqlPoolSize)
+import Database.Persist.Sqlite (Single, createSqlitePool, rawSql, runSqlPool,
+                                sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Middleware)
@@ -77,8 +78,16 @@ makeFoundation appSettings = do
     pool <- (`runLoggingT` logFunc) $ createSqlitePool database poolSize
 
     -- Perform database migration using our application's logging settings.
-    when appDatabaseMigrate $
-        (`runLoggingT` logFunc) $ (`runSqlPool` pool) $ runMigration migrateAll
+    (`runLoggingT` logFunc) $
+        (`runSqlPool` pool) do
+            userTableNameAsList :: [Single Text] <-
+                rawSql
+                    "SELECT name FROM sqlite_master\
+                        \ WHERE type='table' AND name='user';"
+                    []
+            let databaseIsEmpty = null userTableNameAsList
+            when (appDatabaseMigrate || databaseIsEmpty) $
+                runMigration migrateAll
 
     -- Return the foundation
     pure $ mkFoundation pool
