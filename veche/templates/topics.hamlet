@@ -5,7 +5,7 @@
         #{closedTopicCount} closed
 <div .pull-right>
     <a .btn .btn-success href=@{TopicNewR}>
-        New topic
+        New discussion
 
 <table .table .table-striped>
     $forall Entity topicId Topic{topicTitle} <- topics

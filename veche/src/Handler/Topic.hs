@@ -197,18 +197,28 @@ editTopic topicId = do
             topic <- get404 topicId
             authorizeTopicModification topic user
             let version = TopicVersion
-                    { topicVersionTopic     = topicId
+                    { topicVersionAuthor    = user
                     , topicVersionBody      = body
                     , topicVersionCreated   = now
-                    , topicVersionAuthor    = user
+                    , topicVersionTopic     = topicId
                     }
             versionId <- insert version
             update
                 topicId
                 [TopicTitle =. title, TopicCurVersion =. Just versionId]
+            insert_
+                Comment
+                    { commentAuthor     = user
+                    , commentCreated    = now
+                    , commentMessage    = ""
+                    , commentParent     = Nothing
+                    , commentTopic      = topicId
+                    , commentType       = CommentEdit
+                    }
 
 closeReopenTopic :: StateAction -> TopicId -> Handler a
 closeReopenTopic action topicId = do
+    now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
         topic <- get404 topicId
@@ -220,6 +230,18 @@ closeReopenTopic action topicId = do
                         Close  -> False
                         Reopen -> True
             ]
+        insert_
+            Comment
+                { commentAuthor     = user
+                , commentCreated    = now
+                , commentMessage    = ""
+                , commentParent     = Nothing
+                , commentTopic      = topicId
+                , commentType       =
+                    case action of
+                        Close   -> CommentClose
+                        Reopen  -> CommentReopen
+                }
     redirect $ TopicR topicId
 
 authorizeTopicModification :: MonadHandler m => Topic -> UserId -> m ()
