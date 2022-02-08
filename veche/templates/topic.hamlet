@@ -4,11 +4,14 @@
         <span .badge .badge-success>Open
     $else
         <span .badge .badge-danger>Closed
+
 <div .pull-left>
     <a .btn .btn-default href=@{TopicEditR topicId}>Edit
 <div .pull-right>
     <form method=DELETE action=@{TopicR topicId}>
         <button type=submit .btn .btn-danger>Close
+<div .clearfix>
+
 <div .panel .panel-default>
     <div .panel-heading>
         <div>Created by #{userNameWidget author} on #{show topicCreated}
