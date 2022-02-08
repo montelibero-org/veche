@@ -23,7 +23,6 @@
         <div>
             Last edit by #{userNameWidget lastEditor}
             on #{show topicVersionCreated}
-            (<a href="TODO HistoryR topicId">edit history</a>)
     <div .panel-body>#{topicVersionBody}
 
 <h3>Comments
