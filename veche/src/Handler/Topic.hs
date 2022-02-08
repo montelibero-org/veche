@@ -16,7 +16,6 @@ module Handler.Topic
     , getTopicsR
     , postTopicR
     , postTopicsR
-    , putTopicR -- TODO refactor
     ) where
 
 import Import
@@ -109,8 +108,7 @@ getTopicNewR :: Handler Html
 getTopicNewR = do
     (formWidget, formEnctype) <-
         generateFormPost $
-        renderBootstrap3 BootstrapBasicForm $
-        topicForm Nothing
+        renderBootstrap3 BootstrapBasicForm $ topicForm Nothing
     defaultLayout $(widgetFile "topic-new")
 
 getTopicsR :: Handler Html
@@ -168,10 +166,11 @@ postTopicR topicId = do
     case mAction of
         Just "close"  -> closeReopenTopic Close  topicId
         Just "reopen" -> closeReopenTopic Reopen topicId
-        _             -> invalidArgs ["action must be one of: close, reopen"]
+        Just "edit"   -> editTopic               topicId
+        _ -> invalidArgs ["action must be one of: close, reopen, edit"]
 
-putTopicR :: TopicId -> Handler Html
-putTopicR topicId = do
+editTopic :: TopicId -> Handler Html
+editTopic topicId = do
     ((result, formWidget), formEnctype) <-
         runFormPost $ renderBootstrap3 BootstrapBasicForm $ topicForm Nothing
     case result of
@@ -236,7 +235,5 @@ getTopicEditR topicId = do
             pure TopicContent{title = topicTitle, body = topicVersionBody}
     (formWidget, formEnctype) <-
         generateFormPost $
-        renderBootstrap3 BootstrapBasicForm $
-        topicForm $
-        Just content
+        renderBootstrap3 BootstrapBasicForm $ topicForm $ Just content
     defaultLayout $(widgetFile "topic-edit")

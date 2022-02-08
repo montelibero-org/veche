@@ -1,4 +1,5 @@
-<form role=form method=put action=@{TopicR topicId} enctype=#{formEnctype}>
+<form role=form method=post action=@{TopicR topicId} enctype=#{formEnctype}>
+    <input type=hidden name=action value=edit>
     ^{formWidget}
     <div .pull-left>
         <a .btn .btn-default href=@{TopicR topicId}>Cancel
