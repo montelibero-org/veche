@@ -10,13 +10,13 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Handler.Topic
-    ( deleteTopicR
-    , getTopicEditR
+    ( getTopicEditR
     , getTopicNewR
     , getTopicR
     , getTopicsR
+    , postTopicR
     , postTopicsR
-    , putTopicR
+    , putTopicR -- TODO refactor
     ) where
 
 import Import
@@ -160,6 +160,16 @@ postTopicsR = do
             update topicId [TopicCurrentVersion =. Just versionId]
             pure topicId
 
+data StateAction = Close | Reopen
+
+postTopicR :: TopicId -> Handler Html
+postTopicR topicId = do
+    mAction <- lookupPostParam "action"
+    case mAction of
+        Just "close"  -> closeReopenTopic Close  topicId
+        Just "reopen" -> closeReopenTopic Reopen topicId
+        _             -> invalidArgs ["action must be one of: close, reopen"]
+
 putTopicR :: TopicId -> Handler Html
 putTopicR topicId = do
     ((result, formWidget), formEnctype) <-
@@ -190,13 +200,19 @@ putTopicR topicId = do
                 topicId
                 [TopicTitle =. title, TopicCurrentVersion =. Just versionId]
 
-deleteTopicR :: TopicId -> Handler ()
-deleteTopicR topicId = do
+closeReopenTopic :: StateAction -> TopicId -> Handler a
+closeReopenTopic action topicId = do
     user <- requireAuthId
     runDB do
         topic <- get404 topicId
         authorizeTopicModification topic user
-        update topicId [TopicOpen =. False]
+        update
+            topicId
+            [ TopicOpen
+                =.  case action of
+                        Close  -> False
+                        Reopen -> True
+            ]
     redirect $ TopicR topicId
 
 authorizeTopicModification :: MonadHandler m => Topic -> UserId -> m ()

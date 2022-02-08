@@ -8,8 +8,13 @@
 <div .pull-left>
     <a .btn .btn-default href=@{TopicEditR topicId}>Edit
 <div .pull-right>
-    <form method=DELETE action=@{TopicR topicId}>
-        <button type=submit .btn .btn-danger>Close
+    <form method=post action=@{TopicR topicId}>
+        $if topicOpen
+            <input type=hidden name=action value=close>
+            <button type=submit .btn .btn-danger>Close
+        $else
+            <input type=hidden name=action value=reopen>
+            <button type=submit .btn .btn-success>Reopen
 <div .clearfix>
 
 <div .panel .panel-default>

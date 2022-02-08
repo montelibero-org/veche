@@ -8,6 +8,6 @@
 /robots.txt             RobotsR     GET
 /static                 StaticR     Static appStatic
 /topic-new              TopicNewR   GET
-/topics/#TopicId        TopicR      DELETE GET PUT
+/topics/#TopicId        TopicR      GET POST
 /topics/#TopicId/edit   TopicEditR  GET
 /user                   UserR       GET PUT
