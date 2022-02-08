@@ -10,6 +10,7 @@
 
 
 Comment
+    type            CommentType
     message         Text
     author          UserId
     topic           TopicId

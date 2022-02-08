@@ -14,6 +14,7 @@ import Import
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
 import Handler.User (userNameWidget)
+import Types (CommentType (..))
 
 data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
     deriving (FromJSON, Generic)
@@ -43,6 +44,7 @@ postCommentR = do
             , commentMessage = message
             , commentTopic = topic
             , commentParentComment = Nothing
+            , commentType = CommentText
             }
     runDB $ insert_ comment
 
