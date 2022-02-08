@@ -4,7 +4,7 @@
     <a .btn :stateOpen:.btn-default :not stateOpen:.btn-primary href=@?{(TopicsR, [("state", "closed")])}>
         #{closedTopicCount} closed
 <div .pull-right>
-    <a .btn .btn-success href=@{TopicsNewR}>
+    <a .btn .btn-success href=@{TopicNewR}>
         New topic
 
 <table .table .table-striped>

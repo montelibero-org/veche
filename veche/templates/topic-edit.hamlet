@@ -1,0 +1,6 @@
+<form role=form method=put action=@{TopicR topicId} enctype=#{formEnctype}>
+    ^{formWidget}
+    <div .pull-left>
+        <a .btn .btn-default href=@{TopicR topicId}>Cancel
+    <div .pull-right>
+        <button type=submit .btn .btn-success>Save

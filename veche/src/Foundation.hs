@@ -162,16 +162,17 @@ instance Yesod App where
     isAuthorized route _isWrite =
         case route of
             -- Routes not requiring authentication.
-            AuthR _     -> pure Authorized
-            FaviconR    -> pure Authorized
-            RobotsR     -> pure Authorized
-            StaticR _   -> pure Authorized
+            AuthR _         -> pure Authorized
+            FaviconR        -> pure Authorized
+            RobotsR         -> pure Authorized
+            StaticR _       -> pure Authorized
             -- Routes requiring authentication.
-            CommentR    -> isAuthenticated
-            TopicR _    -> isAuthenticated
-            TopicsNewR  -> isAuthenticated
-            TopicsR     -> isAuthenticated
-            UserR       -> isAuthenticated
+            CommentR        -> isAuthenticated
+            TopicEditR _    -> isAuthenticated
+            TopicNewR       -> isAuthenticated
+            TopicR _        -> isAuthenticated
+            TopicsR         -> isAuthenticated
+            UserR           -> isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

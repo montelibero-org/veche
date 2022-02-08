@@ -1,12 +1,21 @@
-<h1>#{topicTitle}
-<h2>
+<h1>
+    #{topicTitle}
     $if topicOpen
-        <span .label .label-success>Open
+        <span .badge .badge-success>Open
     $else
-        <span .label .label-danger>Closed
+        <span .badge .badge-danger>Closed
+<div .pull-left>
+    <a .btn .btn-default href=@{TopicEditR topicId}>Edit
+<div .pull-right>
+    <form method=DELETE action=@{TopicR topicId}>
+        <button type=submit .btn .btn-danger>Close
 <div .panel .panel-default>
     <div .panel-heading>
-        <div>Author: #{userNameWidget author}
+        <div>Created by #{userNameWidget author} on #{show topicCreated}
+        <div>
+            Last edit by #{userNameWidget lastEditor}
+            on #{show topicVersionCreated}
+            (<a href="TODO HistoryR topicId">edit history</a>)
     <div .panel-body>#{topicVersionBody}
 
 <h3>Comments
@@ -17,4 +26,4 @@
     <div .field>
         <textarea rows=2 ##{commentTextareaId} placeholder="Your comment here..." required>
     <button .btn.btn-primary type=submit>
-        Create comment
+        Add comment

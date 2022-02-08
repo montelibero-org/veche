@@ -9,7 +9,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Handler.Topic (getTopicR, getTopicsNewR, getTopicsR, postTopicsR) where
+module Handler.Topic
+    ( deleteTopicR
+    , getTopicEditR
+    , getTopicNewR
+    , getTopicR
+    , getTopicsR
+    , postTopicsR
+    , putTopicR
+    ) where
 
 import Import
 
@@ -22,10 +30,11 @@ import Handler.Comment (CommentMaterialized (..), commentWidget)
 import User (userNameWidget)
 
 data TopicMaterialized = TopicMaterialized
-    { topic             :: Topic
-    , author            :: User
-    , comments          :: [CommentMaterialized]
-    , currentVersion    :: TopicVersion
+    { topic         :: Topic
+    , author        :: User
+    , comments      :: [CommentMaterialized]
+    , lastEdit      :: TopicVersion
+    , lastEditor    :: User
     }
 
 loadTopicComments :: TopicId -> SqlPersistT Handler [CommentMaterialized]
@@ -51,11 +60,14 @@ loadTopic topicId = do
         get topicAuthor
         ?|> lift (constraintFail "Topic.author must exist in User table")
     comments <- loadTopicComments topicId
-    currentVersion <-
+    lastEdit@TopicVersion{topicVersionAuthor = lastEditorId} <-
         get versionId
         ?|> lift
                 (constraintFail
                     "Topic.current_version must exist in TopicVersion table")
+    lastEditor <-
+        get lastEditorId
+        ?|> lift (constraintFail "TopicVersion.author must exist in User table")
     pure TopicMaterialized{..}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
@@ -67,34 +79,39 @@ m ?|> k = m >>= (?| k)
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    TopicMaterialized{author, comments, topic, currentVersion} <-
+    TopicMaterialized{author, comments, topic, lastEdit, lastEditor} <-
         runDB $ loadTopic topicId
-    let Topic{topicTitle, topicOpen} = topic
-    let TopicVersion{topicVersionBody} = currentVersion
+    let Topic{topicTitle, topicOpen, topicCreated} = topic
+    let TopicVersion{topicVersionBody, topicVersionCreated} = lastEdit
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent
     defaultLayout $(widgetFile "topic")
 
-data NewTopic = NewTopic{title, body :: Text}
+data TopicContent = TopicContent{title, body :: Text}
 
-topicForm :: AForm Handler NewTopic
-topicForm = do
+topicForm :: Maybe TopicContent -> AForm Handler TopicContent
+topicForm previousContent = do
     title <-
-        areq textField (bfs ("Title" :: Text)){fsName = Just "title"} Nothing
+        areq
+            textField
+            (bfs ("Title" :: Text)){fsName = Just "title"}
+            (title <$> previousContent)
     body <-
         unTextarea <$>
         areq
             textareaField
             (bfs ("Message" :: Text)){fsName = Just "body"}
-            Nothing
-    pure NewTopic{..}
+            (Textarea . body <$> previousContent)
+    pure TopicContent{..}
 
-getTopicsNewR :: Handler Html
-getTopicsNewR = do
+getTopicNewR :: Handler Html
+getTopicNewR = do
     (formWidget, formEnctype) <-
-        generateFormPost $ renderBootstrap3 BootstrapBasicForm topicForm
-    defaultLayout $(widgetFile "topics-new")
+        generateFormPost $
+        renderBootstrap3 BootstrapBasicForm $
+        topicForm Nothing
+    defaultLayout $(widgetFile "topic-new")
 
 getTopicsR :: Handler Html
 getTopicsR = do
@@ -111,17 +128,17 @@ getTopicsR = do
 postTopicsR :: Handler Html
 postTopicsR = do
     ((result, formWidget), formEnctype) <-
-        runFormPost $ renderBootstrap3 BootstrapBasicForm topicForm
+        runFormPost $ renderBootstrap3 BootstrapBasicForm $ topicForm Nothing
     case result of
         FormSuccess topic -> do
             topicId <- addTopic topic
             redirect $ TopicR topicId
-        _ -> defaultLayout $(widgetFile "topics-new")
+        _ -> defaultLayout $(widgetFile "topic-new")
 
   where
 
-    addTopic :: NewTopic -> Handler TopicId
-    addTopic NewTopic{title, body} = do
+    addTopic :: TopicContent -> Handler TopicId
+    addTopic TopicContent{title, body} = do
         now <- liftIO getCurrentTime
         user <- requireAuthId
         runDB do
@@ -142,3 +159,68 @@ postTopicsR = do
             versionId <- insert version
             update topicId [TopicCurrentVersion =. Just versionId]
             pure topicId
+
+putTopicR :: TopicId -> Handler Html
+putTopicR topicId = do
+    ((result, formWidget), formEnctype) <-
+        runFormPost $ renderBootstrap3 BootstrapBasicForm $ topicForm Nothing
+    case result of
+        FormSuccess content -> do
+            addTopicVersion content
+            redirect $ TopicR topicId
+        _ -> defaultLayout $(widgetFile "topic-edit")
+
+  where
+
+    addTopicVersion :: TopicContent -> Handler ()
+    addTopicVersion TopicContent{title, body} = do
+        now <- liftIO getCurrentTime
+        user <- requireAuthId
+        runDB do
+            topic <- get404 topicId
+            authorizeTopicModification topic user
+            let version = TopicVersion
+                    { topicVersionTopic     = topicId
+                    , topicVersionBody      = body
+                    , topicVersionCreated   = now
+                    , topicVersionAuthor    = user
+                    }
+            versionId <- insert version
+            update
+                topicId
+                [TopicTitle =. title, TopicCurrentVersion =. Just versionId]
+
+deleteTopicR :: TopicId -> Handler ()
+deleteTopicR topicId = do
+    user <- requireAuthId
+    runDB do
+        topic <- get404 topicId
+        authorizeTopicModification topic user
+        update topicId [TopicOpen =. False]
+    redirect $ TopicR topicId
+
+authorizeTopicModification :: MonadHandler m => Topic -> UserId -> m ()
+authorizeTopicModification Topic{topicAuthor} user =
+    when (topicAuthor /= user) $ permissionDenied "Not authorized"
+
+getTopicEditR :: TopicId -> Handler Html
+getTopicEditR topicId = do
+    content <-
+        runDB do
+            Topic{topicTitle, topicCurrentVersion} <- get404 topicId
+            versionId <-
+                topicCurrentVersion
+                ?| lift (constraintFail "Topic.current_version must be valid")
+            TopicVersion{topicVersionBody} <-
+                get versionId
+                ?|> lift
+                        (constraintFail
+                            "Topic.current_version must exist\
+                            \ in TopicVersion table")
+            pure TopicContent{title = topicTitle, body = topicVersionBody}
+    (formWidget, formEnctype) <-
+        generateFormPost $
+        renderBootstrap3 BootstrapBasicForm $
+        topicForm $
+        Just content
+    defaultLayout $(widgetFile "topic-edit")

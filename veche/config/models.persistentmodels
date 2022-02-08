@@ -25,7 +25,7 @@ Topic
     open            Bool
 
     -- denormalized fields to avoid extra requests for min and max versions
-    created         UTCTime -- must be equal to min version
+    created         UTCTime -- must be equal to min version.created
     currentVersion  TopicVersionId Maybe    -- must be equal to max version
                                             -- must be Just
 

@@ -43,7 +43,8 @@ import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 -- Don't forget to add new modules to your cabal file!
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
-import Handler.Topic (getTopicR, getTopicsNewR, getTopicsR, postTopicsR)
+import Handler.Topic (deleteTopicR, getTopicEditR, getTopicNewR, getTopicR,
+                      getTopicsR, postTopicsR, putTopicR)
 import Handler.User (getUserR, putUserR)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
@@ -83,7 +84,7 @@ makeFoundation appSettings = do
             userTableNameAsList :: [Single Text] <-
                 rawSql
                     "SELECT name FROM sqlite_master\
-                        \ WHERE type='table' AND name='user';"
+                        \ WHERE type='table' AND name='user'"
                     []
             let databaseIsEmpty = null userTableNameAsList
             when (appDatabaseMigrate || databaseIsEmpty) $
