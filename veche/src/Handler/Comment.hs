@@ -3,7 +3,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Handler.Comment where
+module Handler.Comment
+    ( CommentMaterialized (..)
+    , commentWidget
+    , postCommentR
+    ) where
 
 import Import
 
