@@ -112,7 +112,7 @@ makeChallenge address = do
         ExitSuccess -> pure $ TextL.toStrict $ decodeUtf8 out
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
   where
-    program = encodeUtf8 $(stextFile "src/Yesod/Auth/challenge.py")
+    program = encodeUtf8 $(stextFile "Yesod/Auth/challenge.py")
 
 -- | Returns address
 verifyResponse :: MonadHandler m => Text -> m Text
@@ -124,4 +124,4 @@ verifyResponse envelope = do
         ExitSuccess -> pure $ Text.strip $ TextL.toStrict $ decodeUtf8 out
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
   where
-    program = encodeUtf8 $(stextFile "src/Yesod/Auth/verify.py")
+    program = encodeUtf8 $(stextFile "Yesod/Auth/verify.py")

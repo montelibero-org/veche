@@ -2,6 +2,7 @@ resolver: lts-17.10
 
 packages:
   - veche
+  - yesod-auth-stellar
 
 extra-deps:
   - classy-prelude-yesod-1.5.0

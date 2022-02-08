@@ -1,0 +1,14 @@
+name:       yesod-auth-stellar
+version:    0
+build-type: Simple
+
+library
+  build-depends:
+      base
+    , shakespeare
+    , text
+    , typed-process
+    , yesod-auth
+    , yesod-core
+
+  exposed-modules: Yesod.Auth.Stellar
