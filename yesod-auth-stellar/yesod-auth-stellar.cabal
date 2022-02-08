@@ -1,6 +1,7 @@
-name:       yesod-auth-stellar
-version:    0
-build-type: Simple
+cabal-version: >=1.2
+name:          yesod-auth-stellar
+version:       0
+build-type:    Simple
 
 library
   build-depends:

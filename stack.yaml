@@ -1,6 +1,7 @@
 resolver: lts-17.10
 
 packages:
+  - stellar-horizon
   - veche
   - yesod-auth-stellar
 
