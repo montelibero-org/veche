@@ -21,6 +21,7 @@ $(function() {
       }),
       success: function (data) {
         $("##{rawJS commentListId}").html((_, old) => old + data);
+        commentTextarea.val(null);
       },
       error: function (data) {
         console.log("Error creating comment: " + data);

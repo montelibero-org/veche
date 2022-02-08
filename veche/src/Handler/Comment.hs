@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -25,26 +26,45 @@ data CommentMaterialized = CommentMaterialized
     }
 
 commentWidget :: CommentMaterialized -> Html
-commentWidget CommentMaterialized{author, comment=Comment{commentMessage}} =
+commentWidget CommentMaterialized{author, comment} =
     [shamlet|
-        <li>
-            <div .comment_author>#{userNameWidget author}
-            <div .comment_message>#{commentMessage}
+        <div .panel .panel-default>
+            <div .panel-heading>
+                <span .comment_author>#{userNameWidget author}
+                <span .comment_action>#{action}
+                on
+                <span .comment_timestamp>#{show commentCreated}
+            $if commentMessage /= ""
+                <div .panel-body>#{commentMessage}
     |]
+  where
+
+    Comment{commentMessage, commentType, commentCreated} = comment
+
+    action :: Text
+    action =
+        case commentType of
+            CommentClose    -> "closed discussion"
+            CommentEdit     -> "edited discussion"
+            CommentReopen   -> "reopened discussion"
+            CommentStart    -> "started discussion"
+            CommentText     -> "commented"
 
 postCommentR :: Handler Value
 postCommentR = do
     -- input
     CommentRequest{message, topic} <- requireCheckJsonBody
     (authorId, author) <- requireAuthPair
+    now <- liftIO getCurrentTime
 
     -- put comment to database
     let comment = Comment
-            { commentAuthor = authorId
-            , commentMessage = message
-            , commentTopic = topic
-            , commentParentComment = Nothing
-            , commentType = CommentText
+            { commentAuthor     = authorId
+            , commentCreated    = now
+            , commentMessage    = message
+            , commentParent     = Nothing
+            , commentTopic      = topic
+            , commentType       = CommentText
             }
     runDB $ insert_ comment
 

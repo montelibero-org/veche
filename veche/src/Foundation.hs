@@ -117,7 +117,7 @@ instance Yesod App where
 
         -- Define the menu items of the header.
         let menuItems =
-                [ NavbarLeft $ menuItem "Topics" TopicsR
+                [ NavbarLeft $ menuItem "Discussions" TopicsR
                 , NavbarRight
                     (menuItem "Profile" UserR){accessCallback = isJust muser}
                 , NavbarRight

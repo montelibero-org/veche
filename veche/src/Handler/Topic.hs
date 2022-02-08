@@ -26,14 +26,12 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
 import Handler.Comment (CommentMaterialized (..), commentWidget)
-import Handler.User (userNameWidget)
+import Types (CommentType (..))
 
 data TopicMaterialized = TopicMaterialized
-    { topic         :: Topic
-    , author        :: User
-    , comments      :: [CommentMaterialized]
-    , lastEdit      :: TopicVersion
-    , lastEditor    :: User
+    { topic     :: Topic
+    , comments  :: [CommentMaterialized]
+    , lastEdit  :: TopicVersion
     }
 
 loadTopicComments :: TopicId -> SqlPersistT Handler [CommentMaterialized]
@@ -51,22 +49,33 @@ loadTopicComments topicId = do
 
 loadTopic :: TopicId -> SqlPersistT Handler TopicMaterialized
 loadTopic topicId = do
-    topic@Topic{topicAuthor, topicCurrentVersion} <- get404 topicId
+    topic@Topic{topicAuthor, topicCreated, topicCurVersion} <- get404 topicId
     versionId <-
-        topicCurrentVersion
+        topicCurVersion
         ?| lift (constraintFail "Topic.current_version must be valid")
     author <-
         get topicAuthor
         ?|> lift (constraintFail "Topic.author must exist in User table")
-    comments <- loadTopicComments topicId
-    lastEdit@TopicVersion{topicVersionAuthor = lastEditorId} <-
+    comments' <- loadTopicComments topicId
+    let startingPseudoComment =
+            CommentMaterialized
+                { comment =
+                    Comment
+                        { commentAuthor     = topicAuthor
+                        , commentCreated    = topicCreated
+                        , commentMessage    = ""
+                        , commentParent     = Nothing
+                        , commentTopic      = topicId
+                        , commentType       = CommentStart
+                        }
+                , author
+                }
+    let comments = startingPseudoComment : comments'
+    lastEdit <-
         get versionId
         ?|> lift
                 (constraintFail
                     "Topic.current_version must exist in TopicVersion table")
-    lastEditor <-
-        get lastEditorId
-        ?|> lift (constraintFail "TopicVersion.author must exist in User table")
     pure TopicMaterialized{..}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
@@ -78,10 +87,9 @@ m ?|> k = m >>= (?| k)
 
 getTopicR :: TopicId -> Handler Html
 getTopicR topicId = do
-    TopicMaterialized{author, comments, topic, lastEdit, lastEditor} <-
-        runDB $ loadTopic topicId
-    let Topic{topicTitle, topicOpen, topicCreated} = topic
-    let TopicVersion{topicVersionBody, topicVersionCreated} = lastEdit
+    TopicMaterialized{comments, topic, lastEdit} <- runDB $ loadTopic topicId
+    let Topic{topicTitle, topicOpen} = topic
+    let TopicVersion{topicVersionBody} = lastEdit
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent
@@ -141,11 +149,11 @@ postTopicsR = do
         user <- requireAuthId
         runDB do
             let topic = Topic
-                    { topicTitle = title
-                    , topicAuthor = user
-                    , topicOpen = True
-                    , topicCreated = now
-                    , topicCurrentVersion = Nothing
+                    { topicTitle        = title
+                    , topicAuthor       = user
+                    , topicOpen         = True
+                    , topicCreated      = now
+                    , topicCurVersion   = Nothing
                     }
             topicId <- insert topic
             let version = TopicVersion
@@ -155,7 +163,7 @@ postTopicsR = do
                     , topicVersionAuthor    = user
                     }
             versionId <- insert version
-            update topicId [TopicCurrentVersion =. Just versionId]
+            update topicId [TopicCurVersion =. Just versionId]
             pure topicId
 
 data StateAction = Close | Reopen
@@ -197,7 +205,7 @@ editTopic topicId = do
             versionId <- insert version
             update
                 topicId
-                [TopicTitle =. title, TopicCurrentVersion =. Just versionId]
+                [TopicTitle =. title, TopicCurVersion =. Just versionId]
 
 closeReopenTopic :: StateAction -> TopicId -> Handler a
 closeReopenTopic action topicId = do
@@ -222,9 +230,9 @@ getTopicEditR :: TopicId -> Handler Html
 getTopicEditR topicId = do
     content <-
         runDB do
-            Topic{topicTitle, topicCurrentVersion} <- get404 topicId
+            Topic{topicTitle, topicCurVersion} <- get404 topicId
             versionId <-
-                topicCurrentVersion
+                topicCurVersion
                 ?| lift (constraintFail "Topic.current_version must be valid")
             TopicVersion{topicVersionBody} <-
                 get versionId

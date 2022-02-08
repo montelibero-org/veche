@@ -10,34 +10,35 @@
 
 
 Comment
-    type            CommentType
-    message         Text
-    author          UserId
-    topic           TopicId
-    parentComment   CommentId Maybe
+    author  UserId
+    created UTCTime
+    message Text
+    parent  CommentId Maybe
+    topic   TopicId
+    type    CommentType
 
     deriving Eq
     deriving Show
 
 
 Topic
-    title           Text
-    author          UserId
-    open            Bool
+    author      UserId
+    open        Bool
+    title       Text
 
     -- denormalized fields to avoid extra requests for min and max versions
-    created         UTCTime -- must be equal to min version.created
-    currentVersion  TopicVersionId Maybe    -- must be equal to max version
-                                            -- must be Just
+    created     UTCTime -- must be equal to min version.created
+    curVersion  TopicVersionId Maybe    -- must be equal to max version
+                                        -- must be Just
 
     deriving Show
 
 
 TopicVersion
-    topic   TopicId
-    body    Text
     author  UserId
+    body    Text
     created UTCTime
+    topic   TopicId
 
 
 User

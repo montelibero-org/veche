@@ -17,16 +17,10 @@
             <button type=submit .btn .btn-success>Reopen
 <div .clearfix>
 
-<div .panel .panel-default>
-    <div .panel-heading>
-        <div>Created by #{userNameWidget author} on #{show topicCreated}
-        <div>
-            Last edit by #{userNameWidget lastEditor}
-            on #{show topicVersionCreated}
+<div .panel .panel-primary>
     <div .panel-body>#{topicVersionBody}
 
-<h3>Comments
-<ul ##{commentListId}>
+<div ##{commentListId}>
     $forall comment <- comments
         ^{commentWidget comment}
 <form .form-horizontal ##{commentFormId}>

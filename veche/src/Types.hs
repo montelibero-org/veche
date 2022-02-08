@@ -11,11 +11,11 @@ import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 
 data CommentType
-    = CommentText
-    | CommentOpen
-    | CommentClose
-    | CommentReopen
+    = CommentClose
     | CommentEdit
+    | CommentReopen
+    | CommentStart
+    | CommentText
     -- TODO | CommentVote
     -- TODO | CommentApprove
     -- TODO | CommentReject
