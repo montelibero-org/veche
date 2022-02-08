@@ -9,7 +9,7 @@ import Import
 
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
-import User (userNameWidget)
+import Handler.User (userNameWidget)
 
 data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
     deriving (FromJSON, Generic)

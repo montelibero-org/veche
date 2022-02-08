@@ -26,7 +26,7 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
 import Handler.Comment (CommentMaterialized (..), commentWidget)
-import User (userNameWidget)
+import Handler.User (userNameWidget)
 
 data TopicMaterialized = TopicMaterialized
     { topic         :: Topic
