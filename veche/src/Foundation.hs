@@ -21,7 +21,6 @@ import Data.Text.Encoding qualified as TE
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
-import Yesod.Auth.Stellar (authStellar)
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
@@ -39,6 +38,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
+    , appAuthStellar :: AuthPlugin App
     }
 
 data MenuItem = MenuItem
@@ -271,10 +271,14 @@ instance YesodAuth App where
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
-    authPlugins app = authStellar : extraAuthPlugins
+    authPlugins App{appSettings, appAuthStellar} =
+        appAuthStellar : extraAuthPlugins
       where
+
         -- Enable authDummy login if enabled.
-        extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+        extraAuthPlugins = [authDummy | appAuthDummyLogin]
+
+        AppSettings{appAuthDummyLogin} = appSettings
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult

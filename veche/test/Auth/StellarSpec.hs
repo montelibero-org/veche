@@ -1,50 +1,64 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Auth.StellarSpec (spec) where
 
 import TestImport
 
+import Control.Concurrent (forkIO, killThread)
+import Control.Monad.Except (throwError)
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
+import Servant.Server (Server, err404, serve)
+import Servant.Server qualified as Servant
+
+-- project
+import Stellar.Horizon.API (API, api)
+import Stellar.Horizon.Types (Account (..), Signer (..))
+
 spec :: Spec
-spec = withApp do
-    describe "Auth.Stellar" do
+spec =
+    around_ withMockHorizon $
+    withApp do
+        describe "Auth.Stellar" do
 
-        describe "initial public key form" do
+            describe "initial public key form" do
 
-            it "shows public key form" do
-                get $ AuthR LoginR
-                statusIs 200
-                htmlCount "input[name=stellar_address]" 1
+                it "shows public key form" do
+                    get $ AuthR LoginR
+                    statusIs 200
+                    htmlCount "input[name=stellar_address]" 1
 
-        describe "challenge/response form" do
+            describe "challenge/response form" do
 
-            it "shows challenge for address" do
-                get (AuthR LoginR, [("stellar_address", testPublicKey)])
-                statusIs 200
-                htmlCount ".stellar_challenge" 1
+                it "shows challenge for address" do
+                    get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
+                    statusIs 200
+                    htmlCount ".stellar_challenge" 1
 
-            it "shows error for bad address" do
-                get (AuthR LoginR, [("stellar_address", "")])
-                statusIs 400
+                it "shows error for bad address" do
+                    get (AuthR LoginR, [("stellar_address", "")])
+                    statusIs 400
 
-            it "shows error for invalid address" do
-                get (AuthR LoginR, [("stellar_address", "foo")])
-                statusIs 400
+                it "shows error for invalid address" do
+                    get (AuthR LoginR, [("stellar_address", "foo")])
+                    statusIs 400
 
-        describe "authentication with tx-response" do
+            describe "authentication with tx-response" do
 
-            it "authenticates when correct tx-response (mainnet)" $
-                testAuthenticationOk testTxSignedForMainnet
+                it "authenticates when correct tx-response (mainnet)" $
+                    testAuthenticationOk testGoodTxSignedForMainnet
 
-            it "authenticates when correct tx-response (testnet)" $
-                testAuthenticationOk testTxSignedForTestnet
+                it "authenticates when correct tx-response (testnet)" $
+                    testAuthenticationOk testGoodTxSignedForTestnet
 
-            it "doesn't authenticate when incorrect tx-response" do
-                request do
-                    setMethod "POST"
-                    setUrl $ AuthR $ PluginR "stellar" []
-                    addPostParam "response" testUnsingedTx
-                statusIs 400
+                it "doesn't authenticate when incorrect tx-response" do
+                    request do
+                        setMethod "POST"
+                        setUrl $ AuthR $ PluginR "stellar" []
+                        addPostParam "response" testGoodTxUnsinged
+                    statusIs 400
 
 testAuthenticationOk :: Text -> YesodExample App ()
 testAuthenticationOk tx = do
@@ -63,30 +77,57 @@ testAuthenticationOk tx = do
         users
         [ User
             { userName = Nothing
-            , userStellarAddress = testPublicKey
+            , userStellarAddress = testGoodPublicKey
             }
         ]
 
-testPublicKey :: Text
-testPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
+testGoodPublicKey :: Text
+testGoodPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
 
--- testSecretKey = "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
+-- testGoodSecretKey =
+--     "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
 
-testUnsingedTx :: Text
-testUnsingedTx =
+testGoodTxUnsinged :: Text
+testGoodTxUnsinged =
     "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
     \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAA"
 
-testTxSignedForMainnet :: Text
-testTxSignedForMainnet =
+testGoodTxSignedForMainnet :: Text
+testGoodTxSignedForMainnet =
     "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
     \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAB\
     \ONXK5QAAAEAy13Yo6c30JzWbUp24b43kCtUitlwbtijOhmU0H6cZlFm8xCa2Y9Eu\
     \WvCG0Rima5rIXHTJnPKHJdI6boKpODwM"
 
-testTxSignedForTestnet :: Text
-testTxSignedForTestnet =
+testGoodTxSignedForTestnet :: Text
+testGoodTxSignedForTestnet =
     "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
     \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAB\
     \ONXK5QAAAEDxIVAlHINvvv9/BcFP6kvXd0Tw/F1w8jEFxVf8UISvDxw6SOmt3Z6B\
     \Nm/CMBwyBtYXYooKhoKW6ky8A0hStCMH"
+
+withMockHorizon :: IO () -> IO ()
+withMockHorizon action =
+    bracket
+        (liftIO $ forkIO $ Warp.run 9999 horizonTestApp)
+        killThread
+        (const action)
+
+horizonTestApp :: Wai.Application
+horizonTestApp = serve api horizonTestServer
+  where
+
+    horizonTestServer :: Server API
+    horizonTestServer = getAccount
+
+    getAccount :: Text -> Servant.Handler Account
+    getAccount address
+        | address == testGoodPublicKey =
+            pure
+                Account
+                    { signers =
+                        [ Signer
+                            {weight = 1, key = testGoodPublicKey, type_ = ""}
+                        ]
+                    }
+        | otherwise = throwError err404

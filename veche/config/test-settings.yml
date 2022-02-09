@@ -11,3 +11,5 @@ database:
 database-migrate: true
 
 auth-dummy-login: true
+
+auth-stellar-horizon-url: http://localhost:9999

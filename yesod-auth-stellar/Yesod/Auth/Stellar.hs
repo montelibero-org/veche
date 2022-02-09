@@ -1,26 +1,40 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Yesod.Auth.Stellar (authStellar) where
+module Yesod.Auth.Stellar
+    (
+    -- * Auth plugin
+      mkAuthStellar
+    ) where
 
+import Control.Exception (throwIO)
+import Control.Monad.Catch (MonadThrow)
 import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Lazy qualified as TextL
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
+import Network.HTTP.Client.TLS (newTlsManager)
+import Servant.Client (BaseUrl, mkClientEnv, parseBaseUrl, runClientM)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
                    Route (PluginR), setCredsRedirect)
 import Yesod.Core (MonadHandler, TypedContent, WidgetFor, invalidArgs, liftIO,
-                   lookupGetParam, lookupPostParam, newIdent, whamlet)
+                   logErrorS, lookupGetParam, lookupPostParam, newIdent,
+                   notAuthenticated, whamlet)
+
+import Stellar.Horizon.Client (getAccount, publicServerBase)
+import Stellar.Horizon.Types (Account (..), Signer (..))
 
 pluginName :: Text
 pluginName = "stellar"
@@ -34,10 +48,19 @@ pluginRoute = PluginR pluginName []
 -- 3. 'login' shows 'challengeResponseForm' with challenge (dummy transaction)
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
--- 4. 'dispatch' verifies the signature and assigns credentials.
-authStellar :: AuthPlugin app
-authStellar =
-    AuthPlugin{apName = pluginName, apDispatch = dispatch, apLogin = login}
+-- 5. 'dispatch' verifies the signature and assigns credentials.
+mkAuthStellar :: MonadThrow m => Maybe Text -> m (AuthPlugin app)
+mkAuthStellar mBaseUrl = do
+    baseUrl <-
+        case mBaseUrl of
+            Nothing  -> pure publicServerBase
+            Just url -> parseBaseUrl $ Text.unpack url
+    pure
+        AuthPlugin
+            { apName = pluginName
+            , apLogin = login
+            , apDispatch = dispatch baseUrl
+            }
 
 type Method = Text
 
@@ -49,14 +72,15 @@ addressField = "stellar_address"
 responseField :: Text
 responseField = "response"
 
-dispatch :: Method -> [Piece] -> AuthHandler app TypedContent
-dispatch _method _path = do
+dispatch :: BaseUrl -> Method -> [Piece] -> AuthHandler app TypedContent
+dispatch baseUrl _method _path = do
     mResponse <- lookupPostParam responseField
     response <-
         case mResponse of
             Nothing -> invalidArgs [responseField <> " not found"]
             Just response -> pure response
     address <- verifyResponse response
+    verifyAccount baseUrl address
     setCredsRedirect
         Creds{credsPlugin = pluginName, credsIdent = address, credsExtra = []}
 
@@ -125,3 +149,28 @@ verifyResponse envelope = do
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
   where
     program = encodeUtf8 $(stextFile "Yesod/Auth/verify.py")
+
+-- | Throws an exception on error
+verifyAccount :: MonadHandler m => BaseUrl -> Text -> m ()
+verifyAccount baseUrl address = do
+    account <- getAccount'
+    assert "account must be personal" $ isPersonal account
+  where
+
+    getAccount' =
+        liftIO do
+            manager <- newTlsManager
+            let env = mkClientEnv manager baseUrl
+            eResult <- runClientM (getAccount address) env
+            either throwIO pure eResult
+
+    assert message condition
+        | condition = pure ()
+        | otherwise = do
+            $logErrorS pluginName message
+            notAuthenticated
+
+    isPersonal Account{signers} =
+        case signers of
+            [Signer{key, weight}]   -> key == address && weight > 0
+            _                       -> False

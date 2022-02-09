@@ -7,12 +7,13 @@
 
 module Stellar.Horizon.API (API, api) where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import Network.HTTP.Media ((//), (/:))
-import Servant.API (Accept (..), Capture, Get, JSON, MimeUnrender (..), (:>))
+import Servant.API (Accept (..), Capture, Get, JSON, MimeRender (..),
+                    MimeUnrender (..), (:>))
 
 import Stellar.Horizon.Types (Account)
 
@@ -25,6 +26,9 @@ instance Accept HalJson where
 
 instance FromJSON a => MimeUnrender HalJson a where
     mimeUnrender _ = mimeUnrender (Proxy @JSON)
+
+instance ToJSON a => MimeRender HalJson a where
+    mimeRender _ = mimeRender (Proxy @JSON)
 
 type API = "accounts" :> Capture "account_id" Text :> Get '[HalJson] Account
 

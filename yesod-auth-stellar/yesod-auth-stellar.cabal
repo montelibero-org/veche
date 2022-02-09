@@ -6,10 +6,15 @@ build-type:    Simple
 library
   build-depends:
       base
+    , exceptions
+    , http-client-tls
+    , servant-client
     , shakespeare
     , text
     , typed-process
     , yesod-auth
     , yesod-core
 
+  -- project
+  build-depends:   stellar-horizon
   exposed-modules: Yesod.Auth.Stellar

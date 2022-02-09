@@ -65,7 +65,7 @@ library
     , yesod-form            >=1.6     && <1.7
     , yesod-static          >=1.6     && <1.7
 
-  -- same project
+  -- project
   build-depends:      yesod-auth-stellar
 
   if (flag(dev) || flag(library-only))
@@ -87,7 +87,7 @@ executable veche
     , foreign-store
     , warp           >=3.0     && <3.4
 
-  -- same package
+  -- package
   build-depends:    veche
 
   if flag(library-only)
@@ -114,17 +114,23 @@ test-suite veche-test
     , hspec                 >=2.0.0
     , microlens
     , monad-logger          >=0.3     && <0.4
+    , mtl
     , persistent
     , persistent-sqlite
+    , servant-server
     , text                  >=0.11    && <2.0
     , time
     , unordered-containers
     , veche
     , vector
+    , wai
+    , warp
     , yaml                  >=0.11    && <0.12
     , yesod                 >=1.6     && <1.7
     , yesod-auth            >=1.6     && <1.7
     , yesod-core            >=1.6     && <1.7
     , yesod-test
 
+  -- project
+  build-depends:    stellar-horizon
   default-language: Haskell2010

@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -39,6 +40,9 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              mkRequestLogger, outputFormat)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 
+-- project
+import Yesod.Auth.Stellar (mkAuthStellar)
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Comment (postCommentR)
@@ -64,13 +68,21 @@ makeFoundation appSettings = do
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
     appStatic <- (if appMutableStatic then staticDevel else static) appStaticDir
 
+    appAuthStellar <- mkAuthStellar appAuthStellarHorizonUrl
+
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
     -- logging function. To get out of this loop, we initially create a
     -- temporary foundation without a real connection pool, get a log function
     -- from there, and then create the real foundation.
     let mkFoundation appConnPool =
-            App{appSettings, appStatic, appConnPool, appHttpManager, appLogger}
+            App { appSettings
+                , appStatic
+                , appConnPool
+                , appHttpManager
+                , appLogger
+                , appAuthStellar
+                }
         tempFoundation =
             mkFoundation $ error "connPool forced in tempFoundation"
         logFunc = messageLoggerSource tempFoundation appLogger
@@ -95,7 +107,12 @@ makeFoundation appSettings = do
 
   where
     AppSettings
-        {appDatabaseMigrate, appDatabaseConf, appMutableStatic, appStaticDir} =
+        { appDatabaseMigrate
+        , appDatabaseConf
+        , appMutableStatic
+        , appStaticDir
+        , appAuthStellarHorizonUrl
+        } =
             appSettings
     database = sqlDatabase appDatabaseConf
     poolSize = sqlPoolSize appDatabaseConf
