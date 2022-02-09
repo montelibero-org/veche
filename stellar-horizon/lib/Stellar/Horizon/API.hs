@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-orphans #-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -14,6 +16,7 @@ import Data.Text (Text)
 import Network.HTTP.Media ((//), (/:))
 import Servant.API (Accept (..), Capture, Get, JSON, MimeRender (..),
                     MimeUnrender (..), (:>))
+import Servant.Docs (DocCapture (..), ToCapture (..))
 
 import Stellar.Horizon.Types (Account)
 
@@ -34,3 +37,10 @@ type API = "accounts" :> Capture "account_id" Text :> Get '[HalJson] Account
 
 api :: Proxy API
 api = Proxy
+
+instance ToCapture (Capture "account_id" Text) where
+    toCapture _ =
+        DocCapture
+            "account_id"
+            "This account’s public key\
+            \ encoded in a base32 string representation."

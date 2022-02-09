@@ -17,3 +17,31 @@ packages:
       sha256: ae84d4cc0e1daf985db6cdcf2ac92319531b8e60f547183cc46480d00aafbe20
       size: 330
     hackage: classy-prelude-yesod-1.5.0@sha256:8f7e183bdfd6d2ea9674284c4f285294ab086aff60d9be4e5d7d2f3c1a2b05b7,1330
+- original:
+    hackage: servant-cli-0.1.0.2
+  completed:
+    pantry-tree:
+      sha256: 67f2f200f0aa839e3e355e96f743380dc35aac2167cd2df1c369eaa38cf87998
+      size: 585
+    hackage: servant-cli-0.1.0.2@sha256:44192f66590e0e8847573335252f79ec86d9790fbd3ce3555f9eea55b7aaea70,2548
+- original:
+    hackage: functor-combinators-0.4.1.0
+  completed:
+    pantry-tree:
+      sha256: e002fcc1c477d2ce2a2afd11ddb0e87c7699e0d5253e73e2ed89705df401305c
+      size: 2700
+    hackage: functor-combinators-0.4.1.0@sha256:085990c3568adad0636c8d5626de493c3deed2a1eeb06ab699bb679b8156453d,5694
+- original:
+    hackage: nonempty-containers-0.3.4.4
+  completed:
+    pantry-tree:
+      sha256: bf30d8ae66f36d109cad6853f2e91693ba6b38253010cb83d35fe87c118ad500
+      size: 1480
+    hackage: nonempty-containers-0.3.4.4@sha256:a39a1373560ce7e8ed448712bf157d0be671045bdc18ed7c9edc4ea7df43dbf2,2705
+- original:
+    hackage: trivial-constraint-0.7.0.0
+  completed:
+    pantry-tree:
+      sha256: 3ee334547f7bbadc1b49720bdb9cbc97ed8f077c9285c47db20df5b42bb56a6d
+      size: 234
+    hackage: trivial-constraint-0.7.0.0@sha256:32c2906df935c17c2b313f71d8ed1f06df1e0f1a19d55959f9a731f90a196dd9,4093
