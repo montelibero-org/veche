@@ -6,7 +6,6 @@ build-type:    Simple
 library
   build-depends:
       base
-    , exceptions
     , http-client-tls
     , http-types
     , servant-client

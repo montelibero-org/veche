@@ -64,7 +64,7 @@ data AppSettings = AppSettings
 
     , appAuthDummyLogin         :: Bool
     -- ^ Indicate if auth dummy login should be enabled.
-    , appAuthStellarHorizonUrl  :: Maybe Text
+    , appStellarHorizonUrl      :: Text
     }
 
 instance FromJSON AppSettings where
@@ -96,7 +96,8 @@ instance FromJSON AppSettings where
             appAnalytics              <- o .:? "analytics"
 
             appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
-            appAuthStellarHorizonUrl  <- o .:? "auth-stellar-horizon-url"
+
+            appStellarHorizonUrl      <- o .: "stellar-horizon-url"
 
             return AppSettings{..}
 

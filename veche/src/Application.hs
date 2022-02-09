@@ -25,7 +25,9 @@ module Application
 
 import Import
 
+-- global
 import Control.Monad.Logger (liftLoc, runLoggingT)
+import Data.Text qualified as Text
 import Database.Persist.Sqlite (Single, createSqlitePool, rawSql, runSqlPool,
                                 sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
@@ -38,18 +40,16 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
+import Servant.Client (parseBaseUrl)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 
--- project
-import Yesod.Auth.Stellar (mkAuthStellar)
-
--- Import all relevant handler modules here.
--- Don't forget to add new modules to your cabal file!
+-- component
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Topic (getTopicEditR, getTopicNewR, getTopicR, getTopicsR,
                       postTopicR, postTopicsR)
 import Handler.User (getUserR, putUserR)
+import Workers.StellarUpdate (stellarDataUpdater)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -68,7 +68,7 @@ makeFoundation appSettings = do
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
     appStatic <- (if appMutableStatic then staticDevel else static) appStaticDir
 
-    appAuthStellar <- mkAuthStellar appAuthStellarHorizonUrl
+    appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -81,7 +81,7 @@ makeFoundation appSettings = do
                 , appConnPool
                 , appHttpManager
                 , appLogger
-                , appAuthStellar
+                , appStellarHorizon
                 }
         tempFoundation =
             mkFoundation $ error "connPool forced in tempFoundation"
@@ -111,7 +111,7 @@ makeFoundation appSettings = do
         , appDatabaseConf
         , appMutableStatic
         , appStaticDir
-        , appAuthStellarHorizonUrl
+        , appStellarHorizonUrl
         } =
             appSettings
     database = sqlDatabase appDatabaseConf
@@ -191,10 +191,13 @@ appMain = do
             useEnv
 
     -- Generate the foundation from the settings
-    foundation <- makeFoundation settings
+    foundation@App{appConnPool, appStellarHorizon} <- makeFoundation settings
 
     -- Generate a WAI Application from the foundation
     app <- makeApplication foundation
+
+    -- Backend workers
+    async (stellarDataUpdater appStellarHorizon appConnPool) >>= link
 
     -- Run the application with Warp
     runSettings (warpSettings foundation) app

@@ -12,11 +12,10 @@
 module Yesod.Auth.Stellar
     (
     -- * Auth plugin
-      mkAuthStellar
+      authStellar
     ) where
 
 import Control.Exception (throwIO)
-import Control.Monad.Catch (MonadThrow)
 import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
@@ -26,7 +25,7 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status (..))
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
-                       parseBaseUrl, runClientM)
+                       runClientM)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
@@ -36,7 +35,7 @@ import Yesod.Core (MonadHandler, TypedContent, WidgetFor, invalidArgs, liftIO,
                    logErrorS, lookupGetParam, lookupPostParam, newIdent,
                    notAuthenticated, whamlet)
 
-import Stellar.Horizon.Client (getAccount, publicServerBase)
+import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (..), Signer (..))
 
 pluginName :: Text
@@ -52,18 +51,10 @@ pluginRoute = PluginR pluginName []
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
-mkAuthStellar :: MonadThrow m => Maybe Text -> m (AuthPlugin app)
-mkAuthStellar mBaseUrl = do
-    baseUrl <-
-        case mBaseUrl of
-            Nothing  -> pure publicServerBase
-            Just url -> parseBaseUrl $ Text.unpack url
-    pure
-        AuthPlugin
-            { apName = pluginName
-            , apLogin = login
-            , apDispatch = dispatch baseUrl
-            }
+authStellar :: BaseUrl -> AuthPlugin app
+authStellar baseUrl =
+    AuthPlugin
+        {apName = pluginName, apLogin = login, apDispatch = dispatch baseUrl}
 
 type Method = Text
 

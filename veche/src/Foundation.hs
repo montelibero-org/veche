@@ -15,30 +15,35 @@ module Foundation where
 
 import Import.NoFoundation
 
+-- global
 import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Servant.Client (BaseUrl)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
 
+-- project
+import Yesod.Auth.Stellar (authStellar)
+
 -- Used only when in "auth-dummy-login" setting is enabled.
-import Yesod.Auth.Dummy
+import Yesod.Auth.Dummy (authDummy)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { appSettings    :: AppSettings
-    , appStatic      :: Static -- ^ Settings for static file serving.
-    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager :: Manager
-    , appLogger      :: Logger
-    , appAuthStellar :: AuthPlugin App
+    { appSettings       :: AppSettings
+    , appStatic         :: Static -- ^ Settings for static file serving.
+    , appConnPool       :: ConnectionPool -- ^ Database connection pool.
+    , appHttpManager    :: Manager
+    , appLogger         :: Logger
+    , appStellarHorizon :: BaseUrl
     }
 
 data MenuItem = MenuItem
@@ -271,8 +276,8 @@ instance YesodAuth App where
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
-    authPlugins App{appSettings, appAuthStellar} =
-        appAuthStellar : extraAuthPlugins
+    authPlugins App{appSettings, appStellarHorizon} =
+        authStellar appStellarHorizon : extraAuthPlugins
       where
 
         -- Enable authDummy login if enabled.

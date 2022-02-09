@@ -35,3 +35,5 @@ database:
 
 copyright: © 2022 MTL Foundation
 #analytics: UA-YOURCODE
+
+stellar-horizon-url: https://horizon.stellar.org

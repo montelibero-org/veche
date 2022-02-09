@@ -8,11 +8,6 @@ flag dev
   manual:      False
   default:     False
 
-flag library-only
-  description: Build for use with "yesod devel"
-  manual:      False
-  default:     False
-
 library
   default-extensions: EmptyCase
   exposed-modules:
@@ -28,6 +23,7 @@ library
     Settings
     Settings.StaticFiles
     Types
+    Workers.StellarUpdate
 
   hs-source-dirs:     src
   build-depends:
@@ -48,6 +44,8 @@ library
     , persistent
     , persistent-sqlite
     , persistent-template
+    , random
+    , servant-client
     , shakespeare           >=2.0     && <2.1
     , template-haskell
     , text                  >=0.11    && <2.0
@@ -66,9 +64,11 @@ library
     , yesod-static          >=1.6     && <1.7
 
   -- project
-  build-depends:      yesod-auth-stellar
+  build-depends:
+      stellar-horizon
+    , yesod-auth-stellar
 
-  if (flag(dev) || flag(library-only))
+  if flag(dev)
     ghc-options: -Wall -fwarn-tabs -O0
     cpp-options: -DDEVELOPMENT
 
@@ -89,10 +89,6 @@ executable veche
 
   -- package
   build-depends:    veche
-
-  if flag(library-only)
-    buildable: False
-
   default-language: Haskell2010
 
 test-suite veche-test

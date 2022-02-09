@@ -15,7 +15,8 @@ import Servant.Server qualified as Servant
 
 -- project
 import Stellar.Horizon.API (API, api)
-import Stellar.Horizon.Types (Account (..), Signer (..))
+import Stellar.Horizon.Types (Account (..), Signer (..),
+                              SignerType (Ed25519PublicKey))
 
 spec :: Spec
 spec =
@@ -127,7 +128,10 @@ horizonTestApp = serve api horizonTestServer
                 Account
                     { signers =
                         [ Signer
-                            {weight = 1, key = testGoodPublicKey, type_ = ""}
+                            { weight    = 1
+                            , key       = testGoodPublicKey
+                            , type_     = Ed25519PublicKey
+                            }
                         ]
                     }
         | otherwise = throwError err404
