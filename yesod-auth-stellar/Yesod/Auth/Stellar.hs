@@ -23,7 +23,10 @@ import Data.Text qualified as Text
 import Data.Text.Lazy qualified as TextL
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Servant.Client (BaseUrl, mkClientEnv, parseBaseUrl, runClientM)
+import Network.HTTP.Types (Status (..))
+import Servant.Client (BaseUrl, ClientError (FailureResponse),
+                       ResponseF (Response, responseStatusCode), mkClientEnv,
+                       parseBaseUrl, runClientM)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
@@ -157,12 +160,17 @@ verifyAccount baseUrl address = do
     assert "account must be personal" $ isPersonal account
   where
 
-    getAccount' =
-        liftIO do
-            manager <- newTlsManager
-            let env = mkClientEnv manager baseUrl
-            eResult <- runClientM (getAccount address) env
-            either throwIO pure eResult
+    getAccount' = do
+        eResult <-
+            liftIO do
+                manager <- newTlsManager
+                runClientM (getAccount address) $ mkClientEnv manager baseUrl
+        case eResult of
+            Left (FailureResponse _ Response{responseStatusCode})
+                | Status{statusCode = 404} <- responseStatusCode ->
+                    invalidArgs ["Account doesn't exist"]
+            Left err -> liftIO $ throwIO err
+            Right result -> pure result
 
     assert message condition
         | condition = pure ()
