@@ -25,7 +25,9 @@ import Stellar.Horizon.Types (Account (..), Signer (..),
 stellarDataUpdater :: BaseUrl -> ConnectionPool -> IO ()
 stellarDataUpdater baseUrl connPool =
     forever do
-        updateMembersCache mtlFund
+        putStrLn "stellarDataUpdater: Updating MTL members"
+        n <- updateMembersCache mtlFund
+        putStrLn $ "stellarDataUpdater: Updated " <> tshow n <> " items"
         randomDelay
   where
 
