@@ -15,7 +15,7 @@ library
     Foundation
     Handler.Comment
     Handler.Common
-    Handler.Topic
+    Handler.Issue
     Handler.User
     Import
     Import.NoFoundation

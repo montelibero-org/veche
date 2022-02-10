@@ -1,15 +1,15 @@
 <h1>
-    #{topicTitle}
-    $if topicOpen
+    #{issueTitle}
+    $if issueOpen
         <span .badge .badge-success>Open
     $else
         <span .badge .badge-danger>Closed
 
 <div .pull-left>
-    <a .btn .btn-default href=@{TopicEditR topicId}>Edit
+    <a .btn .btn-default href=@{IssueEditR issueId}>Edit
 <div .pull-right>
-    <form method=post action=@{TopicR topicId}>
-        $if topicOpen
+    <form method=post action=@{IssueR issueId}>
+        $if issueOpen
             <input type=hidden name=action value=close>
             <button type=submit .btn .btn-danger>Close
         $else
@@ -18,7 +18,7 @@
 <div .clearfix>
 
 <div .panel .panel-primary>
-    <div .panel-body>#{topicVersionBody}
+    <div .panel-body>#{issueVersionBody}
 
 <div ##{commentListId}>
     $forall comment <- comments

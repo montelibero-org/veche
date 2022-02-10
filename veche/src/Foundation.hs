@@ -122,7 +122,7 @@ instance Yesod App where
 
         -- Define the menu items of the header.
         let menuItems =
-                [ NavbarLeft $ menuItem "Discussions" TopicsR
+                [ NavbarLeft $ menuItem "Issues" IssuesR
                 , NavbarRight
                     (menuItem "Profile" UserR){accessCallback = isJust muser}
                 , NavbarRight
@@ -173,10 +173,10 @@ instance Yesod App where
             StaticR _       -> pure Authorized
             -- Routes requiring authentication.
             CommentR        -> isAuthenticated
-            TopicEditR _    -> isAuthenticated
-            TopicNewR       -> isAuthenticated
-            TopicR _        -> isAuthenticated
-            TopicsR         -> isAuthenticated
+            IssueEditR _    -> isAuthenticated
+            IssueNewR       -> isAuthenticated
+            IssueR _        -> isAuthenticated
+            IssuesR         -> isAuthenticated
             UserR           -> isAuthenticated
 
     -- This function creates static content files in the static folder
@@ -246,7 +246,7 @@ instance YesodAuth App where
 
     -- Where to send a user after successful login
     loginDest :: App -> Route App
-    loginDest _ = TopicsR
+    loginDest _ = IssuesR
 
     -- Where to send a user after logout
     logoutDest :: App -> Route App

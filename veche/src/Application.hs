@@ -46,8 +46,8 @@ import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 -- component
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
-import Handler.Topic (getTopicEditR, getTopicNewR, getTopicR, getTopicsR,
-                      postTopicR, postTopicsR)
+import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
+                      postIssueR, postIssuesR)
 import Handler.User (getUserR, putUserR)
 import Workers.StellarUpdate (stellarDataUpdater)
 

@@ -17,7 +17,7 @@ $(function() {
       contentType: "application/json",
       data: JSON.stringify({
         message: message,
-        topic: #{toJSON topicId},
+        issue: #{toJSON issueId},
       }),
       success: function (data) {
         $("##{rawJS commentListId}").html((_, old) => old + data);

@@ -14,7 +14,7 @@ Comment
     created UTCTime
     message Text
     parent  CommentId Maybe
-    topic   TopicId
+    issue   IssueId
     type    CommentType
 
     deriving Eq
@@ -29,24 +29,24 @@ StellarSigner
     UniqueMember target key
 
 
-Topic
+Issue
     author      UserId
     open        Bool
     title       Text
 
     -- denormalized fields to avoid extra requests for min and max versions
     created     UTCTime -- must be equal to min version.created
-    curVersion  TopicVersionId Maybe    -- must be equal to max version
+    curVersion  IssueVersionId Maybe    -- must be equal to max version
                                         -- must be Just
 
     deriving Show
 
 
-TopicVersion
+IssueVersion
     author  UserId
     body    Text
     created UTCTime
-    topic   TopicId
+    issue   IssueId
 
 
 User

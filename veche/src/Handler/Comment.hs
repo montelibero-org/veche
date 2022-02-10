@@ -17,7 +17,7 @@ import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Handler.User (userNameWidget)
 import Types (CommentType (..))
 
-data CommentRequest = CommentRequest{message :: Text, topic :: TopicId}
+data CommentRequest = CommentRequest{message :: Text, issue :: IssueId}
     deriving (FromJSON, Generic)
 
 data CommentMaterialized = CommentMaterialized
@@ -44,16 +44,16 @@ commentWidget CommentMaterialized{author, comment} =
     action :: Text
     action =
         case commentType of
-            CommentClose    -> "closed discussion"
-            CommentEdit     -> "edited discussion"
-            CommentReopen   -> "reopened discussion"
-            CommentStart    -> "started discussion"
+            CommentClose    -> "closed issue"
+            CommentEdit     -> "edited issue"
+            CommentReopen   -> "reopened issue"
+            CommentStart    -> "started issue"
             CommentText     -> "commented"
 
 postCommentR :: Handler Value
 postCommentR = do
     -- input
-    CommentRequest{message, topic} <- requireCheckJsonBody
+    CommentRequest{message, issue} <- requireCheckJsonBody
     (authorId, author) <- requireAuthPair
     now <- liftIO getCurrentTime
 
@@ -63,7 +63,7 @@ postCommentR = do
             , commentCreated    = now
             , commentMessage    = message
             , commentParent     = Nothing
-            , commentTopic      = topic
+            , commentIssue      = issue
             , commentType       = CommentText
             }
     runDB $ insert_ comment
