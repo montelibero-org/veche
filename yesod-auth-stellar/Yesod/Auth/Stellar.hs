@@ -105,7 +105,8 @@ challengeResponseForm routeToMaster challenge = do
         $newline never
         Sign this transaction, but do not submit it:
         <div>
-            <code .stellar_challenge>#{challenge}
+            <code .stellar_challenge style="overflow-wrap: break-word;">
+                #{challenge}
         <div>
             [
                 <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challenge}&type=TransactionEnvelope" target="_blank">
