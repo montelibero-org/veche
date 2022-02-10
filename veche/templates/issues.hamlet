@@ -7,6 +7,8 @@
     <a .btn .btn-success href=@{IssueNewR}>
         New issue
 
+<div .clearfix style="margin-bottom: 1em;">
+
 <table .table .table-striped>
     $forall Entity issueId Issue{issueTitle} <- issues
         <tr>

@@ -15,7 +15,8 @@
         $else
             <input type=hidden name=action value=reopen>
             <button type=submit .btn .btn-success>Reopen
-<div .clearfix>
+
+<div .clearfix style="margin-bottom: 1em;">
 
 <div .panel .panel-primary>
     <div .panel-body>#{issueVersionBody}
@@ -23,8 +24,7 @@
 <div ##{commentListId}>
     $forall comment <- comments
         ^{commentWidget comment}
-<form .form-horizontal ##{commentFormId}>
-    <div .field>
-        <textarea rows=2 ##{commentTextareaId} placeholder="Your comment here..." required>
+<form ##{commentFormId}>
+    <textarea .form-control ##{commentTextareaId} placeholder="Your comment here..." required>
     <button .btn.btn-primary type=submit>
         Add comment

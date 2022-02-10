@@ -1,5 +1,5 @@
 <!-- Static navbar -->
-<nav .navbar.navbar-default.navbar-static-top>
+<nav .navbar.navbar-inverse.navbar-static-top>
     <div .container>
         <div .navbar-header>
             <button type=button .navbar-toggle.collapsed data-toggle=collapse data-target="#navbar" aria-expanded=false aria-controls=navbar>
@@ -26,7 +26,7 @@
         This is a beta version of the service.
         If you find any problems, please contact
         <a href="https://t.me/cblp_su">@cblp_su
-        or open and issue in
+        or open an issue on
         <a href="https://github.com/montelibero-org/veche/issues/new">GitHub
 
 <div .container>
