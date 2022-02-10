@@ -29,7 +29,6 @@
         or open an issue on
         <a href="https://github.com/montelibero-org/veche/issues/new">GitHub
 
-<div .container>
     $# $if not $ Just HomeR == mcurrentRoute
     $#     <ul .breadcrumb>
     $#         $forall bc <- parents
@@ -40,13 +39,15 @@
     $maybe msg <- mmsg
         <div .alert.alert-info #message>#{msg}
 
-$# $if (Just HomeR == mcurrentRoute)
-$#     ^{widget}
-$# $else
-<div .container>
+    $# $if (Just HomeR == mcurrentRoute)
+    $#     ^{widget}
+    $# $else
     <div .row>
         <div .col-md-12>
             ^{widget}
+
+    $if isNothing muser && maybe True (not . isAuthR) mcurrentRoute
+        <a .btn .btn-primary href=@{AuthR LoginR}>Log in
 
 <!-- Footer -->
 <footer .footer>

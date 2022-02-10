@@ -126,10 +126,10 @@ instance Yesod App where
                 , NavbarRight
                     (menuItem "Profile" UserR){accessCallback = isJust muser}
                 , NavbarRight
-                    (menuItem "Login" $ AuthR LoginR)
+                    (menuItem "Log in" $ AuthR LoginR)
                         {accessCallback = isNothing muser}
                 , NavbarRight
-                    (menuItem "Logout" $ AuthR LogoutR)
+                    (menuItem "Log out" $ AuthR LogoutR)
                         {accessCallback = isJust muser}
                 ]
 
@@ -295,7 +295,7 @@ isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
     pure $ case muid of
-        Nothing -> Unauthorized "You must login to access this page"
+        Nothing -> Unauthorized "You must log in to access this page"
         Just _  -> Authorized
 
 instance YesodAuthPersist App
@@ -345,3 +345,7 @@ getEntity404 ::
     (MonadIO m, PersistStoreRead backend, PersistRecordBackend val backend) =>
     Key val -> ReaderT backend m (Entity val)
 getEntity404 key = Entity key <$> get404 key
+
+isAuthR = \case
+    AuthR _ -> True
+    _ -> False
