@@ -84,7 +84,7 @@ stellarDataUpdater baseUrl connPool =
             Right result -> pure result
 
     randomDelay = do
-        delayMinutes <- randomRIO (1, 60)
+        delayMinutes <- randomRIO (1, 10)
         threadDelay $ delayMinutes * 60 * 1_000_000
 
     db action = runSqlPool action connPool
