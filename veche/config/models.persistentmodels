@@ -26,7 +26,7 @@ StellarSigner
     key     Text -- signer account address
     weight  Int
 
-    UniqueMember target key
+    UniqueSigner target key
 
 
 Issue

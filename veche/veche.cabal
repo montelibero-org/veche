@@ -12,7 +12,9 @@ library
   default-extensions: EmptyCase
   exposed-modules:
     Application
+    Authorization
     Foundation
+    Genesis
     Handler.Comment
     Handler.Common
     Handler.Issue

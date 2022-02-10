@@ -1,7 +1,8 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Handler.Comment
@@ -14,6 +15,7 @@ import Import
 
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
+import Genesis (mtlFund)
 import Handler.User (userNameWidget)
 import Types (CommentType (..))
 
@@ -52,9 +54,11 @@ commentWidget CommentMaterialized{author, comment} =
 
 postCommentR :: Handler Value
 postCommentR = do
+    -- auth
+    (authorId, author@User{userStellarAddress}) <- requireAuthPair
+
     -- input
     CommentRequest{message, issue} <- requireCheckJsonBody
-    (authorId, author) <- requireAuthPair
     now <- liftIO getCurrentTime
 
     -- put comment to database
@@ -66,6 +70,9 @@ postCommentR = do
             , commentIssue      = issue
             , commentType       = CommentText
             }
-    runDB $ insert_ comment
+    runDB do
+        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        requireAuthz $ AddIssueComment signerId
+        insert_ comment
 
     returnJson $ renderHtml $ commentWidget CommentMaterialized{author, comment}

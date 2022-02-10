@@ -28,8 +28,8 @@ import Import
 -- global
 import Control.Monad.Logger (liftLoc, runLoggingT)
 import Data.Text qualified as Text
-import Database.Persist.Sqlite (Single, createSqlitePool, rawSql, runSqlPool,
-                                sqlDatabase, sqlPoolSize)
+import Database.Persist.Sqlite (Single, createSqlitePool, printMigration,
+                                rawSql, runSqlPool, sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Middleware)
@@ -99,8 +99,10 @@ makeFoundation appSettings = do
                         \ WHERE type='table' AND name='user'"
                     []
             let databaseIsEmpty = null userTableNameAsList
-            when (appDatabaseMigrate || databaseIsEmpty) $
+            if appDatabaseMigrate || databaseIsEmpty then
                 runMigration migrateAll
+            else
+                printMigration migrateAll
 
     -- Return the foundation
     pure $ mkFoundation pool

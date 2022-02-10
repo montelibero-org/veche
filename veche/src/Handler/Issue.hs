@@ -20,11 +20,14 @@ module Handler.Issue
 
 import Import
 
+-- global
 import Database.Persist.Sql (rawSql)
 import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
+-- component
+import Genesis (mtlFund)
 import Handler.Comment (CommentMaterialized (..), commentWidget)
 import Types (CommentType (..))
 
@@ -87,6 +90,11 @@ m ?|> k = m >>= (?| k)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
+    (_, User{userStellarAddress}) <- requireAuthPair
+    Entity signerId _ <-
+        runDB $ getBy403 $ UniqueSigner mtlFund userStellarAddress
+    requireAuthz $ ReadIssue signerId
+
     IssueMaterialized{comments, issue, lastEdit} <- runDB $ loadIssue issueId
     let Issue{issueTitle, issueOpen} = issue
     let IssueVersion{issueVersionBody} = lastEdit
@@ -114,6 +122,10 @@ issueForm previousContent = do
 
 getIssueNewR :: Handler Html
 getIssueNewR = do
+    runDB do
+        (_, User{userStellarAddress}) <- requireAuthPair
+        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        requireAuthz $ CreateIssue signerId
     (formWidget, formEnctype) <-
         generateFormPost $
         renderBootstrap3 BootstrapBasicForm $ issueForm Nothing
@@ -123,12 +135,16 @@ getIssuesR :: Handler Html
 getIssuesR = do
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
+    (_, User{userStellarAddress}) <- requireAuthPair
     (openIssueCount, closedIssueCount, issues) <-
-        runDB $
+        runDB do
+            Entity signerId _ <-
+                getBy403 $ UniqueSigner mtlFund userStellarAddress
+            requireAuthz $ ListIssues signerId
             (,,)
-            <$> count [IssueOpen ==. True]
-            <*> count [IssueOpen ==. False]
-            <*> selectList [IssueOpen ==. stateOpen] []
+                <$> count [IssueOpen ==. True]
+                <*> count [IssueOpen ==. False]
+                <*> selectList [IssueOpen ==. stateOpen] []
     defaultLayout $(widgetFile "issues")
 
 postIssuesR :: Handler Html
@@ -146,8 +162,11 @@ postIssuesR = do
     addIssue :: IssueContent -> Handler IssueId
     addIssue IssueContent{title, body} = do
         now <- liftIO getCurrentTime
-        user <- requireAuthId
         runDB do
+            (user, User{userStellarAddress}) <- requireAuthPair
+            Entity signerId _ <-
+                getBy403 $ UniqueSigner mtlFund userStellarAddress
+            requireAuthz $ CreateIssue signerId
             let issue = Issue
                     { issueTitle        = title
                     , issueAuthor       = user
@@ -194,8 +213,8 @@ editIssue issueId = do
         now <- liftIO getCurrentTime
         user <- requireAuthId
         runDB do
-            issue <- get404 issueId
-            authorizeIssueModification issue user
+            issue <- getEntity404 issueId
+            requireAuthz $ EditIssue issue user
             let version = IssueVersion
                     { issueVersionAuthor    = user
                     , issueVersionBody      = body
@@ -221,8 +240,8 @@ closeReopenIssue action issueId = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
-        issue <- get404 issueId
-        authorizeIssueModification issue user
+        issue <- getEntity404 issueId
+        requireAuthz $ CloseReopenIssue issue user
         update
             issueId
             [ IssueOpen
@@ -244,15 +263,14 @@ closeReopenIssue action issueId = do
                 }
     redirect $ IssueR issueId
 
-authorizeIssueModification :: MonadHandler m => Issue -> UserId -> m ()
-authorizeIssueModification Issue{issueAuthor} user =
-    when (issueAuthor /= user) $ permissionDenied "Not authorized"
-
 getIssueEditR :: IssueId -> Handler Html
 getIssueEditR issueId = do
+    userId <- requireAuthId
     content <-
         runDB do
-            Issue{issueTitle, issueCurVersion} <- get404 issueId
+            issue@(Entity _ Issue{issueTitle, issueCurVersion}) <-
+                getEntity404 issueId
+            requireAuthz $ EditIssue issue userId
             versionId <-
                 issueCurVersion
                 ?| lift (constraintFail "Issue.current_version must be valid")

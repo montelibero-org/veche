@@ -165,6 +165,10 @@ instance Yesod App where
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
     isAuthorized route _isWrite =
+        -- Actually, we check only authentication here.
+        -- Authorization requires data from the database,
+        -- and happens inside handlers after the data is got
+        -- to minimize DB requests.
         case route of
             -- Routes not requiring authentication.
             AuthR _         -> pure Authorized
@@ -246,7 +250,7 @@ instance YesodAuth App where
 
     -- Where to send a user after successful login
     loginDest :: App -> Route App
-    loginDest _ = IssuesR
+    loginDest _ = UserR
 
     -- Where to send a user after logout
     logoutDest :: App -> Route App
@@ -268,11 +272,11 @@ instance YesodAuth App where
                 Just (Entity uid _) -> pure $ Authenticated uid
                 Nothing ->
                     Authenticated <$>
-                        insert
-                            User
-                                { userName = Nothing
-                                , userStellarAddress = stellarAddress
-                                }
+                    insert
+                        User
+                            { userName              = Nothing
+                            , userStellarAddress    = stellarAddress
+                            }
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
@@ -323,3 +327,20 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 constraintFail :: Text -> Handler a
 constraintFail msg =
     sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg
+
+getBy403 ::
+    (   MonadHandler m,
+        PersistRecordBackend val backend,
+        PersistUniqueRead backend
+        ) =>
+    Unique val -> ReaderT backend m (Entity val)
+getBy403 key = do
+    mres <- getBy key
+    case mres of
+        Nothing  -> permissionDenied "Not authorized"
+        Just res -> return res
+
+getEntity404 ::
+    (MonadIO m, PersistStoreRead backend, PersistRecordBackend val backend) =>
+    Key val -> ReaderT backend m (Entity val)
+getEntity404 key = Entity key <$> get404 key

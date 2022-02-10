@@ -22,16 +22,19 @@ import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (..), Signer (..),
                               SignerType (Ed25519PublicKey))
 
+-- component
+import Genesis (mtlFund)
+
 stellarDataUpdater :: BaseUrl -> ConnectionPool -> IO ()
 stellarDataUpdater baseUrl connPool =
     forever do
-        putStrLn "stellarDataUpdater: Updating MTL members"
-        n <- updateMembersCache mtlFund
+        putStrLn "stellarDataUpdater: Updating MTL signers"
+        n <- updateMtlSignersCache mtlFund
         putStrLn $ "stellarDataUpdater: Updated " <> tshow n <> " items"
         randomDelay
   where
 
-    updateMembersCache target = do
+    updateMtlSignersCache target = do
         Account{signers} <- getAccount' target
         let actual =
                 Map.fromList
@@ -59,7 +62,7 @@ stellarDataUpdater baseUrl connPool =
                             Map.assocs $ Map.intersectionWith (,) cached actual
                         , weightCached /= weightActual
                         ]
-            for_ (Map.keys deleted) $ deleteBy . UniqueMember target
+            for_ (Map.keys deleted) $ deleteBy . UniqueSigner target
             insertMany_
                 [ StellarSigner
                     { stellarSignerTarget = target
@@ -85,6 +88,3 @@ stellarDataUpdater baseUrl connPool =
         threadDelay $ delayMinutes * 60 * 1_000_000
 
     db action = runSqlPool action connPool
-
-mtlFund :: Text
-mtlFund = "GDX23CPGMQ4LN55VGEDVFZPAJMAUEHSHAMJ2GMCU2ZSHN5QF4TMZYPIS"
