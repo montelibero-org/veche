@@ -2,7 +2,7 @@
 
 # /etc/cron.hourly/veche-backup
 
-set -eux -o pipefail
+set -eu -o pipefail
 
 timestamp="$(date --utc +%F_%H-%M-%S)"
 source=/var/www/veche.sqlite3
