@@ -46,7 +46,7 @@
         <div .col-md-12>
             ^{widget}
 
-    $if isNothing muser && maybe True (not . isAuthR) mcurrentRoute
+    $if isNothing muser && not (isAuthRMay mcurrentRoute)
         <a .btn .btn-primary href=@{AuthR LoginR}>Log in
 
 <!-- Footer -->

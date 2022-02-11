@@ -346,7 +346,7 @@ getEntity404 ::
     Key val -> ReaderT backend m (Entity val)
 getEntity404 key = Entity key <$> get404 key
 
-isAuthR :: Route App -> Bool
-isAuthR = \case
-    AuthR _ -> True
-    _ -> False
+isAuthRMay :: Maybe (Route App) -> Bool
+isAuthRMay = \case
+    Just (AuthR _)  -> True
+    _               -> False
