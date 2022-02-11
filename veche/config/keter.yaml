@@ -27,7 +27,7 @@ stanzas:
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
-    requires-secure: false
+    requires-secure: true
 
 # Use the following to automatically copy your bundle upon creation via `yesod
 # keter`. Uses `scp` internally, so you can set it to a remote destination
