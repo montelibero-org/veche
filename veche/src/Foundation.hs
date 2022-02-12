@@ -284,26 +284,40 @@ instance YesodAuth App where
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
-    authPlugins App{appSettings, appStellarHorizon} =
-        authStellar authStellarConfig : extraAuthPlugins
+    authPlugins app@App{appSettings} =
+        authStellar (authStellarConfig app) : extraAuthPlugins
       where
-
-        authStellarConfig =
-            Yesod.Auth.Stellar.Config
-                { horizon = appStellarHorizon
-                , setVerifyKey = \authNonceUserIdent authNonceValue ->
-                    liftHandler do
-                        now <- liftIO getCurrentTime
-                        let authNonceExpires = addUTCTime nonceTtl now
-                        runDB $ insert_ AuthNonce{..}
-                }
-
-        nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
 
         -- Enable authDummy login if enabled.
         extraAuthPlugins = [authDummy | appAuthDummyLogin]
 
         AppSettings{appAuthDummyLogin} = appSettings
+
+authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
+authStellarConfig App{appStellarHorizon} =
+    Yesod.Auth.Stellar.Config
+        {horizon = appStellarHorizon, setVerifyKey, hasVerifyKey}
+  where
+
+    setVerifyKey :: Text -> Text -> Widget
+    setVerifyKey verifierUserIdent verifierKey =
+        liftHandler do
+            now <- liftIO getCurrentTime
+            let verifierExpires = addUTCTime nonceTtl now
+            runDB $ insert_ Verifier{..}
+
+    nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
+
+    hasVerifyKey :: Text -> Text -> Handler Bool
+    hasVerifyKey verifierUserIdent verifierKey = do
+        now <- liftIO getCurrentTime
+        mVerifier <-
+            runDB $ getBy $ UniqueVerifier verifierUserIdent verifierKey
+        pure
+            case mVerifier of
+                Nothing -> False
+                Just (Entity _ Verifier{verifierExpires}) ->
+                    now <= verifierExpires
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult

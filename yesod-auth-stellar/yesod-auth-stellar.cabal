@@ -20,4 +20,6 @@ library
   -- project
   build-depends:    stellar-horizon
   default-language: Haskell2010
-  exposed-modules:  Yesod.Auth.Stellar
+  exposed-modules:
+    Yesod.Auth.Stellar
+    Yesod.Auth.Stellar.Internal

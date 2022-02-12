@@ -2,10 +2,12 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 
-AuthNonce
+Verifier
     userIdent   Text
-    value       Text
+    key         Text
     expires     UTCTime
+
+    UniqueVerifier userIdent key
 
 
 Comment

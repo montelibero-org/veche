@@ -17,37 +17,35 @@ module Yesod.Auth.Stellar
     ) where
 
 import Control.Exception (throwIO)
+import Control.Monad ((>=>))
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
-import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Data.Text.Lazy qualified as TextL
-import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status (..))
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
-import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.IO.Unsafe (unsafePerformIO)
-import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
                    Route (PluginR), setCredsRedirect)
-import Yesod.Core (HandlerSite, MonadHandler, RenderMessage, TypedContent,
-                   WidgetFor, invalidArgs, liftIO, logErrorS, lookupGetParam,
-                   notAuthenticated, whamlet)
+import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage,
+                   TypedContent, WidgetFor, invalidArgs, liftHandler, liftIO,
+                   logErrorS, lookupGetParam, notAuthenticated, whamlet)
 import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
                    fsName, textField, textareaField, unTextarea)
 import Yesod.Form qualified as Yesod
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
+-- project
 import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (..), Signer (..))
 
-type TextL = TextL.Text
+-- component
+import Yesod.Auth.Stellar.Internal (TextL, python3)
 
 pluginName :: Text
 pluginName = "stellar"
@@ -59,7 +57,7 @@ data Config app =
     Config
         { horizon :: BaseUrl
         , setVerifyKey :: Text -> Text -> WidgetFor app ()
-        -- , getVerifyKey :: ()
+        , hasVerifyKey :: Text -> Text -> HandlerFor app Bool
         }
 
 -- | Flow:
@@ -95,18 +93,22 @@ responseForm =
         Nothing
 
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
-dispatch config _method _path = do
+dispatch config@Config{hasVerifyKey} _method _path = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
-            address <- verifyResponse response
+            (address, nonce) <- verifyResponse response
             verifyAccount config address
-            setCredsRedirect
-                Creds
-                    { credsPlugin   = pluginName
-                    , credsIdent    = address
-                    , credsExtra    = []
-                    }
+            ok <- liftHandler $ hasVerifyKey address nonce
+            if ok then
+                setCredsRedirect
+                    Creds
+                        { credsPlugin = pluginName
+                        , credsIdent  = address
+                        , credsExtra  = []
+                        }
+            else
+                invalidArgs ["Verification key is invalid or expired"]
         _ -> invalidArgs [Text.pack $ show result]
 
 login ::
@@ -166,21 +168,18 @@ makeResponseForm routeToMaster challenge = do
     |]
 
 makeChallenge :: MonadHandler m => Text -> Text -> m Text
-makeChallenge address nonce = python3 $(stextFile "Yesod/Auth/challenge.py")
+makeChallenge address nonce = python3' $(stextFile "Yesod/Auth/challenge.py")
 
--- | Returns address
-verifyResponse :: MonadHandler m => Text -> m Text
-verifyResponse envelope = python3 $(stextFile "Yesod/Auth/verify.py")
+-- | Returns address and nonce
+verifyResponse :: MonadHandler m => Text -> m (Text, Text)
+verifyResponse envelope = do
+    addressNonce <- python3' $(stextFile "Yesod/Auth/verify.py")
+    case Text.words addressNonce of
+        [address, nonce] -> pure (address, nonce)
+        _ -> invalidArgs ["Bad transaction"]
 
-python3 :: MonadHandler m => TextL -> m Text
-python3 program = do
-    (exitCode, out, err) <-
-        liftIO $
-        readProcess $
-        proc "python3" [] & setStdin (byteStringInput $ encodeUtf8 program)
-    case exitCode of
-        ExitSuccess -> pure $ Text.strip $ TextL.toStrict $ decodeUtf8 out
-        ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
+python3' :: MonadHandler m => TextL -> m Text
+python3' = python3 >=> either (\msg -> invalidArgs [msg]) pure
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Text -> m ()

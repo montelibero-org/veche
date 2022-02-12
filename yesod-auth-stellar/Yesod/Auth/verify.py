@@ -16,7 +16,12 @@ def verify(xdr, passphrase):
         keypair = Keypair.from_public_key(account_id)
         [signature] = envelope.signatures
         keypair.verify(envelope.hash(), signature.signature)
-        return (True, account_id)
+        [nonce] = [
+            op.data_value.decode()
+            for op in envelope.transaction.operations
+            if isinstance(op, ManageData) and op.data_name == 'nonce'
+        ]
+        return (True, '{}\t{}'.format(account_id, nonce))
     except Exception as e:
         return (False, str(e))
 

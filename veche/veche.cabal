@@ -116,6 +116,7 @@ test-suite veche-test
     , persistent
     , persistent-sqlite
     , servant-server
+    , shakespeare
     , text                  >=0.11    && <2.0
     , time
     , unordered-containers
@@ -123,6 +124,7 @@ test-suite veche-test
     , vector
     , wai
     , warp
+    , xml-conduit
     , yaml                  >=0.11    && <0.12
     , yesod                 >=1.6     && <1.7
     , yesod-auth            >=1.6     && <1.7
@@ -130,5 +132,8 @@ test-suite veche-test
     , yesod-test
 
   -- project
-  build-depends:    stellar-horizon
+  build-depends:
+      stellar-horizon
+    , yesod-auth-stellar
+
   default-language: Haskell2010

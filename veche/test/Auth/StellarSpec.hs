@@ -1,24 +1,31 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Auth.StellarSpec (spec) where
 
 import TestImport
 
+-- global
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
+import Data.Text qualified as Text
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant.Server (Server, err404, serve)
 import Servant.Server qualified as Servant
+import Text.Shakespeare.Text (stextFile)
+import Text.XML.Cursor (content, descendant)
 
 -- project
 import Stellar.Horizon.API (API, api)
 import Stellar.Horizon.Types (Account (..), Signer (..),
                               SignerType (Ed25519PublicKey))
+import Yesod.Auth.Stellar.Internal (python3)
 
 spec :: Spec
 spec =
@@ -50,15 +57,13 @@ spec =
 
             describe "authentication with tx-response" do
 
-                it "authenticates when correct tx-response (mainnet)" $
-                    testAuthenticationOk
-                        testGoodPublicKey
-                        testGoodTxSignedForMainnet
+                it "authenticates when correct tx-response (mainnet)" do
+                    testAuthenticationOk testGoodPublicKey
 
-                it "authenticates when correct tx-response (testnet)" $
-                    testAuthenticationOk
-                        testGoodPublicKey
-                        testGoodTxSignedForTestnet
+                -- it "authenticates when correct tx-response (testnet)" $
+                --     testAuthenticationOk
+                --         testGoodPublicKey
+                --         testGoodTxSignedForTestnet
 
                 it "doesn't authenticate when incorrect tx-response" do
                     request do
@@ -67,16 +72,24 @@ spec =
                         addPostParam "response" testGoodTxUnsinged
                     statusIs 400
 
-testAuthenticationOk :: Text -> Text -> YesodExample App ()
-testAuthenticationOk address tx = do
+testAuthenticationOk :: Text -> YesodExample App ()
+testAuthenticationOk address = do
     get (AuthR LoginR, [("stellar_address", address)])
     statusIs 200
+
+    transactionXdr <-
+        the . (content <=< descendant) . parseHTML . the <$>
+        htmlQuery ".stellar_challenge"
+    let secretKey = testGoodSecretKey
+    response <-
+        either (error . Text.unpack) id <$> python3 $(stextFile "test/sign.py")
 
     request do
         setMethod "POST"
         setUrl $ AuthR $ PluginR "stellar" []
-        addPostParam "response" tx
+        addPostParam "response" response
         addToken_ "#auth_stellar_response_form"
+    printBody
     statusIs 303 -- okay redirect
 
     get UserR
@@ -91,27 +104,13 @@ testAuthenticationOk address tx = do
 testGoodPublicKey :: Text
 testGoodPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
 
--- testGoodSecretKey =
---     "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
+testGoodSecretKey :: Text
+testGoodSecretKey = "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
 
 testGoodTxUnsinged :: Text
 testGoodTxUnsinged =
     "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
     \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAA"
-
-testGoodTxSignedForMainnet :: Text
-testGoodTxSignedForMainnet =
-    "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
-    \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAB\
-    \ONXK5QAAAEAy13Yo6c30JzWbUp24b43kCtUitlwbtijOhmU0H6cZlFm8xCa2Y9Eu\
-    \WvCG0Rima5rIXHTJnPKHJdI6boKpODwM"
-
-testGoodTxSignedForTestnet :: Text
-testGoodTxSignedForTestnet =
-    "AAAAAgAAAADW3LZbOzaNuBBWK9sEAripT6bEgsxhAJX5OLBwONXK5QAAAAAAAAAA\
-    \AAAAAQAAAAAAAAABAAAAEkxvZ2dpbmcgaW50byBWZWNoZQAAAAAAAAAAAAAAAAAB\
-    \ONXK5QAAAEDxIVAlHINvvv9/BcFP6kvXd0Tw/F1w8jEFxVf8UISvDxw6SOmt3Z6B\
-    \Nm/CMBwyBtYXYooKhoKW6ky8A0hStCMH"
 
 withMockHorizon :: IO () -> IO ()
 withMockHorizon =
@@ -131,3 +130,8 @@ horizonTestApp = serve api horizonTestServer
         | otherwise = throwError err404
 
     signer key = Signer{key, type_ = Ed25519PublicKey, weight = 1}
+
+the :: HasCallStack => [a] -> a
+the = \case
+    [a] -> a
+    xs -> error $ "the: " <> show (length xs) <> " items"
