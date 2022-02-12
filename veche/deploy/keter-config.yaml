@@ -26,7 +26,7 @@ setuid: www-data
 # Get the user's IP address from x-forwarded-for. Useful when sitting behind a
 # load balancer like Amazon ELB.
 
-# ip-from-header: true
+ip-from-header: true
 
 # Control the port numbers assigned via APPROOT
 # external-http-port: 8080
@@ -35,6 +35,7 @@ setuid: www-data
 # Set additional environment variables for all apps
 env:
   VECHE_DATABASE: /var/www/veche.sqlite3
+  YESOD_IP_FROM_HEADER: 'true'
 
 # Connection time bound in milliseconds, set to 0 to have no time bound,
 # i.e. keep connections alive indefinitely. Default value is 5 minutes.
