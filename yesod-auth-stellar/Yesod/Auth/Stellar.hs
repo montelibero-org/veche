@@ -38,6 +38,8 @@ import Yesod.Core (MonadHandler, TypedContent, WidgetFor, invalidArgs, liftIO,
 import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (..), Signer (..))
 
+type TextL = TextL.Text
+
 pluginName :: Text
 pluginName = "stellar"
 
@@ -123,27 +125,21 @@ challengeResponseForm routeToMaster challenge = do
     |]
 
 makeChallenge :: MonadHandler m => Text -> m Text
-makeChallenge address = do
-    (exitCode, out, err) <-
-        liftIO $
-        readProcess $ proc "python3" [] & setStdin (byteStringInput program)
-    case exitCode of
-        ExitSuccess -> pure $ TextL.toStrict $ decodeUtf8 out
-        ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
-  where
-    program = encodeUtf8 $(stextFile "Yesod/Auth/challenge.py")
+makeChallenge address = python3 $(stextFile "Yesod/Auth/challenge.py")
 
 -- | Returns address
 verifyResponse :: MonadHandler m => Text -> m Text
-verifyResponse envelope = do
+verifyResponse envelope = python3 $(stextFile "Yesod/Auth/verify.py")
+
+python3 :: MonadHandler m => TextL -> m Text
+python3 program = do
     (exitCode, out, err) <-
         liftIO $
-        readProcess $ proc "python3" [] & setStdin (byteStringInput program)
+        readProcess $
+        proc "python3" [] & setStdin (byteStringInput $ encodeUtf8 program)
     case exitCode of
         ExitSuccess -> pure $ Text.strip $ TextL.toStrict $ decodeUtf8 out
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
-  where
-    program = encodeUtf8 $(stextFile "Yesod/Auth/verify.py")
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => BaseUrl -> Text -> m ()
