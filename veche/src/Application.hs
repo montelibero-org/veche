@@ -101,7 +101,8 @@ makeFoundation appSettings = do
             let databaseIsEmpty = null userTableNameAsList
             if appDatabaseMigrate || databaseIsEmpty then
                 runMigration migrateAll
-            else
+            else do
+                putStrLn "NOT MIGRATING, but we have something to migrate:"
                 printMigration migrateAll
 
     -- Return the foundation

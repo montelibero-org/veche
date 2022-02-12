@@ -53,12 +53,11 @@ pluginName = "stellar"
 pluginRoute :: Route Auth
 pluginRoute = PluginR pluginName []
 
-data Config app =
-    Config
-        { horizon :: BaseUrl
-        , setVerifyKey :: Text -> Text -> WidgetFor app ()
-        , hasVerifyKey :: Text -> Text -> HandlerFor app Bool
-        }
+data Config app = Config
+    { horizon :: BaseUrl
+    , setVerifyKey :: Text -> Text -> WidgetFor app ()
+    , checkAndRemoveVerifyKey :: Text -> Text -> HandlerFor app Bool
+    }
 
 -- | Flow:
 -- 1. 'login' shows 'addressForm'.
@@ -93,13 +92,13 @@ responseForm =
         Nothing
 
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
-dispatch config@Config{hasVerifyKey} _method _path = do
+dispatch config@Config{checkAndRemoveVerifyKey} _method _path = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
             (address, nonce) <- verifyResponse response
             verifyAccount config address
-            ok <- liftHandler $ hasVerifyKey address nonce
+            ok <- liftHandler $ checkAndRemoveVerifyKey address nonce
             if ok then
                 setCredsRedirect
                     Creds

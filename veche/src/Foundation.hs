@@ -296,7 +296,7 @@ instance YesodAuth App where
 authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
 authStellarConfig App{appStellarHorizon} =
     Yesod.Auth.Stellar.Config
-        {horizon = appStellarHorizon, setVerifyKey, hasVerifyKey}
+        {horizon = appStellarHorizon, setVerifyKey, checkAndRemoveVerifyKey}
   where
 
     setVerifyKey :: Text -> Text -> Widget
@@ -308,16 +308,16 @@ authStellarConfig App{appStellarHorizon} =
 
     nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
 
-    hasVerifyKey :: Text -> Text -> Handler Bool
-    hasVerifyKey verifierUserIdent verifierKey = do
-        now <- liftIO getCurrentTime
-        mVerifier <-
-            runDB $ getBy $ UniqueVerifier verifierUserIdent verifierKey
-        pure
+    checkAndRemoveVerifyKey :: Text -> Text -> Handler Bool
+    checkAndRemoveVerifyKey verifierUserIdent verifierKey =
+        runDB do
+            mVerifier <- getBy $ UniqueVerifier verifierUserIdent verifierKey
             case mVerifier of
-                Nothing -> False
-                Just (Entity _ Verifier{verifierExpires}) ->
-                    now <= verifierExpires
+                Just (Entity verifierId Verifier{verifierExpires}) -> do
+                    delete verifierId
+                    now <- liftIO getCurrentTime
+                    pure $ now <= verifierExpires
+                Nothing -> pure False
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
