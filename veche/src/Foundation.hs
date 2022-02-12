@@ -20,6 +20,7 @@ import Import.NoFoundation
 import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
+import Data.Time (addUTCTime, secondsToNominalDiffTime)
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Servant.Client (BaseUrl)
 import Text.Hamlet (hamletFile)
@@ -290,9 +291,14 @@ instance YesodAuth App where
         authStellarConfig =
             Yesod.Auth.Stellar.Config
                 { horizon = appStellarHorizon
-                -- , upsertVerifyKey = \verifyKey ->
-                --     upsert User{} [UserVerifyKey =. verifyKey]
+                , setVerifyKey = \authNonceUserIdent authNonceValue ->
+                    liftHandler do
+                        now <- liftIO getCurrentTime
+                        let authNonceExpires = addUTCTime nonceTtl now
+                        runDB $ insert_ AuthNonce{..}
                 }
+
+        nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
 
         -- Enable authDummy login if enabled.
         extraAuthPlugins = [authDummy | appAuthDummyLogin]

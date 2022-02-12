@@ -55,10 +55,10 @@ pluginName = "stellar"
 pluginRoute :: Route Auth
 pluginRoute = PluginR pluginName []
 
-data Config =
+data Config app =
     Config
         { horizon :: BaseUrl
-        -- , upsertVerifyKey :: ()
+        , setVerifyKey :: Text -> Text -> WidgetFor app ()
         -- , getVerifyKey :: ()
         }
 
@@ -69,10 +69,13 @@ data Config =
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
-authStellar :: RenderMessage app FormMessage => Config -> AuthPlugin app
+authStellar :: RenderMessage app FormMessage => Config app -> AuthPlugin app
 authStellar config =
     AuthPlugin
-        {apName = pluginName, apLogin = login, apDispatch = dispatch config}
+        { apName     = pluginName
+        , apLogin    = login config
+        , apDispatch = dispatch config
+        }
 
 type Method = Text
 
@@ -91,7 +94,7 @@ responseForm =
         (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
         Nothing
 
-dispatch :: Config -> Method -> [Piece] -> AuthHandler app TypedContent
+dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch config _method _path = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
@@ -108,13 +111,14 @@ dispatch config _method _path = do
 
 login ::
     RenderMessage app FormMessage =>
-    (Route Auth -> Route app) -> WidgetFor app ()
-login routeToMaster = do
+    Config app -> (Route Auth -> Route app) -> WidgetFor app ()
+login Config{setVerifyKey} routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
         Nothing -> makeAddressForm
         Just address -> do
             nonce <- nonce128urlT nonceGenerator
+            setVerifyKey address nonce
             challenge <- makeChallenge address nonce
             makeResponseForm routeToMaster challenge
 
@@ -179,7 +183,7 @@ python3 program = do
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
 
 -- | Throws an exception on error
-verifyAccount :: MonadHandler m => Config -> Text -> m ()
+verifyAccount :: MonadHandler m => Config app -> Text -> m ()
 verifyAccount Config{horizon} address = do
     account <- getAccount'
     assert "account must be personal" $ isPersonal account
