@@ -31,9 +31,13 @@ import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
                    Route (PluginR), setCredsRedirect)
-import Yesod.Core (MonadHandler, TypedContent, WidgetFor, invalidArgs, liftIO,
-                   logErrorS, lookupGetParam, lookupPostParam, newIdent,
-                   notAuthenticated, whamlet)
+import Yesod.Core (HandlerSite, MonadHandler, RenderMessage, TypedContent,
+                   WidgetFor, invalidArgs, liftIO, logErrorS, lookupGetParam,
+                   newIdent, notAuthenticated, whamlet)
+import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), areq, fsName,
+                   generateFormPost, runFormPost, textareaField, unTextarea)
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
+                              renderBootstrap3)
 
 import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (..), Signer (..))
@@ -53,7 +57,7 @@ pluginRoute = PluginR pluginName []
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
-authStellar :: BaseUrl -> AuthPlugin app
+authStellar :: RenderMessage app FormMessage => BaseUrl -> AuthPlugin app
 authStellar baseUrl =
     AuthPlugin
         {apName = pluginName, apLogin = login, apDispatch = dispatch baseUrl}
@@ -62,25 +66,39 @@ type Method = Text
 
 type Piece = Text
 
+-- TODO runFormGet
 addressField :: Text
 addressField = "stellar_address"
 
-responseField :: Text
-responseField = "response"
+responseForm ::
+    (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
+    AForm m Text
+responseForm =
+    unTextarea <$>
+    areq
+        textareaField
+        (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
+        Nothing
 
 dispatch :: BaseUrl -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch baseUrl _method _path = do
-    mResponse <- lookupPostParam responseField
-    response <-
-        case mResponse of
-            Nothing -> invalidArgs [responseField <> " not found"]
-            Just response -> pure response
-    address <- verifyResponse response
-    verifyAccount baseUrl address
-    setCredsRedirect
-        Creds{credsPlugin = pluginName, credsIdent = address, credsExtra = []}
+    ((result, _formWidget), _formEnctype) <-
+        runFormPost $ renderBootstrap3 BootstrapBasicForm responseForm
+    case result of
+        FormSuccess response -> do
+            address <- verifyResponse response
+            verifyAccount baseUrl address
+            setCredsRedirect
+                Creds
+                    { credsPlugin   = pluginName
+                    , credsIdent    = address
+                    , credsExtra    = []
+                    }
+        _ -> invalidArgs [Text.pack $ show result]
 
-login :: (Route Auth -> Route app) -> WidgetFor app ()
+login ::
+    RenderMessage app FormMessage =>
+    (Route Auth -> Route app) -> WidgetFor app ()
 login routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
@@ -93,16 +111,18 @@ addressForm :: WidgetFor app ()
 addressForm = do
     ident <- newIdent
     [whamlet|
-        <form method="get">
-            <label for="#{ident}">
-                Stellar public address (starts with G):
-            <input id="#{ident}" type="text" name="#{addressField}">
-            <input type="submit" value="Next">
+        <form method=get>
+            <label for=#{ident}>Stellar public address (starts with G):
+            <input id=#{ident} type=text name=#{addressField}>
+            <button type=submit>Next
     |]
 
-challengeResponseForm :: (Route Auth -> Route app) -> Text -> WidgetFor app ()
+challengeResponseForm ::
+    RenderMessage app FormMessage =>
+    (Route Auth -> Route app) -> Text -> WidgetFor app ()
 challengeResponseForm routeToMaster challenge = do
-    ident <- newIdent
+    (formWidget, formEnctype) <-
+        generateFormPost $ renderBootstrap3 BootstrapBasicForm responseForm
     [whamlet|
         $newline never
         Sign this transaction, but do not submit it:
@@ -117,11 +137,9 @@ challengeResponseForm routeToMaster challenge = do
                 <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challenge}" target="_blank">
                     Sign in Lab
             ]
-        <form method="post" action="@{routeToMaster pluginRoute}">
-            <label for="#{ident}">Paste the signed piece here:
-            <div>
-                <textarea id="#{ident}" name="#{responseField}">
-            <input type="submit" value="Log in">
+        <form method=post action=@{routeToMaster pluginRoute} enctype=#{formEnctype} id=auth_stellar_response_form>
+            ^{formWidget}
+            <button type=submit .btn .btn-primary>Log in
     |]
 
 makeChallenge :: MonadHandler m => Text -> m Text

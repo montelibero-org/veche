@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Auth.StellarSpec (spec) where
@@ -49,10 +50,14 @@ spec =
             describe "authentication with tx-response" do
 
                 it "authenticates when correct tx-response (mainnet)" $
-                    testAuthenticationOk testGoodTxSignedForMainnet
+                    testAuthenticationOk
+                        testGoodPublicKey
+                        testGoodTxSignedForMainnet
 
                 it "authenticates when correct tx-response (testnet)" $
-                    testAuthenticationOk testGoodTxSignedForTestnet
+                    testAuthenticationOk
+                        testGoodPublicKey
+                        testGoodTxSignedForTestnet
 
                 it "doesn't authenticate when incorrect tx-response" do
                     request do
@@ -61,12 +66,15 @@ spec =
                         addPostParam "response" testGoodTxUnsinged
                     statusIs 400
 
-testAuthenticationOk :: Text -> YesodExample App ()
-testAuthenticationOk tx = do
+testAuthenticationOk :: Text -> Text -> YesodExample App ()
+testAuthenticationOk address tx = do
+    get (AuthR LoginR, [("stellar_address", address)])
+
     request do
         setMethod "POST"
         setUrl $ AuthR $ PluginR "stellar" []
         addPostParam "response" tx
+        addToken_ "#auth_stellar_response_form"
     statusIs 303 -- okay redirect
 
     get UserR
@@ -124,14 +132,7 @@ horizonTestApp = serve api horizonTestServer
     getAccount :: Text -> Servant.Handler Account
     getAccount address
         | address == testGoodPublicKey =
-            pure
-                Account
-                    { signers =
-                        [ Signer
-                            { weight    = 1
-                            , key       = testGoodPublicKey
-                            , type_     = Ed25519PublicKey
-                            }
-                        ]
-                    }
+            pure Account{signers = [signer testGoodPublicKey]}
         | otherwise = throwError err404
+
+    signer key = Signer{key, type_ = Ed25519PublicKey, weight = 1}

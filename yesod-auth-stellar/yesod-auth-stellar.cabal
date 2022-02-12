@@ -14,6 +14,7 @@ library
     , typed-process
     , yesod-auth
     , yesod-core
+    , yesod-form
 
   -- project
   build-depends:    stellar-horizon
