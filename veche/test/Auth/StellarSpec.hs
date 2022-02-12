@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Auth.StellarSpec (spec) where
@@ -38,7 +39,6 @@ spec =
                 it "shows challenge for address" do
                     get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
                     statusIs 200
-                    -- htmlCount ".stellar_challenge" 1
                     htmlAllContain ".stellar_challenge" $
                         Text.unpack testGoodTxUnsinged
 
@@ -116,11 +116,8 @@ testGoodTxSignedForTestnet =
     \Nm/CMBwyBtYXYooKhoKW6ky8A0hStCMH"
 
 withMockHorizon :: IO () -> IO ()
-withMockHorizon action =
-    bracket
-        (liftIO $ forkIO $ Warp.run 9999 horizonTestApp)
-        killThread
-        (const action)
+withMockHorizon =
+    bracket (forkIO $ Warp.run 9999 horizonTestApp) killThread . const
 
 horizonTestApp :: Wai.Application
 horizonTestApp = serve api horizonTestServer

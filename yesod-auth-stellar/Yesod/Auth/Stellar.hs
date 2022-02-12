@@ -199,16 +199,14 @@ verifyAccount baseUrl address = do
 runFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
-runFormPost form = Yesod.runFormPost $ renderBootstrap3 BootstrapBasicForm form
+runFormPost = Yesod.runFormPost . renderBootstrap3 BootstrapBasicForm
 
 generateFormGet ::
     MonadHandler m =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormGet form =
-    Yesod.generateFormGet' $ renderBootstrap3 BootstrapBasicForm form
+generateFormGet = Yesod.generateFormGet' . renderBootstrap3 BootstrapBasicForm
 
 generateFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormPost form =
-    Yesod.generateFormPost $ renderBootstrap3 BootstrapBasicForm form
+generateFormPost = Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
