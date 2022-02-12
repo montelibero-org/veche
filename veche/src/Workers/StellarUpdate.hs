@@ -75,6 +75,7 @@ stellarDataUpdater baseUrl connPool =
                 updateWhere
                     [StellarSignerTarget ==. target, StellarSignerKey ==. key]
                     [StellarSignerWeight =. weight]
+        pure $ length actual
 
     getAccount' address = do
         manager <- newTlsManager
