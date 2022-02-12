@@ -13,9 +13,12 @@ module Yesod.Auth.Stellar
     (
     -- * Auth plugin
       authStellar
+    , Config (..)
     ) where
 
 import Control.Exception (throwIO)
+import Crypto.Nonce (nonce128urlT)
+import Crypto.Nonce qualified
 import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
@@ -27,6 +30,7 @@ import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
+import System.IO.Unsafe (unsafePerformIO)
 import System.Process.Typed (byteStringInput, proc, readProcess, setStdin)
 import Text.Shakespeare.Text (stextFile)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
@@ -51,6 +55,13 @@ pluginName = "stellar"
 pluginRoute :: Route Auth
 pluginRoute = PluginR pluginName []
 
+data Config =
+    Config
+        { horizon :: BaseUrl
+        -- , upsertVerifyKey :: ()
+        -- , getVerifyKey :: ()
+        }
+
 -- | Flow:
 -- 1. 'login' shows 'addressForm'.
 -- 2. User enters address (public key).
@@ -58,10 +69,10 @@ pluginRoute = PluginR pluginName []
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
-authStellar :: RenderMessage app FormMessage => BaseUrl -> AuthPlugin app
-authStellar baseUrl =
+authStellar :: RenderMessage app FormMessage => Config -> AuthPlugin app
+authStellar config =
     AuthPlugin
-        {apName = pluginName, apLogin = login, apDispatch = dispatch baseUrl}
+        {apName = pluginName, apLogin = login, apDispatch = dispatch config}
 
 type Method = Text
 
@@ -80,13 +91,13 @@ responseForm =
         (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
         Nothing
 
-dispatch :: BaseUrl -> Method -> [Piece] -> AuthHandler app TypedContent
-dispatch baseUrl _method _path = do
+dispatch :: Config -> Method -> [Piece] -> AuthHandler app TypedContent
+dispatch config _method _path = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
             address <- verifyResponse response
-            verifyAccount baseUrl address
+            verifyAccount config address
             setCredsRedirect
                 Creds
                     { credsPlugin   = pluginName
@@ -103,7 +114,8 @@ login routeToMaster = do
     case mAddress of
         Nothing -> makeAddressForm
         Just address -> do
-            challenge <- makeChallenge address
+            nonce <- nonce128urlT nonceGenerator
+            challenge <- makeChallenge address nonce
             makeResponseForm routeToMaster challenge
 
 makeAddressForm :: RenderMessage app FormMessage => WidgetFor app ()
@@ -149,8 +161,8 @@ makeResponseForm routeToMaster challenge = do
             <button type=submit .btn .btn-primary>Log in
     |]
 
-makeChallenge :: MonadHandler m => Text -> m Text
-makeChallenge address = python3 $(stextFile "Yesod/Auth/challenge.py")
+makeChallenge :: MonadHandler m => Text -> Text -> m Text
+makeChallenge address nonce = python3 $(stextFile "Yesod/Auth/challenge.py")
 
 -- | Returns address
 verifyResponse :: MonadHandler m => Text -> m Text
@@ -167,8 +179,8 @@ python3 program = do
         ExitFailure _ -> invalidArgs [TextL.toStrict $ decodeUtf8 err]
 
 -- | Throws an exception on error
-verifyAccount :: MonadHandler m => BaseUrl -> Text -> m ()
-verifyAccount baseUrl address = do
+verifyAccount :: MonadHandler m => Config -> Text -> m ()
+verifyAccount Config{horizon} address = do
     account <- getAccount'
     assert "account must be personal" $ isPersonal account
   where
@@ -177,7 +189,7 @@ verifyAccount baseUrl address = do
         eResult <-
             liftIO do
                 manager <- newTlsManager
-                runClientM (getAccount address) $ mkClientEnv manager baseUrl
+                runClientM (getAccount address) $ mkClientEnv manager horizon
         case eResult of
             Left (FailureResponse _ Response{responseStatusCode})
                 | Status{statusCode = 404} <- responseStatusCode ->
@@ -210,3 +222,7 @@ generateFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
 generateFormPost = Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
+
+nonceGenerator :: Crypto.Nonce.Generator
+nonceGenerator = unsafePerformIO Crypto.Nonce.new
+{-# NOINLINE nonceGenerator #-}

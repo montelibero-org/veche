@@ -7,6 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -29,6 +30,7 @@ import Yesod.Default.Util (addStaticContentExternal)
 
 -- project
 import Yesod.Auth.Stellar (authStellar)
+import Yesod.Auth.Stellar qualified
 
 -- Used only when in "auth-dummy-login" setting is enabled.
 import Yesod.Auth.Dummy (authDummy)
@@ -282,8 +284,15 @@ instance YesodAuth App where
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins App{appSettings, appStellarHorizon} =
-        authStellar appStellarHorizon : extraAuthPlugins
+        authStellar authStellarConfig : extraAuthPlugins
       where
+
+        authStellarConfig =
+            Yesod.Auth.Stellar.Config
+                { horizon = appStellarHorizon
+                -- , upsertVerifyKey = \verifyKey ->
+                --     upsert User{} [UserVerifyKey =. verifyKey]
+                }
 
         -- Enable authDummy login if enabled.
         extraAuthPlugins = [authDummy | appAuthDummyLogin]

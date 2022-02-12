@@ -10,7 +10,6 @@ import TestImport
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
-import Data.Text qualified as Text
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant.Server (Server, err404, serve)
@@ -39,8 +38,7 @@ spec =
                 it "shows challenge for address" do
                     get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
                     statusIs 200
-                    htmlAllContain ".stellar_challenge" $
-                        Text.unpack testGoodTxUnsinged
+                    htmlCount ".stellar_challenge" 1
 
                 it "shows error for bad address" do
                     get (AuthR LoginR, [("stellar_address", "")])
