@@ -33,9 +33,10 @@ import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
                    Route (PluginR), setCredsRedirect)
 import Yesod.Core (HandlerSite, MonadHandler, RenderMessage, TypedContent,
                    WidgetFor, invalidArgs, liftIO, logErrorS, lookupGetParam,
-                   newIdent, notAuthenticated, whamlet)
-import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), areq, fsName,
-                   generateFormPost, runFormPost, textareaField, unTextarea)
+                   notAuthenticated, whamlet)
+import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
+                   fsName, textField, textareaField, unTextarea)
+import Yesod.Form qualified as Yesod
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
@@ -53,7 +54,7 @@ pluginRoute = PluginR pluginName []
 -- | Flow:
 -- 1. 'login' shows 'addressForm'.
 -- 2. User enters address (public key).
--- 3. 'login' shows 'challengeResponseForm' with challenge (dummy transaction)
+-- 3. 'login' shows 'responseForm' with challenge (dummy transaction)
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
@@ -66,7 +67,6 @@ type Method = Text
 
 type Piece = Text
 
--- TODO runFormGet
 addressField :: Text
 addressField = "stellar_address"
 
@@ -82,8 +82,7 @@ responseForm =
 
 dispatch :: BaseUrl -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch baseUrl _method _path = do
-    ((result, _formWidget), _formEnctype) <-
-        runFormPost $ renderBootstrap3 BootstrapBasicForm responseForm
+    ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
             address <- verifyResponse response
@@ -102,27 +101,35 @@ login ::
 login routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
-        Nothing -> addressForm
+        Nothing -> makeAddressForm
         Just address -> do
             challenge <- makeChallenge address
-            challengeResponseForm routeToMaster challenge
+            makeResponseForm routeToMaster challenge
 
-addressForm :: WidgetFor app ()
-addressForm = do
-    ident <- newIdent
+makeAddressForm :: RenderMessage app FormMessage => WidgetFor app ()
+makeAddressForm = do
+    (widget, enctype) <- generateFormGet addressForm
     [whamlet|
-        <form method=get>
-            <label for=#{ident}>Stellar public address (starts with G):
-            <input id=#{ident} type=text name=#{addressField}>
-            <button type=submit>Next
+        <form method=get enctype=#{enctype}>
+            ^{widget}
+            <button type=submit .btn .btn-primary>Next
     |]
 
-challengeResponseForm ::
+addressForm ::
+    (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
+    AForm m (Maybe Text)
+addressForm =
+    aopt
+        textField
+        (bfs ("Stellar public address (starts with G):" :: Text))
+            {fsName = Just "stellar_address"}
+        Nothing
+
+makeResponseForm ::
     RenderMessage app FormMessage =>
     (Route Auth -> Route app) -> Text -> WidgetFor app ()
-challengeResponseForm routeToMaster challenge = do
-    (formWidget, formEnctype) <-
-        generateFormPost $ renderBootstrap3 BootstrapBasicForm responseForm
+makeResponseForm routeToMaster challenge = do
+    (widget, enctype) <- generateFormPost responseForm
     [whamlet|
         $newline never
         Sign this transaction, but do not submit it:
@@ -137,8 +144,8 @@ challengeResponseForm routeToMaster challenge = do
                 <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challenge}" target="_blank">
                     Sign in Lab
             ]
-        <form method=post action=@{routeToMaster pluginRoute} enctype=#{formEnctype} id=auth_stellar_response_form>
-            ^{formWidget}
+        <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
+            ^{widget}
             <button type=submit .btn .btn-primary>Log in
     |]
 
@@ -188,3 +195,20 @@ verifyAccount baseUrl address = do
         case signers of
             [Signer{key, weight}]   -> key == address && weight > 0
             _                       -> False
+
+runFormPost ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
+runFormPost form = Yesod.runFormPost $ renderBootstrap3 BootstrapBasicForm form
+
+generateFormGet ::
+    MonadHandler m =>
+    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormGet form =
+    Yesod.generateFormGet' $ renderBootstrap3 BootstrapBasicForm form
+
+generateFormPost ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormPost form =
+    Yesod.generateFormPost $ renderBootstrap3 BootstrapBasicForm form

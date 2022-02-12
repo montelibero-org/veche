@@ -9,6 +9,7 @@ import TestImport
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
+import Data.Text qualified as Text
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant.Server (Server, err404, serve)
@@ -37,7 +38,9 @@ spec =
                 it "shows challenge for address" do
                     get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
                     statusIs 200
-                    htmlCount ".stellar_challenge" 1
+                    -- htmlCount ".stellar_challenge" 1
+                    htmlAllContain ".stellar_challenge" $
+                        Text.unpack testGoodTxUnsinged
 
                 it "shows error for bad address" do
                     get (AuthR LoginR, [("stellar_address", "")])
@@ -69,6 +72,7 @@ spec =
 testAuthenticationOk :: Text -> Text -> YesodExample App ()
 testAuthenticationOk address tx = do
     get (AuthR LoginR, [("stellar_address", address)])
+    statusIs 200
 
     request do
         setMethod "POST"
@@ -84,11 +88,7 @@ testAuthenticationOk address tx = do
     assertEq
         "users after auth"
         users
-        [ User
-            { userName = Nothing
-            , userStellarAddress = testGoodPublicKey
-            }
-        ]
+        [User{userName = Nothing, userStellarAddress = testGoodPublicKey}]
 
 testGoodPublicKey :: Text
 testGoodPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
