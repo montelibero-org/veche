@@ -58,12 +58,14 @@ spec =
             describe "authentication with tx-response" do
 
                 it "authenticates when correct tx-response (mainnet)" do
-                    testAuthenticationOk testGoodPublicKey
+                    testAuthenticationOk
+                        (testGoodPublicKey, testGoodSecretKey)
+                        mainnetPassphrase
 
-                -- it "authenticates when correct tx-response (testnet)" $
-                --     testAuthenticationOk
-                --         testGoodPublicKey
-                --         testGoodTxSignedForTestnet
+                it "authenticates when correct tx-response (testnet)" $
+                    testAuthenticationOk
+                        (testGoodPublicKey, testGoodSecretKey)
+                        testnetPassphrase
 
                 it "doesn't authenticate when incorrect tx-response" do
                     request do
@@ -72,15 +74,14 @@ spec =
                         addPostParam "response" testGoodTxUnsinged
                     statusIs 400
 
-testAuthenticationOk :: Text -> YesodExample App ()
-testAuthenticationOk address = do
+testAuthenticationOk :: (Text, Text) -> Text -> YesodExample App ()
+testAuthenticationOk (address, secretKey) networkPassphrase = do
     get (AuthR LoginR, [("stellar_address", address)])
     statusIs 200
 
     transactionXdr <-
         the . (content <=< descendant) . parseHTML . the <$>
         htmlQuery ".stellar_challenge"
-    let secretKey = testGoodSecretKey
     response <-
         either (error . Text.unpack) id <$> python3 $(stextFile "test/sign.py")
 
@@ -135,3 +136,9 @@ the :: HasCallStack => [a] -> a
 the = \case
     [a] -> a
     xs -> error $ "the: " <> show (length xs) <> " items"
+
+mainnetPassphrase :: Text
+mainnetPassphrase = "Public Global Stellar Network ; September 2015"
+
+testnetPassphrase :: Text
+testnetPassphrase = "Test SDF Network ; September 2015"
