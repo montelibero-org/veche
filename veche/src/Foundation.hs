@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -28,6 +30,9 @@ import Text.Jasmine (minifym)
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
+import Yesod.Form qualified as Yesod
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
+                              renderBootstrap3)
 
 -- project
 import Yesod.Auth.Stellar (authStellar)
@@ -382,5 +387,55 @@ isAuthRMay = \case
 
 maxOn :: Ord b => (a -> b) -> a -> a -> a
 maxOn f x y
-  | f x > f y = x
-  | otherwise = y
+    | f x > f y = x
+    | otherwise = y
+
+submitButton ::
+    (Monad m, RenderMessage (HandlerSite m) FormMessage) => Text -> Field m Text
+submitButton label = Field
+    { fieldParse = parseHelper Right
+    , fieldView = \theId name attrs val isReq ->
+        [whamlet|
+            $newline never
+            <button id=#{theId} name=#{name} type=submit *{attrs}
+                    :isReq:required value=#{either id id val}>
+                #{label}
+        |]
+    , fieldEnctype = UrlEncoded
+    }
+
+submitButtonReq ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    Text -> Text -> Text -> Text -> AForm m Text
+submitButtonReq extraClasses name value label =
+    areq
+        (submitButton label)
+        fieldSettings
+        (Just value)
+  where
+    fieldSettings0@FieldSettings{fsAttrs} = bfs (mempty :: Text)
+    fieldSettings =
+        fieldSettings0{fsName = Just name, fsAttrs = newClasses : fsAttrs}
+    newClasses =
+        ( "class"
+        , fromMaybe "" (lookup "class" fsAttrs) ++ " btn " ++ extraClasses
+        )
+
+-- | Bootstrap version of 'runFormPost'
+runFormPostBS ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
+runFormPostBS = Yesod.runFormPost . renderBootstrap3 BootstrapBasicForm
+
+-- | Bootstrap version of 'generateFormGet'
+generateFormGetBS ::
+    MonadHandler m =>
+    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormGetBS = Yesod.generateFormGet' . renderBootstrap3 BootstrapBasicForm
+
+-- | Bootstrap version of 'generateFormPost'
+generateFormPostBS ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormPostBS =
+    Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm

@@ -10,13 +10,9 @@ $if isEditAllowed
         <a .btn .btn-default href=@{IssueEditR issueId}>Edit
 $if isCloseReopenAllowed
     <div .pull-right>
-        <form method=post action=@{IssueR issueId}>
-            $if issueOpen
-                <input type=hidden name=action value=close>
-                <button type=submit .btn .btn-danger>Close
-            $else
-                <input type=hidden name=action value=reopen>
-                <button type=submit .btn .btn-success>Reopen
+        <form   action=@{IssueR issueId} enctype=#{closeReopenEnctype}
+                method=post>
+            ^{closeReopenWidget}
 
 <div .clearfix style="margin-bottom: 1em;">
 
@@ -31,14 +27,9 @@ $forall (vote, percentage, share) <- votes
                 #{share}
 
 $if isVoteAllowed
-    <form   .form-inline
-            action=@{IssueR issueId} method=post style="display: inline;">
-        <input type=hidden name=action value=approve>
-        <button type=submit .btn .btn-success>Approve
-    <form   .form-inline
-            action=@{IssueR issueId} method=post style="display: inline;">
-        <input type=hidden name=action value=reject>
-        <button type=submit .btn .btn-danger>Reject
+    <form .form-inline
+            action=@{IssueR issueId} enctype=#{voteEnctype} method=post>
+        ^{voteWidget}
 
 <div .clearfix style="margin-bottom: 1em;">
 

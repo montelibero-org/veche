@@ -92,6 +92,25 @@ Just x  ?| _        = pure x
 (?|>) :: Monad f => f (Maybe a) -> f a -> f a
 m ?|> k = m >>= (?| k)
 
+-- | Generate-only form; for its input, one must use 'actionForm'
+closeReopenForm :: Bool -> AForm Handler Void
+closeReopenForm issueOpen = do
+    if issueOpen then
+        submitButtonReq "btn-danger"  "action" "close"  "Close"
+    else
+        submitButtonReq "btn-success" "action" "reopen" "Reopen"
+    pure $ error "Void"
+
+-- | Generate-only form; for its input, one must use 'actionForm'
+voteForm :: AForm Handler Void
+voteForm = do
+    submitButtonReq "btn-success" "action" "approve" "Approve"
+    submitButtonReq "btn-danger"  "action" "reject"  "Reject"
+    pure $ error "Void"
+
+actionForm :: AForm Handler Text
+actionForm = areq textField ""{fsName = Just "action"} Nothing
+
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
     (userId, User{userStellarAddress}) <- requireAuthPair
@@ -129,6 +148,10 @@ getIssueR issueId = do
                     :: Double
                 share = show voteWeight <> "/" <> show (sum weights)
             ]
+
+    (closeReopenWidget, closeReopenEnctype) <-
+        generateFormPostBS $ closeReopenForm issueOpen
+    (voteWidget, voteEnctype) <- generateFormPostBS voteForm
 
     commentFormId <- newIdent
     commentListId <- newIdent
@@ -224,16 +247,21 @@ data Vote = Approve | Reject
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
-    mAction <- lookupPostParam "action"
-    case mAction of
-        Just "approve" -> addVote     Approve issueId
-        Just "reject"  -> addVote     Reject  issueId
-        Just "close"   -> changeState Close   issueId
-        Just "reopen"  -> changeState Reopen  issueId
-        Just "edit"    -> edit                issueId
-        _ ->
-            invalidArgs
-                ["action must be one of: approve, reject, close, reopen, edit"]
+    ((result, _widget), _enctype) <- runFormPostBS actionForm
+    case result of
+        FormSuccess action ->
+            case action of
+                "approve" -> addVote     Approve issueId
+                "reject"  -> addVote     Reject  issueId
+                "close"   -> changeState Close   issueId
+                "reopen"  -> changeState Reopen  issueId
+                "edit"    -> edit                issueId
+                _ ->
+                    invalidArgs
+                        [   "action must be one of: approve, reject, close,\
+                            \ reopen, edit"
+                        ]
+        _ -> invalidArgs [tshow result]
 
 edit :: IssueId -> Handler Html
 edit issueId = do
