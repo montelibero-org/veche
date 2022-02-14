@@ -379,3 +379,8 @@ isAuthRMay :: Maybe (Route App) -> Bool
 isAuthRMay = \case
     Just (AuthR _)  -> True
     _               -> False
+
+maxOn :: Ord b => (a -> b) -> a -> a -> a
+maxOn f x y
+  | f x > f y = x
+  | otherwise = y

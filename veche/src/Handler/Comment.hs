@@ -46,11 +46,14 @@ commentWidget CommentMaterialized{author, comment} =
     action :: Text
     action =
         case commentType of
-            CommentClose    -> "closed issue"
-            CommentEdit     -> "edited issue"
-            CommentReopen   -> "reopened issue"
-            CommentStart    -> "started issue"
-            CommentText     -> "commented"
+            CommentApprove      -> "approved"
+            CommentClose        -> "closed issue"
+            CommentEdit         -> "edited issue"
+            CommentReject       -> "rejected"
+            CommentReopen       -> "reopened issue"
+            CommentRequestInfo  -> "requested additional information"
+            CommentStart        -> "started issue"
+            CommentText         -> "commented"
 
 postCommentR :: Handler Value
 postCommentR = do

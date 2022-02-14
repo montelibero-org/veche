@@ -1,6 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,9 +19,12 @@ module Handler.Issue
     , postIssuesR
     ) where
 
-import Import
+import Import hiding (share)
 
 -- global
+import Data.HashMap.Strict qualified as HashMap
+import Data.HashSet qualified as HashSet
+import Data.Map.Strict qualified as Map
 import Database.Persist.Sql (rawSql)
 import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
@@ -90,14 +94,42 @@ m ?|> k = m >>= (?| k)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
-    (_, User{userStellarAddress}) <- requireAuthPair
+    (userId, User{userStellarAddress}) <- requireAuthPair
     Entity signerId _ <-
         runDB $ getBy403 $ UniqueSigner mtlFund userStellarAddress
     requireAuthz $ ReadIssue signerId
 
     IssueMaterialized{comments, issue, lastEdit} <- runDB $ loadIssue issueId
     let Issue{issueTitle, issueOpen} = issue
-    let IssueVersion{issueVersionBody} = lastEdit
+        IssueVersion{issueVersionBody} = lastEdit
+        issueE = Entity issueId issue
+    let isEditAllowed        = isAllowed $ EditIssue        issueE userId
+        isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
+        isVoteAllowed        = isAllowed $ AddVote signerId
+
+    signers <- runDB $ selectList [StellarSignerTarget ==. mtlFund] []
+    let weights =
+            Map.fromList
+                [ (stellarSignerKey, stellarSignerWeight)
+                | Entity _ signer <- signers
+                , let StellarSigner{stellarSignerKey, stellarSignerWeight} =
+                        signer
+                ]
+        votes =
+            [ (vote, percentage, share)
+            | (vote, users) <- Map.assocs $ collectVotes comments
+            , let
+                voteWeight =
+                    sum
+                        [ Map.findWithDefault 0 key weights
+                        | User{userStellarAddress = key} <- toList users
+                        ]
+                percentage =
+                    fromIntegral voteWeight / fromIntegral (sum weights) * 100
+                    :: Double
+                share = show voteWeight <> "/" <> show (sum weights)
+            ]
+
     commentFormId <- newIdent
     commentListId <- newIdent
     commentTextareaId <- newIdent
@@ -187,17 +219,24 @@ postIssuesR = do
 
 data StateAction = Close | Reopen
 
+data Vote = Approve | Reject
+    deriving (Eq, Ord, Show)
+
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
     mAction <- lookupPostParam "action"
     case mAction of
-        Just "close"  -> closeReopenIssue Close  issueId
-        Just "reopen" -> closeReopenIssue Reopen issueId
-        Just "edit"   -> editIssue               issueId
-        _ -> invalidArgs ["action must be one of: close, reopen, edit"]
+        Just "approve" -> addVote     Approve issueId
+        Just "reject"  -> addVote     Reject  issueId
+        Just "close"   -> changeState Close   issueId
+        Just "reopen"  -> changeState Reopen  issueId
+        Just "edit"    -> edit                issueId
+        _ ->
+            invalidArgs
+                ["action must be one of: approve, reject, close, reopen, edit"]
 
-editIssue :: IssueId -> Handler Html
-editIssue issueId = do
+edit :: IssueId -> Handler Html
+edit issueId = do
     ((result, formWidget), formEnctype) <-
         runFormPost $ renderBootstrap3 BootstrapBasicForm $ issueForm Nothing
     case result of
@@ -235,8 +274,29 @@ editIssue issueId = do
                     , commentType       = CommentEdit
                     }
 
-closeReopenIssue :: StateAction -> IssueId -> Handler a
-closeReopenIssue action issueId = do
+addVote :: Vote -> IssueId -> Handler Html
+addVote vote issueId = do
+    now <- liftIO getCurrentTime
+    (user, User{userStellarAddress}) <- requireAuthPair
+    runDB do
+        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        requireAuthz $ AddVote signerId
+        insert_
+            Comment
+                { commentAuthor     = user
+                , commentCreated    = now
+                , commentMessage    = ""
+                , commentParent     = Nothing
+                , commentIssue      = issueId
+                , commentType       =
+                    case vote of
+                        Approve -> CommentApprove
+                        Reject  -> CommentReject
+                }
+    redirect $ IssueR issueId
+
+changeState :: StateAction -> IssueId -> Handler a
+changeState action issueId = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
@@ -285,3 +345,27 @@ getIssueEditR issueId = do
         generateFormPost $
         renderBootstrap3 BootstrapBasicForm $ issueForm $ Just content
     defaultLayout $(widgetFile "issue-edit")
+
+collectVotes :: [CommentMaterialized] -> Map Vote (HashSet User)
+collectVotes comments =
+    Map.fromListWith
+        (<>)
+        [ (vote, HashSet.singleton author)
+        | (author, (_, vote)) <- HashMap.toList lastVotes
+        ]
+  where
+    lastVotes :: HashMap User (UTCTime, Vote)
+    lastVotes =
+        HashMap.fromListWith
+            (maxOn fst)
+            [ (author, (commentCreated, vote))
+            | CommentMaterialized
+                {author, comment = Comment{commentType, commentCreated}} <-
+                    comments
+            , Just vote <-
+                pure
+                    case commentType of
+                        CommentApprove -> Just Approve
+                        CommentReject  -> Just Reject
+                        _              -> Nothing
+            ]

@@ -14,15 +14,17 @@ data AuthzRequest
     | CreateIssue     StellarSignerId
     | ReadIssue       StellarSignerId
     | AddIssueComment StellarSignerId
+    | AddVote         StellarSignerId
     | EditIssue        (Entity Issue) UserId
     | CloseReopenIssue (Entity Issue) UserId
 
-authorize :: AuthzRequest -> Bool
-authorize = \case
+isAllowed :: AuthzRequest -> Bool
+isAllowed = \case
     ListIssues      (_proof :: StellarSignerId) -> True
     CreateIssue     (_proof :: StellarSignerId) -> True
     ReadIssue       (_proof :: StellarSignerId) -> True
     AddIssueComment (_proof :: StellarSignerId) -> True
+    AddVote         (_proof :: StellarSignerId) -> True
     EditIssue        issue user -> authzEditIssue issue user
     CloseReopenIssue issue user -> authzEditIssue issue user
   where
@@ -30,5 +32,5 @@ authorize = \case
 
 requireAuthz :: MonadHandler m => AuthzRequest -> m ()
 requireAuthz req
-    | authorize req = pure ()
+    | isAllowed req = pure ()
     | otherwise     = permissionDenied ""

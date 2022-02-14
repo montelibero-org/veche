@@ -5,26 +5,50 @@
     $else
         <span .badge .badge-danger>Closed
 
-<div .pull-left>
-    <a .btn .btn-default href=@{IssueEditR issueId}>Edit
-<div .pull-right>
-    <form method=post action=@{IssueR issueId}>
-        $if issueOpen
-            <input type=hidden name=action value=close>
-            <button type=submit .btn .btn-danger>Close
-        $else
-            <input type=hidden name=action value=reopen>
-            <button type=submit .btn .btn-success>Reopen
+$if isEditAllowed
+    <div .pull-left>
+        <a .btn .btn-default href=@{IssueEditR issueId}>Edit
+$if isCloseReopenAllowed
+    <div .pull-right>
+        <form method=post action=@{IssueR issueId}>
+            $if issueOpen
+                <input type=hidden name=action value=close>
+                <button type=submit .btn .btn-danger>Close
+            $else
+                <input type=hidden name=action value=reopen>
+                <button type=submit .btn .btn-success>Reopen
 
 <div .clearfix style="margin-bottom: 1em;">
 
 <div .panel .panel-primary>
     <div .panel-body>#{issueVersionBody}
 
+$forall (vote, percentage, share) <- votes
+    <label .col-sm-2 .text-right>#{show vote}
+    <div .col-sm-10>
+        <div .progress>
+            <div .progress-bar role=progressbar style="width: #{percentage}%;">
+                #{share}
+
+$if isVoteAllowed
+    <form   .form-inline
+            action=@{IssueR issueId} method=post style="display: inline;">
+        <input type=hidden name=action value=approve>
+        <button type=submit .btn .btn-success>Approve
+    <form   .form-inline
+            action=@{IssueR issueId} method=post style="display: inline;">
+        <input type=hidden name=action value=reject>
+        <button type=submit .btn .btn-danger>Reject
+
+<div .clearfix style="margin-bottom: 1em;">
+
 <div ##{commentListId}>
     $forall comment <- comments
         ^{commentWidget comment}
 <form ##{commentFormId}>
-    <textarea .form-control ##{commentTextareaId} placeholder="Your comment here..." required>
+    <textarea
+            .form-control
+            ##{commentTextareaId}
+            placeholder="Your comment here..." required>
     <button .btn.btn-primary type=submit>
         Add comment

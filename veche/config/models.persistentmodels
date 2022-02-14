@@ -29,6 +29,8 @@ StellarSigner
 
     UniqueSigner target key
 
+    deriving Show
+
 
 Issue
     author      UserId
@@ -57,5 +59,7 @@ User
     UniqueUser stellarAddress
 
     deriving Eq
+    deriving Generic
+    deriving Hashable
     deriving Show
     deriving Typeable
