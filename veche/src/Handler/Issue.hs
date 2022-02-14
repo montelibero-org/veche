@@ -26,8 +26,7 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist.Sql (rawSql)
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
-                              renderBootstrap3)
+import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
 import Genesis (mtlFund)
@@ -190,9 +189,7 @@ getIssueNewR = do
         (_, User{userStellarAddress}) <- requireAuthPair
         Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
         requireAuthz $ CreateIssue signerId
-    (formWidget, formEnctype) <-
-        generateFormPost $
-        renderBootstrap3 BootstrapBasicForm $ issueForm Nothing
+    (widget, enctype) <- generateFormPostBS $ issueForm Nothing
     defaultLayout $(widgetFile "issue-new")
 
 getIssuesR :: Handler Html
@@ -213,8 +210,7 @@ getIssuesR = do
 
 postIssuesR :: Handler Html
 postIssuesR = do
-    ((result, formWidget), formEnctype) <-
-        runFormPost $ renderBootstrap3 BootstrapBasicForm $ issueForm Nothing
+    ((result, widget), enctype) <- runFormPostBS $ issueForm Nothing
     case result of
         FormSuccess issue -> do
             issueId <- addIssue issue
@@ -272,10 +268,12 @@ postIssueR issueId = do
                         ]
         _ -> invalidArgs [tshow result]
 
+-- issueEditWidget :: IssueId -> Widget -> Enctype -> Widget
+-- issueEditWidget issueId widget enctype = $(widgetFile "issue-edit")
+
 edit :: IssueId -> Handler Html
 edit issueId = do
-    ((result, formWidget), formEnctype) <-
-        runFormPost $ renderBootstrap3 BootstrapBasicForm $ issueForm Nothing
+    ((result, widget), enctype) <- runFormPostBS $ issueForm Nothing
     case result of
         FormSuccess content -> do
             addIssueVersion content
@@ -378,9 +376,7 @@ getIssueEditR issueId = do
                             "Issue.current_version must exist\
                             \ in IssueVersion table")
             pure IssueContent{title = issueTitle, body = issueVersionBody}
-    (formWidget, formEnctype) <-
-        generateFormPost $
-        renderBootstrap3 BootstrapBasicForm $ issueForm $ Just content
+    (widget, enctype) <- generateFormPostBS $ issueForm $ Just content
     defaultLayout $(widgetFile "issue-edit")
 
 collectVotes :: [CommentMaterialized] -> Map Vote (HashSet User)
