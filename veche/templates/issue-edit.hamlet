@@ -1,7 +1,6 @@
 <form role=form method=post action=@{IssueR issueId} enctype=#{formEnctype}>
-    <input type=hidden name=action value=edit>
     ^{formWidget}
     <div .pull-left>
         <a .btn .btn-default href=@{IssueR issueId}>Cancel
     <div .pull-right>
-        <button type=submit .btn .btn-success>Save
+        <button type=submit name=action value=edit .btn .btn-success>Save
