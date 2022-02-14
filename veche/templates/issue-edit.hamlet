@@ -1,6 +1,0 @@
-<form role=form method=post action=@{IssueR issueId} enctype=#{enctype}>
-    ^{widget}
-    <div .pull-left>
-        <a .btn .btn-default href=@{IssueR issueId}>Cancel
-    <div .pull-right>
-        <button type=submit name=action value=edit .btn .btn-success>Save

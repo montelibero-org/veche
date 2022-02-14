@@ -1,3 +1,0 @@
-<form role=form method=post action=@{IssuesR} enctype=#{enctype}>
-    ^{widget}
-    <button type="submit" .btn .btn-success>Start dicussion

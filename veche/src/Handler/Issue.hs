@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -168,20 +169,44 @@ getIssueR issueId = do
 
 data IssueContent = IssueContent{title, body :: Text}
 
-issueForm :: Maybe IssueContent -> AForm Handler IssueContent
-issueForm previousContent = do
-    title <-
-        areq
-            textField
-            (bfs ("Title" :: Text)){fsName = Just "title"}
-            (title <$> previousContent)
-    body <-
-        unTextarea <$>
-        areq
-            textareaField
-            (bfs ("Message" :: Text)){fsName = Just "body"}
-            (Textarea . body <$> previousContent)
-    pure IssueContent{..}
+issueForm :: Maybe IssueContent -> BForm IssueContent
+issueForm previousContent =
+    bform do
+        title <-
+            areq
+                textField
+                (bfs ("Title" :: Text)){fsName = Just "title"}
+                (title <$> previousContent)
+        body <-
+            unTextarea <$>
+            areq
+                textareaField
+                (bfs ("Message" :: Text)){fsName = Just "body"}
+                (Textarea . body <$> previousContent)
+        pure IssueContent{..}
+
+editIssueForm :: IssueId -> Maybe IssueContent -> BForm IssueContent
+editIssueForm issueId previousContent =
+    (issueForm previousContent)
+        { action = Just $ IssueR issueId
+        , footer =
+            [whamlet|
+                <div .pull-left>
+                    <a .btn .btn-default href=@{IssueR issueId}>Cancel
+                <div .pull-right>
+                    <button .btn .btn-success
+                            type=submit name=action value=edit>
+                        Save
+            |]
+        }
+
+newIssueForm :: BForm IssueContent
+newIssueForm =
+    (issueForm Nothing)
+        { action = Just IssuesR
+        , footer =
+            [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
+        }
 
 getIssueNewR :: Handler Html
 getIssueNewR = do
@@ -189,8 +214,8 @@ getIssueNewR = do
         (_, User{userStellarAddress}) <- requireAuthPair
         Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
         requireAuthz $ CreateIssue signerId
-    (widget, enctype) <- generateFormPostBS $ issueForm Nothing
-    defaultLayout $(widgetFile "issue-new")
+    formWidget <- generateFormPostB newIssueForm
+    defaultLayout formWidget
 
 getIssuesR :: Handler Html
 getIssuesR = do
@@ -210,12 +235,12 @@ getIssuesR = do
 
 postIssuesR :: Handler Html
 postIssuesR = do
-    ((result, widget), enctype) <- runFormPostBS $ issueForm Nothing
+    (result, formWidget) <- runFormPostB newIssueForm
     case result of
         FormSuccess issue -> do
             issueId <- addIssue issue
             redirect $ IssueR issueId
-        _ -> defaultLayout $(widgetFile "issue-new")
+        _ -> defaultLayout formWidget
 
   where
 
@@ -268,17 +293,14 @@ postIssueR issueId = do
                         ]
         _ -> invalidArgs [tshow result]
 
--- issueEditWidget :: IssueId -> Widget -> Enctype -> Widget
--- issueEditWidget issueId widget enctype = $(widgetFile "issue-edit")
-
 edit :: IssueId -> Handler Html
 edit issueId = do
-    ((result, widget), enctype) <- runFormPostBS $ issueForm Nothing
+    (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
     case result of
         FormSuccess content -> do
             addIssueVersion content
             redirect $ IssueR issueId
-        _ -> defaultLayout $(widgetFile "issue-edit")
+        _ -> defaultLayout formWidget
 
   where
 
@@ -376,8 +398,8 @@ getIssueEditR issueId = do
                             "Issue.current_version must exist\
                             \ in IssueVersion table")
             pure IssueContent{title = issueTitle, body = issueVersionBody}
-    (widget, enctype) <- generateFormPostBS $ issueForm $ Just content
-    defaultLayout $(widgetFile "issue-edit")
+    formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
+    defaultLayout formWidget
 
 collectVotes :: [CommentMaterialized] -> Map Vote (HashSet User)
 collectVotes comments =

@@ -83,9 +83,6 @@ data MenuTypes
 -- type Widget = WidgetFor App ()
 mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
--- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
-
 -- | A convenient synonym for database access functions.
 type DB a = forall m. (MonadUnliftIO m) => ReaderT SqlBackend m a
 
@@ -418,9 +415,7 @@ instance IsString SubmitButton where
             , extraClasses  = []
             }
 
-submitButtonReq ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    SubmitButton -> AForm m Text
+submitButtonReq :: SubmitButton -> AForm Handler Text
 submitButtonReq SubmitButton{extraClasses, name, value, label} =
     areq
         (submitButton label)
@@ -436,19 +431,47 @@ submitButtonReq SubmitButton{extraClasses, name, value, label} =
 
 -- | Bootstrap version of 'runFormPost'
 runFormPostBS ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
+    AForm Handler a -> Handler ((FormResult a, Widget), Yesod.Enctype)
 runFormPostBS = Yesod.runFormPost . renderBootstrap3 BootstrapBasicForm
 
 -- | Bootstrap version of 'generateFormGet'
-generateFormGetBS ::
-    MonadHandler m =>
-    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormGetBS :: AForm Handler a -> Handler (Widget, Yesod.Enctype)
 generateFormGetBS = Yesod.generateFormGet' . renderBootstrap3 BootstrapBasicForm
 
 -- | Bootstrap version of 'generateFormPost'
-generateFormPostBS ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
+generateFormPostBS :: AForm Handler a -> Handler (Widget, Yesod.Enctype)
 generateFormPostBS =
     Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
+
+data BForm a = BForm
+    {aform :: AForm Handler a, action :: Maybe (Route App), footer :: Widget}
+
+bform :: AForm Handler a -> BForm a
+bform aform = BForm{aform, action = Nothing, footer = mempty}
+
+runFormPostB :: BForm a -> Handler (FormResult a, Widget)
+runFormPostB BForm{aform, action, footer} = do
+    urlRender <- getUrlRender
+    let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
+    ((result, fields), enctype) <-
+        Yesod.runFormPost $ renderBootstrap3 BootstrapBasicForm aform
+    let formWidget =
+            [whamlet|
+                <form *{attrs} enctype=#{enctype} method=post role=form>
+                    ^{fields}
+                    ^{footer}
+            |]
+    pure (result, formWidget)
+
+generateFormPostB :: BForm a -> Handler Widget
+generateFormPostB BForm{aform, action, footer} = do
+    urlRender <- getUrlRender
+    let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
+    (fields, enctype) <-
+        Yesod.generateFormPost $ renderBootstrap3 BootstrapBasicForm aform
+    pure
+        [whamlet|
+            <form *{attrs} enctype=#{enctype} method=post role=form>
+                ^{fields}
+                ^{footer}
+        |]
