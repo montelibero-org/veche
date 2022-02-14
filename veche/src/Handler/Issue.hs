@@ -26,7 +26,6 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist.Sql (rawSql)
-import Text.Julius (rawJS)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
@@ -153,9 +152,6 @@ getIssueR issueId = do
         generateFormPostBS $ closeReopenForm issueOpen
     (voteWidget, voteEnctype) <- generateFormPostBS voteForm
 
-    commentFormId <- newIdent
-    commentListId <- newIdent
-    commentTextareaId <- newIdent
     defaultLayout $(widgetFile "issue")
 
 data IssueContent = IssueContent{title, body :: Text}

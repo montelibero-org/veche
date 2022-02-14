@@ -33,13 +33,10 @@ $if isVoteAllowed
 
 <div .clearfix style="margin-bottom: 1em;">
 
-<div ##{commentListId}>
+<div #commentListId>
     $forall comment <- comments
         ^{commentWidget comment}
-<form ##{commentFormId}>
-    <textarea
-            .form-control
-            ##{commentTextareaId}
-            placeholder="Your comment here..." required>
-    <button .btn.btn-primary type=submit>
-        Add comment
+<form #commentFormId>
+    <textarea .form-control #commentTextareaId
+        placeholder="Your comment here..." required>
+    <button .btn .btn-primary type=submit>Add comment
