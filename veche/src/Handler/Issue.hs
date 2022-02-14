@@ -94,17 +94,26 @@ m ?|> k = m >>= (?| k)
 -- | Generate-only form; for its input, one must use 'actionForm'
 closeReopenForm :: Bool -> AForm Handler Void
 closeReopenForm issueOpen = do
-    if issueOpen then
-        submitButtonReq "btn-danger"  "action" "close"  "Close"
-    else
-        submitButtonReq "btn-success" "action" "reopen" "Reopen"
+    submitButtonReq
+        if issueOpen then
+            "Close"
+                {name = "action", value = "close", extraClasses = "btn-danger"}
+        else
+            "Reopen"
+                { name          = "action"
+                , value         = "reopen"
+                , extraClasses  = "btn-success"
+                }
     pure $ error "Void"
 
 -- | Generate-only form; for its input, one must use 'actionForm'
 voteForm :: AForm Handler Void
 voteForm = do
-    submitButtonReq "btn-success" "action" "approve" "Approve"
-    submitButtonReq "btn-danger"  "action" "reject"  "Reject"
+    submitButtonReq
+        "Approve"
+            {name = "action", value = "approve", extraClasses = "btn-success"}
+    submitButtonReq
+        "Reject"{name = "action", value = "reject", extraClasses = "btn-danger"}
     pure $ error "Void"
 
 actionForm :: AForm Handler Text

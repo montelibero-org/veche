@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
@@ -21,6 +22,7 @@ import Import.NoFoundation
 -- global
 import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
+import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TE
 import Data.Time (addUTCTime, secondsToNominalDiffTime)
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
@@ -404,10 +406,21 @@ submitButton label = Field
     , fieldEnctype = UrlEncoded
     }
 
+data SubmitButton = SubmitButton{extraClasses, name, value, label :: Text}
+
+instance IsString SubmitButton where
+    fromString label =
+        SubmitButton
+            { label         = fromString label
+            , extraClasses  = Text.empty
+            , name          = Text.empty
+            , value         = Text.empty
+            }
+
 submitButtonReq ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    Text -> Text -> Text -> Text -> AForm m Text
-submitButtonReq extraClasses name value label =
+    SubmitButton -> AForm m Text
+submitButtonReq SubmitButton{extraClasses, name, value, label} =
     areq
         (submitButton label)
         fieldSettings
