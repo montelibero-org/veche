@@ -97,12 +97,15 @@ closeReopenForm issueOpen = do
     submitButtonReq
         if issueOpen then
             "Close"
-                {name = "action", value = "close", extraClasses = "btn-danger"}
+                { name          = "action"
+                , value         = "close"
+                , extraClasses  = ["btn-danger"]
+                }
         else
             "Reopen"
                 { name          = "action"
                 , value         = "reopen"
-                , extraClasses  = "btn-success"
+                , extraClasses  = ["btn-success"]
                 }
     pure $ error "Void"
 
@@ -111,9 +114,10 @@ voteForm :: AForm Handler Void
 voteForm = do
     submitButtonReq
         "Approve"
-            {name = "action", value = "approve", extraClasses = "btn-success"}
+            {name = "action", value = "approve", extraClasses = ["btn-success"]}
     submitButtonReq
-        "Reject"{name = "action", value = "reject", extraClasses = "btn-danger"}
+        "Reject"
+            {name = "action", value = "reject", extraClasses = ["btn-danger"]}
     pure $ error "Void"
 
 actionForm :: AForm Handler Text

@@ -406,15 +406,16 @@ submitButton label = Field
     , fieldEnctype = UrlEncoded
     }
 
-data SubmitButton = SubmitButton{extraClasses, name, value, label :: Text}
+data SubmitButton = SubmitButton
+    {name, value, label :: Text, extraClasses :: [Text]}
 
 instance IsString SubmitButton where
     fromString label =
         SubmitButton
             { label         = fromString label
-            , extraClasses  = Text.empty
             , name          = Text.empty
             , value         = Text.empty
+            , extraClasses  = []
             }
 
 submitButtonReq ::
@@ -428,11 +429,10 @@ submitButtonReq SubmitButton{extraClasses, name, value, label} =
   where
     fieldSettings0@FieldSettings{fsAttrs} = bfs (mempty :: Text)
     fieldSettings =
-        fieldSettings0{fsName = Just name, fsAttrs = newClasses : fsAttrs}
-    newClasses =
-        ( "class"
-        , fromMaybe "" (lookup "class" fsAttrs) ++ " btn " ++ extraClasses
-        )
+        fieldSettings0
+            { fsName  = Just name
+            , fsAttrs = foldr addClass fsAttrs $ "btn" : extraClasses
+            }
 
 -- | Bootstrap version of 'runFormPost'
 runFormPostBS ::
