@@ -91,37 +91,34 @@ Just x  ?| _        = pure x
 (?|>) :: Monad f => f (Maybe a) -> f a -> f a
 m ?|> k = m >>= (?| k)
 
+actionButton :: Text -> Text -> [Text] -> AForm Handler Void
+actionButton value label extraClasses =
+    submitButtonReq SubmitButton{name = "action", value, label, extraClasses}
+    $> error "Void"
+
 -- | Generate-only form; for its input, one must use 'actionForm'
-closeReopenForm :: Bool -> AForm Handler Void
-closeReopenForm issueOpen = do
-    submitButtonReq
+closeReopenForm :: IssueId -> Bool -> Form Void
+closeReopenForm issueId issueOpen =
+    (bform
         if issueOpen then
-            "Close"
-                { name          = "action"
-                , value         = "close"
-                , extraClasses  = ["btn-danger"]
-                }
+            actionButton "close" "Close" ["btn-danger"]
         else
-            "Reopen"
-                { name          = "action"
-                , value         = "reopen"
-                , extraClasses  = ["btn-success"]
-                }
-    pure $ error "Void"
+            actionButton "reopen" "Reopen" ["btn-success"]
+    )
+        {action = Just $ IssueR issueId}
 
 -- | Generate-only form; for its input, one must use 'actionForm'
-voteForm :: AForm Handler Void
-voteForm = do
-    submitButtonReq
-        "Approve"
-            {name = "action", value = "approve", extraClasses = ["btn-success"]}
-    submitButtonReq
-        "Reject"
-            {name = "action", value = "reject", extraClasses = ["btn-danger"]}
-    pure $ error "Void"
+voteForm :: IssueId -> Form Void
+voteForm issueId =
+    (bform
+        (  actionButton "approve" "Approve" ["btn-success"]
+        *> actionButton "reject"  "Reject"  ["btn-danger"]
+        )
+    )
+        {action = Just $ IssueR issueId, extraClasses = ["form-inline"]}
 
-actionForm :: AForm Handler Text
-actionForm = areq textField ""{fsName = Just "action"} Nothing
+actionForm :: Form Text
+actionForm = bform $ areq textField ""{fsName = Just "action"} Nothing
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -161,9 +158,8 @@ getIssueR issueId = do
                 share = show voteWeight <> "/" <> show (sum weights)
             ]
 
-    (closeReopenWidget, closeReopenEnctype) <-
-        generateFormPostBS $ closeReopenForm issueOpen
-    (voteWidget, voteEnctype) <- generateFormPostBS voteForm
+    closeReopenWidget <- generateFormPostB $ closeReopenForm issueId issueOpen
+    voteWidget        <- generateFormPostB $ voteForm        issueId
 
     defaultLayout $(widgetFile "issue")
 
@@ -171,7 +167,7 @@ data IssueContent = IssueContent{title, body :: Text}
 
 issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
-    formB do
+    bform do
         title <-
             areq
                 textField
@@ -277,7 +273,7 @@ data Vote = Approve | Reject
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
-    ((result, _widget), _enctype) <- runFormPostBS actionForm
+    (result, _widget) <- runFormPostB actionForm
     case result of
         FormSuccess action ->
             case action of

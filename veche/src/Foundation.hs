@@ -22,26 +22,23 @@ import Import.NoFoundation
 -- global
 import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
-import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TE
 import Data.Time (addUTCTime, secondsToNominalDiffTime)
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Servant.Client (BaseUrl)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
+import Yesod.Auth.Dummy (authDummy)
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
-import Yesod.Form qualified as Yesod
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
-                              renderBootstrap3)
 
 -- project
 import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
--- Used only when in "auth-dummy-login" setting is enabled.
-import Yesod.Auth.Dummy (authDummy)
+-- component
+import Form (BForm)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -389,89 +386,4 @@ maxOn f x y
     | f x > f y = x
     | otherwise = y
 
-submitButton ::
-    (Monad m, RenderMessage (HandlerSite m) FormMessage) => Text -> Field m Text
-submitButton label = Field
-    { fieldParse = parseHelper Right
-    , fieldView = \theId name attrs val isReq ->
-        [whamlet|
-            $newline never
-            <button id=#{theId} name=#{name} type=submit *{attrs}
-                    :isReq:required value=#{either id id val}>
-                #{label}
-        |]
-    , fieldEnctype = UrlEncoded
-    }
-
-data SubmitButton = SubmitButton
-    {name, value, label :: Text, extraClasses :: [Text]}
-
-instance IsString SubmitButton where
-    fromString label =
-        SubmitButton
-            { label         = fromString label
-            , name          = Text.empty
-            , value         = Text.empty
-            , extraClasses  = []
-            }
-
-submitButtonReq :: SubmitButton -> AForm Handler Text
-submitButtonReq SubmitButton{extraClasses, name, value, label} =
-    areq
-        (submitButton label)
-        fieldSettings
-        (Just value)
-  where
-    fieldSettings0@FieldSettings{fsAttrs} = bfs (mempty :: Text)
-    fieldSettings =
-        fieldSettings0
-            { fsName  = Just name
-            , fsAttrs = foldr addClass fsAttrs $ "btn" : extraClasses
-            }
-
--- | Bootstrap version of 'runFormPost'
-runFormPostBS ::
-    AForm Handler a -> Handler ((FormResult a, Widget), Yesod.Enctype)
-runFormPostBS = Yesod.runFormPost . renderBootstrap3 BootstrapBasicForm
-
--- | Bootstrap version of 'generateFormGet'
-generateFormGetBS :: AForm Handler a -> Handler (Widget, Yesod.Enctype)
-generateFormGetBS = Yesod.generateFormGet' . renderBootstrap3 BootstrapBasicForm
-
--- | Bootstrap version of 'generateFormPost'
-generateFormPostBS :: AForm Handler a -> Handler (Widget, Yesod.Enctype)
-generateFormPostBS =
-    Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
-
-data Form a = Form
-    {aform :: AForm Handler a, action :: Maybe (Route App), footer :: Widget}
-
-formB :: AForm Handler a -> Form a
-formB aform = Form{aform, action = Nothing, footer = mempty}
-
-runFormPostB :: Form a -> Handler (FormResult a, Widget)
-runFormPostB Form{aform, action, footer} = do
-    urlRender <- getUrlRender
-    let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
-    ((result, fields), enctype) <-
-        Yesod.runFormPost $ renderBootstrap3 BootstrapBasicForm aform
-    let formWidget =
-            [whamlet|
-                <form *{attrs} enctype=#{enctype} method=post role=form>
-                    ^{fields}
-                    ^{footer}
-            |]
-    pure (result, formWidget)
-
-generateFormPostB :: Form a -> Handler Widget
-generateFormPostB Form{aform, action, footer} = do
-    urlRender <- getUrlRender
-    let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
-    (fields, enctype) <-
-        Yesod.generateFormPost $ renderBootstrap3 BootstrapBasicForm aform
-    pure
-        [whamlet|
-            <form *{attrs} enctype=#{enctype} method=post role=form>
-                ^{fields}
-                ^{footer}
-        |]
+type Form = BForm Handler
