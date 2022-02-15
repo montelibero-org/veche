@@ -18,6 +18,7 @@ library
     Genesis
     Handler.Comment
     Handler.Common
+    Handler.Dashboard
     Handler.Issue
     Handler.User
     Import

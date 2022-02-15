@@ -126,7 +126,8 @@ instance Yesod App where
 
         -- Define the menu items of the header.
         let menuItems =
-                [ NavbarLeft $ menuItem "Issues" IssuesR
+                [ NavbarLeft $ menuItem "Dashboard" DashboardR
+                , NavbarLeft $ menuItem "Issues" IssuesR
                 , NavbarRight
                     (menuItem "Profile" UserR){accessCallback = isJust muser}
                 , NavbarRight
@@ -182,6 +183,7 @@ instance Yesod App where
             StaticR _       -> pure Authorized
             -- Routes requiring authentication.
             CommentR        -> isAuthenticated
+            DashboardR      -> isAuthenticated
             IssueEditR _    -> isAuthenticated
             IssueNewR       -> isAuthenticated
             IssueR _        -> isAuthenticated
@@ -255,7 +257,7 @@ instance YesodAuth App where
 
     -- Where to send a user after successful login
     loginDest :: App -> Route App
-    loginDest _ = UserR
+    loginDest _ = DashboardR
 
     -- Where to send a user after logout
     logoutDest :: App -> Route App
