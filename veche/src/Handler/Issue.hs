@@ -1,15 +1,9 @@
-{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Handler.Issue
     ( getIssueEditR
@@ -27,11 +21,13 @@ import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist.Sql (rawSql)
-import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
 import Genesis (mtlFund)
 import Handler.Comment (CommentMaterialized (..), commentWidget)
+import Issue (IssueContent (..))
+import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
+                        newIssueForm, voteForm)
 import Types (CommentType (..))
 
 data IssueMaterialized = IssueMaterialized
@@ -49,7 +45,7 @@ loadIssueComments issueId = do
             \ WHERE Comment.issue == ?"
             [toPersistValue issueId]
     pure
-        [ CommentMaterialized{..}
+        [ CommentMaterialized{comment, author}
         | (Entity _ comment, Entity _ author) <- comments
         ]
 
@@ -82,7 +78,7 @@ loadIssue issueId = do
         ?|> lift
                 (constraintFail
                     "Issue.current_version must exist in IssueVersion table")
-    pure IssueMaterialized{..}
+    pure IssueMaterialized{issue, comments, lastEdit}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
 Nothing ?| action   = action
@@ -90,35 +86,6 @@ Just x  ?| _        = pure x
 
 (?|>) :: Monad f => f (Maybe a) -> f a -> f a
 m ?|> k = m >>= (?| k)
-
-actionButton :: Text -> Text -> [Text] -> AForm Handler Void
-actionButton value label extraClasses =
-    submitButtonReq SubmitButton{name = "action", value, label, extraClasses}
-    $> error "Void"
-
--- | Generate-only form; for its input, one must use 'actionForm'
-closeReopenForm :: IssueId -> Bool -> Form Void
-closeReopenForm issueId issueOpen =
-    (bform
-        if issueOpen then
-            actionButton "close" "Close" ["btn-danger"]
-        else
-            actionButton "reopen" "Reopen" ["btn-success"]
-    )
-        {action = Just $ IssueR issueId}
-
--- | Generate-only form; for its input, one must use 'actionForm'
-voteForm :: IssueId -> Form Void
-voteForm issueId =
-    (bform
-        (  actionButton "approve" "Approve" ["btn-success"]
-        *> actionButton "reject"  "Reject"  ["btn-danger"]
-        )
-    )
-        {action = Just $ IssueR issueId, extraClasses = ["form-inline"]}
-
-actionForm :: Form Text
-actionForm = bform $ areq textField ""{fsName = Just "action"} Nothing
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -162,47 +129,6 @@ getIssueR issueId = do
     voteWidget        <- generateFormPostB $ voteForm        issueId
 
     defaultLayout $(widgetFile "issue")
-
-data IssueContent = IssueContent{title, body :: Text}
-
-issueForm :: Maybe IssueContent -> Form IssueContent
-issueForm previousContent =
-    bform do
-        title <-
-            areq
-                textField
-                (bfs ("Title" :: Text)){fsName = Just "title"}
-                (title <$> previousContent)
-        body <-
-            unTextarea <$>
-            areq
-                textareaField
-                (bfs ("Message" :: Text)){fsName = Just "body"}
-                (Textarea . body <$> previousContent)
-        pure IssueContent{..}
-
-editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
-editIssueForm issueId previousContent =
-    (issueForm previousContent)
-        { action = Just $ IssueR issueId
-        , footer =
-            [whamlet|
-                <div .pull-left>
-                    <a .btn .btn-default href=@{IssueR issueId}>Cancel
-                <div .pull-right>
-                    <button .btn .btn-success
-                            type=submit name=action value=edit>
-                        Save
-            |]
-        }
-
-newIssueForm :: Form IssueContent
-newIssueForm =
-    (issueForm Nothing)
-        { action = Just IssuesR
-        , footer =
-            [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
-        }
 
 getIssueNewR :: Handler Html
 getIssueNewR = do

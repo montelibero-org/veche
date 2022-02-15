@@ -22,9 +22,11 @@ library
     Handler.User
     Import
     Import.NoFoundation
+    Issue
     Model
     Settings
     Settings.StaticFiles
+    Templates.Issue
     Types
     Workers.StellarUpdate
 
