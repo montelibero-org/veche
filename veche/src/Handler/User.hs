@@ -3,16 +3,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Handler.User (getUserR, putUserR, userNameWidget) where
+module Handler.User (getUserR, putUserR) where
 
 import Import
 
@@ -48,12 +45,3 @@ putUserR = do
 
   where
     isValid = Text.all \c -> isAscii c && isPrint c
-
-userNameWidget :: User -> Html
-userNameWidget User{userName, userStellarAddress} =
-    toHtml $
-    case userName of
-        Just name -> name <> " (" <> abbreviatedAddress <> ")"
-        Nothing -> abbreviatedAddress
-  where
-    abbreviatedAddress = "*" <> Text.takeEnd 4 userStellarAddress

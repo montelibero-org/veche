@@ -16,7 +16,7 @@ import GHC.Stack (HasCallStack)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
-import Issue (IssueContent (..))
+import Types.Issue (IssueContent (..))
 
 actionButton :: Text -> Text -> [Text] -> AForm Handler Void
 actionButton value label extraClasses =

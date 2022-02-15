@@ -2,13 +2,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Handler.Comment
-    ( CommentMaterialized (..)
-    , commentWidget
-    , postCommentR
+    ( postCommentR
     ) where
 
 import Import
@@ -16,44 +12,12 @@ import Import
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
 import Genesis (mtlFund)
-import Handler.User (userNameWidget)
+import Templates.Comment (commentWidget)
 import Types (CommentType (..))
+import Types.Comment (CommentMaterialized (..))
 
 data CommentRequest = CommentRequest{message :: Text, issue :: IssueId}
     deriving (FromJSON, Generic)
-
-data CommentMaterialized = CommentMaterialized
-    { comment   :: Comment
-    , author    :: User
-    }
-
-commentWidget :: CommentMaterialized -> Html
-commentWidget CommentMaterialized{author, comment} =
-    [shamlet|
-        <div .panel .panel-default>
-            <div .panel-heading>
-                <span .comment_author>#{userNameWidget author}
-                <span .comment_action>#{action}
-                on
-                <span .comment_timestamp>#{show commentCreated}
-            $if commentMessage /= ""
-                <div .panel-body>#{commentMessage}
-    |]
-  where
-
-    Comment{commentMessage, commentType, commentCreated} = comment
-
-    action :: Text
-    action =
-        case commentType of
-            CommentApprove      -> "approved"
-            CommentClose        -> "closed issue"
-            CommentEdit         -> "edited issue"
-            CommentReject       -> "rejected"
-            CommentReopen       -> "reopened issue"
-            CommentRequestInfo  -> "requested additional information"
-            CommentStart        -> "started issue"
-            CommentText         -> "commented"
 
 postCommentR :: Handler Value
 postCommentR = do

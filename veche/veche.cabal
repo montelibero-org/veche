@@ -22,12 +22,15 @@ library
     Handler.User
     Import
     Import.NoFoundation
-    Issue
     Model
     Settings
     Settings.StaticFiles
+    Templates.Comment
     Templates.Issue
+    Templates.User
     Types
+    Types.Comment
+    Types.Issue
     Workers.StellarUpdate
 
   hs-source-dirs:     src

@@ -1,4 +1,4 @@
-module Issue where
+module Types.Issue where
 
 import Import
 

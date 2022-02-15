@@ -24,11 +24,12 @@ import Database.Persist.Sql (rawSql)
 
 -- component
 import Genesis (mtlFund)
-import Handler.Comment (CommentMaterialized (..), commentWidget)
-import Issue (IssueContent (..))
+import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
 import Types (CommentType (..))
+import Types.Comment (CommentMaterialized (..))
+import Types.Issue (IssueContent (..))
 
 data IssueMaterialized = IssueMaterialized
     { issue     :: Issue
