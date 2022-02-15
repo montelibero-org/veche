@@ -34,12 +34,12 @@ submitButton label =
         }
 
 data SubmitButton = SubmitButton
-    {name, value, label :: Text, extraClasses :: [Text]}
+    {name, value, label :: Text, classes :: [Text]}
 
 submitButtonReq ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     SubmitButton -> AForm m Text
-submitButtonReq SubmitButton{extraClasses, name, value, label} =
+submitButtonReq SubmitButton{classes, name, value, label} =
     areq
         (submitButton label)
         fieldSettings
@@ -49,18 +49,18 @@ submitButtonReq SubmitButton{extraClasses, name, value, label} =
     fieldSettings =
         fieldSettings0
             { fsName  = Just name
-            , fsAttrs = foldr addClass fsAttrs $ "btn" : extraClasses
+            , fsAttrs = foldr addClass fsAttrs $ "btn" : classes
             }
 
 data BForm m a = BForm
-    { action        :: Maybe (Route (HandlerSite m))
-    , extraClasses  :: [Text]
-    , aform         :: AForm m a
-    , footer        :: WidgetFor (HandlerSite m) ()
+    { action  :: Maybe (Route (HandlerSite m))
+    , classes :: [Text]
+    , aform   :: AForm m a
+    , footer  :: WidgetFor (HandlerSite m) ()
     }
 
 bform :: AForm m a -> BForm m a
-bform aform = BForm{aform, action = Nothing, footer = mempty, extraClasses = []}
+bform aform = BForm{aform, action = Nothing, footer = mempty, classes = []}
 
 makeFormWidget ::
     Text ->
@@ -68,12 +68,12 @@ makeFormWidget ::
     WidgetFor (HandlerSite m) () ->
     Enctype ->
     WidgetFor (HandlerSite m) ()
-makeFormWidget method BForm{action, footer, extraClasses} fields enctype = do
+makeFormWidget method BForm{action, footer, classes} fields enctype = do
     urlRender <- getUrlRender
     let attrs =
             ("method", method)
             :   [("action", urlRender act) | Just act <- [action]]
-            ++  foldr addClass [] extraClasses
+            ++  foldr addClass [] classes
     [whamlet|
         <form *{attrs} enctype=#{enctype} method=post role=form>
             ^{fields}

@@ -7,7 +7,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Templates.Issue where
+module Templates.Issue
+    ( actionForm
+    , closeReopenForm
+    , editIssueForm
+    , newIssueForm
+    , voteForm
+    ) where
 
 import Import
 
@@ -19,8 +25,8 @@ import Yesod.Form.Bootstrap3 (bfs)
 import Types.Issue (IssueContent (..))
 
 actionButton :: Text -> Text -> [Text] -> AForm Handler Void
-actionButton value label extraClasses =
-    submitButtonReq SubmitButton{name = "action", value, label, extraClasses}
+actionButton value label classes =
+    submitButtonReq SubmitButton{name = "action", value, label, classes}
     $> error "Void"
 
 -- | Generate-only form; for its input, one must use 'actionForm'
@@ -42,7 +48,7 @@ voteForm issueId =
         *> actionButton "reject"  "Reject"  ["btn-danger"]
         )
     )
-        {action = Just $ IssueR issueId, extraClasses = ["form-inline"]}
+        {action = Just $ IssueR issueId, classes = ["form-inline"]}
 
 actionForm :: HasCallStack => Form Text
 actionForm =
