@@ -169,9 +169,9 @@ getIssueR issueId = do
 
 data IssueContent = IssueContent{title, body :: Text}
 
-issueForm :: Maybe IssueContent -> BForm IssueContent
+issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
-    bform do
+    formB do
         title <-
             areq
                 textField
@@ -185,7 +185,7 @@ issueForm previousContent =
                 (Textarea . body <$> previousContent)
         pure IssueContent{..}
 
-editIssueForm :: IssueId -> Maybe IssueContent -> BForm IssueContent
+editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
 editIssueForm issueId previousContent =
     (issueForm previousContent)
         { action = Just $ IssueR issueId
@@ -200,7 +200,7 @@ editIssueForm issueId previousContent =
             |]
         }
 
-newIssueForm :: BForm IssueContent
+newIssueForm :: Form IssueContent
 newIssueForm =
     (issueForm Nothing)
         { action = Just IssuesR

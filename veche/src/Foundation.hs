@@ -443,14 +443,14 @@ generateFormPostBS :: AForm Handler a -> Handler (Widget, Yesod.Enctype)
 generateFormPostBS =
     Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
 
-data BForm a = BForm
+data Form a = Form
     {aform :: AForm Handler a, action :: Maybe (Route App), footer :: Widget}
 
-bform :: AForm Handler a -> BForm a
-bform aform = BForm{aform, action = Nothing, footer = mempty}
+formB :: AForm Handler a -> Form a
+formB aform = Form{aform, action = Nothing, footer = mempty}
 
-runFormPostB :: BForm a -> Handler (FormResult a, Widget)
-runFormPostB BForm{aform, action, footer} = do
+runFormPostB :: Form a -> Handler (FormResult a, Widget)
+runFormPostB Form{aform, action, footer} = do
     urlRender <- getUrlRender
     let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
     ((result, fields), enctype) <-
@@ -463,8 +463,8 @@ runFormPostB BForm{aform, action, footer} = do
             |]
     pure (result, formWidget)
 
-generateFormPostB :: BForm a -> Handler Widget
-generateFormPostB BForm{aform, action, footer} = do
+generateFormPostB :: Form a -> Handler Widget
+generateFormPostB Form{aform, action, footer} = do
     urlRender <- getUrlRender
     let attrs = [("action" :: Text, urlRender act) | Just act <- [action]]
     (fields, enctype) <-
