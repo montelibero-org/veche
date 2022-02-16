@@ -1,20 +1,33 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Handler.Dashboard (getDashboardR) where
 
 import Import
 
+-- global
+import Database.Persist.Sql (rawSql)
+
+-- component
 import Genesis (mtlFund)
 
 getDashboardR :: Handler Html
 getDashboardR = do
-    (_, User{userStellarAddress}) <- requireAuthPair
+    (userId, User{userStellarAddress}) <- requireAuthPair
     issues <-
         runDB do
             Entity signerId _ <-
                 getBy403 $ UniqueSigner mtlFund userStellarAddress
             requireAuthz $ ListIssues signerId
-            selectList [IssueOpen ==. True] []
+            rawSql
+                "SELECT ??\
+                \ FROM\
+                    \ issue\
+                    \ LEFT JOIN\
+                    \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
+                    \ ON issue.id = vote.issue\
+                \ WHERE vote.id IS NULL AND issue.open"
+                [toPersistValue userId]
     defaultLayout $(widgetFile "dashboard")
