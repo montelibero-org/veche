@@ -27,7 +27,7 @@ import Genesis (mtlFund)
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
-import Types (CommentType (..))
+import Types (Choice (Approve, Reject), CommentType (..))
 import Types.Comment (CommentMaterialized (..))
 import Types.Issue (IssueContent (..))
 
@@ -195,9 +195,6 @@ postIssuesR = do
 
 data StateAction = Close | Reopen
 
-data Vote = Approve | Reject
-    deriving (Eq, Ord, Show)
-
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
     (result, _widget) <- runFormPostB actionForm
@@ -254,8 +251,8 @@ edit issueId = do
                     , commentType       = CommentEdit
                     }
 
-addVote :: Vote -> IssueId -> Handler Html
-addVote vote issueId = do
+addVote :: Choice -> IssueId -> Handler Html
+addVote choice issueId = do
     now <- liftIO getCurrentTime
     (user, User{userStellarAddress}) <- requireAuthPair
     runDB do
@@ -269,7 +266,7 @@ addVote vote issueId = do
                 , commentParent     = Nothing
                 , commentIssue      = issueId
                 , commentType       =
-                    case vote of
+                    case choice of
                         Approve -> CommentApprove
                         Reject  -> CommentReject
                 }
@@ -324,23 +321,23 @@ getIssueEditR issueId = do
     formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
     defaultLayout formWidget
 
-collectVotes :: [CommentMaterialized] -> Map Vote (HashSet User)
+collectVotes :: [CommentMaterialized] -> Map Choice (HashSet User)
 collectVotes comments =
     Map.fromListWith
         (<>)
-        [ (vote, HashSet.singleton author)
-        | (author, (_, vote)) <- HashMap.toList lastVotes
+        [ (choice, HashSet.singleton author)
+        | (author, (_, choice)) <- HashMap.toList lastVotes
         ]
   where
-    lastVotes :: HashMap User (UTCTime, Vote)
+    lastVotes :: HashMap User (UTCTime, Choice)
     lastVotes =
         HashMap.fromListWith
             (maxOn fst)
-            [ (author, (commentCreated, vote))
+            [ (author, (commentCreated, choice))
             | CommentMaterialized
                 {author, comment = Comment{commentType, commentCreated}} <-
                     comments
-            , Just vote <-
+            , Just choice <-
                 pure
                     case commentType of
                         CommentApprove -> Just Approve

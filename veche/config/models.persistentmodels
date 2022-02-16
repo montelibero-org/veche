@@ -63,3 +63,11 @@ Verifier
     expires     UTCTime
 
     UniqueVerifier userIdent key
+
+
+Vote
+    user    UserId
+    issue   IssueId
+    choice  Choice
+
+    UniqueVote user issue
