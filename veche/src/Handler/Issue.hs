@@ -112,18 +112,18 @@ getIssueR issueId = do
                         signer
                 ]
         votes =
-            [ (vote, percentage, share)
-            | (vote, users) <- Map.assocs $ collectVotes comments
+            [ (choice, percentage, share)
+            | (choice, users) <- Map.assocs $ collectVotes comments
             , let
-                voteWeight =
+                choiceWeight =
                     sum
                         [ Map.findWithDefault 0 key weights
                         | User{userStellarAddress = key} <- toList users
                         ]
                 percentage =
-                    fromIntegral voteWeight / fromIntegral (sum weights) * 100
+                    fromIntegral choiceWeight / fromIntegral (sum weights) * 100
                     :: Double
-                share = show voteWeight <> "/" <> show (sum weights)
+                share = show choiceWeight <> "/" <> show (sum weights)
             ]
 
     closeReopenWidget <- generateFormPostB $ closeReopenForm issueId issueOpen
@@ -258,6 +258,9 @@ addVote choice issueId = do
     runDB do
         Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
         requireAuthz $ AddVote signerId
+        upsert_
+            Vote{voteUser = user, voteIssue = issueId, voteChoice = choice}
+            [VoteChoice =. choice]
         insert_
             Comment
                 { commentAuthor     = user

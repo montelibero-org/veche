@@ -54,7 +54,6 @@ User
     deriving Generic
     deriving Hashable
     deriving Show
-    deriving Typeable
 
 
 Verifier

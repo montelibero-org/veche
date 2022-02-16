@@ -362,10 +362,10 @@ constraintFail msg =
     sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg
 
 getBy403 ::
-    (   MonadHandler m,
-        PersistRecordBackend val backend,
-        PersistUniqueRead backend
-        ) =>
+    ( MonadHandler m
+    , PersistRecordBackend val backend
+    , PersistUniqueRead backend
+    ) =>
     Unique val -> ReaderT backend m (Entity val)
 getBy403 key = do
     mres <- getBy key
@@ -389,3 +389,12 @@ maxOn f x y
     | otherwise = y
 
 type Form = BForm Handler
+
+upsert_ ::
+    ( MonadIO m
+    , PersistUniqueWrite backend
+    , OnlyOneUniqueKey record
+    , PersistEntityBackend record ~ BaseBackend backend
+    ) =>
+    record -> [Update record] -> ReaderT backend m ()
+upsert_ record updates = void $ upsert record updates
