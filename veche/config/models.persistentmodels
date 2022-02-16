@@ -2,14 +2,6 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 
-Verifier
-    userIdent   Text
-    key         Text
-    expires     UTCTime
-
-    UniqueVerifier userIdent key
-
-
 Comment
     author  UserId
     created UTCTime
@@ -19,16 +11,6 @@ Comment
     type    CommentType
 
     deriving Eq
-    deriving Show
-
-
-StellarSigner
-    target  Text -- target account address (managed one)
-    key     Text -- signer account address
-    weight  Int
-
-    UniqueSigner target key
-
     deriving Show
 
 
@@ -52,6 +34,16 @@ IssueVersion
     issue   IssueId
 
 
+StellarSigner
+    target  Text -- target account address (managed one)
+    key     Text -- signer account address
+    weight  Int
+
+    UniqueSigner target key
+
+    deriving Show
+
+
 User
     name            Text Maybe
     stellarAddress  Text
@@ -63,3 +55,11 @@ User
     deriving Hashable
     deriving Show
     deriving Typeable
+
+
+Verifier
+    userIdent   Text
+    key         Text
+    expires     UTCTime
+
+    UniqueVerifier userIdent key
