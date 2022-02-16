@@ -13,7 +13,6 @@ import Text.Blaze.Html.Renderer.Text (renderHtml)
 
 import Genesis (mtlFund)
 import Templates.Comment (commentWidget)
-import Types (CommentType (..))
 import Types.Comment (CommentMaterialized (..))
 
 data CommentRequest = CommentRequest{message :: Text, issue :: IssueId}

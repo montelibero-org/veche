@@ -7,7 +7,6 @@ module Templates.Comment where
 import Import
 
 import Templates.User (userNameWidget)
-import Types (CommentType (..))
 import Types.Comment (CommentMaterialized (..))
 
 commentWidget :: CommentMaterialized -> Html

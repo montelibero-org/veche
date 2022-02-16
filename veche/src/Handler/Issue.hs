@@ -17,7 +17,6 @@ module Handler.Issue
 import Import hiding (share)
 
 -- global
-import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist.Sql (rawSql)
@@ -27,14 +26,19 @@ import Genesis (mtlFund)
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
-import Types (Choice (Approve, Reject), CommentType (..))
 import Types.Comment (CommentMaterialized (..))
 import Types.Issue (IssueContent (..))
 
+data VoteMaterialized = VoteMaterialized
+    { choice :: Choice
+    , voter  :: User
+    }
+
 data IssueMaterialized = IssueMaterialized
-    { issue     :: Issue
-    , comments  :: [CommentMaterialized]
-    , lastEdit  :: IssueVersion
+    { issue      :: Issue
+    , comments   :: [CommentMaterialized]
+    , votes      :: [VoteMaterialized]
+    , curVersion :: IssueVersion
     }
 
 loadIssueComments :: IssueId -> SqlPersistT Handler [CommentMaterialized]
@@ -42,12 +46,25 @@ loadIssueComments issueId = do
     comments <-
         rawSql
             "SELECT ??, ??\
-            \ FROM Comment, User ON Comment.author == User.id\
-            \ WHERE Comment.issue == ?"
+            \ FROM comment, user ON comment.author == user.id\
+            \ WHERE comment.issue == ?"
             [toPersistValue issueId]
     pure
         [ CommentMaterialized{comment, author}
         | (Entity _ comment, Entity _ author) <- comments
+        ]
+
+loadIssueVotes :: IssueId -> SqlPersistT Handler [VoteMaterialized]
+loadIssueVotes issueId = do
+    votes <-
+        rawSql
+            "SELECT ??, ??\
+            \ FROM vote, user ON vote.user == user.id\
+            \ WHERE vote.issue == ?"
+            [toPersistValue issueId]
+    pure
+        [ VoteMaterialized{choice = voteChoice, voter}
+        | (Entity _ Vote{voteChoice}, Entity _ voter) <- votes
         ]
 
 loadIssue :: IssueId -> SqlPersistT Handler IssueMaterialized
@@ -74,12 +91,13 @@ loadIssue issueId = do
                 , author
                 }
     let comments = startingPseudoComment : comments'
-    lastEdit <-
+    curVersion <-
         get versionId
         ?|> lift
                 (constraintFail
                     "Issue.current_version must exist in IssueVersion table")
-    pure IssueMaterialized{issue, comments, lastEdit}
+    votes <- loadIssueVotes issueId
+    pure IssueMaterialized{issue, comments, curVersion, votes}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
 Nothing ?| action   = action
@@ -95,9 +113,11 @@ getIssueR issueId = do
         runDB $ getBy403 $ UniqueSigner mtlFund userStellarAddress
     requireAuthz $ ReadIssue signerId
 
-    IssueMaterialized{comments, issue, lastEdit} <- runDB $ loadIssue issueId
+    IssueMaterialized{comments, issue, curVersion, votes} <-
+        runDB $ loadIssue issueId
+
     let Issue{issueTitle, issueOpen} = issue
-        IssueVersion{issueVersionBody} = lastEdit
+        IssueVersion{issueVersionBody} = curVersion
         issueE = Entity issueId issue
     let isEditAllowed        = isAllowed $ EditIssue        issueE userId
         isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
@@ -111,9 +131,9 @@ getIssueR issueId = do
                 , let StellarSigner{stellarSignerKey, stellarSignerWeight} =
                         signer
                 ]
-        votes =
+        voteResults =
             [ (choice, percentage, share)
-            | (choice, users) <- Map.assocs $ collectVotes comments
+            | (choice, users) <- Map.assocs $ collectChoices votes
             , let
                 choiceWeight =
                     sum
@@ -324,26 +344,10 @@ getIssueEditR issueId = do
     formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
     defaultLayout formWidget
 
-collectVotes :: [CommentMaterialized] -> Map Choice (HashSet User)
-collectVotes comments =
+collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
+collectChoices votes =
     Map.fromListWith
         (<>)
-        [ (choice, HashSet.singleton author)
-        | (author, (_, choice)) <- HashMap.toList lastVotes
+        [ (choice, HashSet.singleton voter)
+        | VoteMaterialized{choice, voter} <- votes
         ]
-  where
-    lastVotes :: HashMap User (UTCTime, Choice)
-    lastVotes =
-        HashMap.fromListWith
-            (maxOn fst)
-            [ (author, (commentCreated, choice))
-            | CommentMaterialized
-                {author, comment = Comment{commentType, commentCreated}} <-
-                    comments
-            , Just choice <-
-                pure
-                    case commentType of
-                        CommentApprove -> Just Approve
-                        CommentReject  -> Just Reject
-                        _              -> Nothing
-            ]

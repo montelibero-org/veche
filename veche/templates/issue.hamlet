@@ -17,8 +17,8 @@ $if isCloseReopenAllowed
 <div .panel .panel-primary>
     <div .panel-body>#{issueVersionBody}
 
-$forall (vote, percentage, share) <- votes
-    <label .col-sm-2 .text-right>#{show vote}
+$forall (choice, percentage, share) <- voteResults
+    <label .col-sm-2 .text-right>#{choice}
     <div .col-sm-10>
         <div .progress>
             <div .progress-bar role=progressbar style="width: #{percentage}%;">

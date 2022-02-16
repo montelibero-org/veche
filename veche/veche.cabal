@@ -24,12 +24,12 @@ library
     Import
     Import.NoFoundation
     Model
+    Model.Types
     Settings
     Settings.StaticFiles
     Templates.Comment
     Templates.Issue
     Templates.User
-    Types
     Types.Comment
     Types.Issue
     Workers.StellarUpdate
