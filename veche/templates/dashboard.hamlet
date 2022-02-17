@@ -1,4 +1,4 @@
-<h2>Voting required
+<h2>Voting required (#{show $ length issues})
 
 <table .table .table-striped>
     $forall Entity issueId Issue{issueTitle} <- issues
