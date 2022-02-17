@@ -13,6 +13,7 @@ library
   exposed-modules:
     Application
     Authorization
+    Database.Persist.Extra
     Form
     Foundation
     Genesis

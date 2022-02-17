@@ -1,4 +1,6 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Model.Types (
@@ -10,14 +12,18 @@ import ClassyPrelude.Yesod
 
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
+import Database.Persist.Sql (PersistFieldSql)
 import Text.Blaze.Html (ToMarkup, toMarkup)
+
+import Database.Persist.Extra (JsonString (..))
 
 data Choice = Approve | Reject
     deriving (Eq, Ord, Show)
 deriveJSON
     defaultOptions{constructorTagModifier = camelTo2 '_'}
     ''Choice
-derivePersistFieldJSON "Choice"
+deriving via JsonString Choice instance PersistField    Choice
+deriving via JsonString Choice instance PersistFieldSql Choice
 
 instance ToMarkup Choice where
     toMarkup = toMarkup . show
@@ -31,8 +37,9 @@ data CommentType
     | CommentRequestInfo
     | CommentStart
     | CommentText
-    deriving (Eq, Show)
+    deriving stock (Eq, Show)
 deriveJSON
     defaultOptions{constructorTagModifier = camelTo2 '_' . drop 7}
     ''CommentType
-derivePersistFieldJSON "CommentType"
+deriving via JsonString CommentType instance PersistField    CommentType
+deriving via JsonString CommentType instance PersistFieldSql CommentType
