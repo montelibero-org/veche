@@ -62,7 +62,7 @@ stellarDataUpdater baseUrl connPool =
                             Map.assocs $ Map.intersectionWith (,) cached actual
                         , weightCached /= weightActual
                         ]
-            for_ (Map.keys deleted) $ deleteBy . UniqueSigner target
+            for_ (Map.keys deleted) $ deleteBy . UniqueMember target
             insertMany_
                 [ StellarSigner
                     { stellarSignerTarget = target

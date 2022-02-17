@@ -39,7 +39,7 @@ StellarSigner
     key     Text -- signer account address
     weight  Int
 
-    UniqueSigner target key
+    UniqueMember target key
 
     deriving Show
 

@@ -37,7 +37,7 @@ postCommentR = do
             , commentType       = CommentText
             }
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ AddIssueComment signerId
         insert_ comment
 

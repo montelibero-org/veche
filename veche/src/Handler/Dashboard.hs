@@ -19,7 +19,7 @@ getDashboardR = do
     issues <-
         runDB do
             Entity signerId _ <-
-                getBy403 $ UniqueSigner mtlFund userStellarAddress
+                getBy403 $ UniqueMember mtlFund userStellarAddress
             requireAuthz $ ListIssues signerId
             rawSql
                 "SELECT ??\

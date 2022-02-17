@@ -110,7 +110,7 @@ getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
     (userId, User{userStellarAddress}) <- requireAuthPair
     Entity signerId _ <-
-        runDB $ getBy403 $ UniqueSigner mtlFund userStellarAddress
+        runDB $ getBy403 $ UniqueMember mtlFund userStellarAddress
     requireAuthz $ ReadIssue signerId
 
     IssueMaterialized{comments, issue, curVersion, votes} <-
@@ -155,7 +155,7 @@ getIssueNewR :: Handler Html
 getIssueNewR = do
     runDB do
         (_, User{userStellarAddress}) <- requireAuthPair
-        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ CreateIssue signerId
     formWidget <- generateFormPostB newIssueForm
     defaultLayout formWidget
@@ -168,7 +168,7 @@ getIssuesR = do
     (openIssueCount, closedIssueCount, issues) <-
         runDB do
             Entity signerId _ <-
-                getBy403 $ UniqueSigner mtlFund userStellarAddress
+                getBy403 $ UniqueMember mtlFund userStellarAddress
             requireAuthz $ ListIssues signerId
             (,,)
                 <$> count [IssueOpen ==. True]
@@ -193,7 +193,7 @@ postIssuesR = do
         runDB do
             (user, User{userStellarAddress}) <- requireAuthPair
             Entity signerId _ <-
-                getBy403 $ UniqueSigner mtlFund userStellarAddress
+                getBy403 $ UniqueMember mtlFund userStellarAddress
             requireAuthz $ CreateIssue signerId
             let issue = Issue
                     { issueTitle        = title
@@ -276,7 +276,7 @@ addVote choice issueId = do
     now <- liftIO getCurrentTime
     (user, User{userStellarAddress}) <- requireAuthPair
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ AddVote signerId
         upsert_
             Vote{voteUser = user, voteIssue = issueId, voteChoice = choice}
