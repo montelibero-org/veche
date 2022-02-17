@@ -27,6 +27,7 @@ import Import
 
 -- global
 import Control.Monad.Logger (liftLoc, runLoggingT)
+import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Database.Persist.Sqlite (Single, createSqlitePool, printMigration,
                                 rawSql, runSqlPool, sqlDatabase, sqlPoolSize)
@@ -106,6 +107,11 @@ makeFoundation appSettings = do
                 putStrLn "NOT MIGRATING, but we have something to migrate:"
                 printMigration migrateAll
 
+            -- upgrade votes
+            votesSample :: [Single Int] <- rawSql "SELECT 1 FROM vote" []
+            let votesEmpty = null votesSample
+            when votesEmpty upgradeVotes
+
     -- Return the foundation
     pure $ mkFoundation pool
 
@@ -120,6 +126,39 @@ makeFoundation appSettings = do
             appSettings
     database = sqlDatabase appDatabaseConf
     poolSize = sqlPoolSize appDatabaseConf
+
+    upgradeVotes = do
+        voteComments <-
+            map entityVal <$>
+            selectList
+                (   [CommentType ==. CommentApprove]
+                    ||. [CommentType ==. CommentReject]
+                )
+                []
+        let lastVoteComments =
+                Map.fromListWith
+                    (maxOn fst)
+                    [ ((commentIssue, commentAuthor), (commentCreated, choice))
+                    | Comment
+                        { commentIssue
+                        , commentAuthor
+                        , commentCreated
+                        , commentType
+                        } <-
+                            voteComments
+                    , Just choice <-
+                        pure
+                            case commentType of
+                                CommentApprove -> Just Approve
+                                CommentReject  -> Just Reject
+                                _              -> Nothing
+                    ]
+        let newVotes =
+                [ Vote{voteIssue, voteUser, voteChoice}
+                | ((voteIssue, voteUser), (_, voteChoice)) <-
+                    Map.assocs lastVoteComments
+                ]
+        insertMany_ newVotes
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.

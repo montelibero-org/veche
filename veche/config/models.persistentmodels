@@ -70,3 +70,5 @@ Vote
     choice  Choice
 
     UniqueVote user issue
+
+    deriving Show
