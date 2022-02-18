@@ -1,11 +1,90 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
 # /etc/cron.hourly/veche-backup
 
-set -eu -o pipefail
+from collections import defaultdict
+from datetime import datetime, timedelta
+from os import chdir, listdir, remove
+from random import randint
+from subprocess import check_call
+from sys import argv
+from time import sleep
+from typing import Dict, List, Set
+import logging
 
-timestamp="$(date --utc +%F_%H-%M-%S)"
-source=/var/www/veche.sqlite3
-target=/var/www/veche.${timestamp}.sqlite3
 
-sudo -u www-data sqlite3 $source ".backup $target"
+def rsync_all():
+    cmd = [
+        'rsync',
+        '--archive',
+        '--progress',
+        '--verbose',
+        'root@veche.montelibero.org:/var/www/veche.2*',
+        '.'
+    ]
+    logging.info('Running %s', cmd)
+    check_call(cmd)
+
+
+def collect_files_by_date(files: List[str]) -> Dict[str, Set[str]]:
+    d = defaultdict(set)
+    for file in files:
+        parts = file.split('.')
+        if len(parts) != 3 or parts[0] != 'veche' or parts[2] != 'sqlite3':
+            continue
+        timestamp = parts[1]
+        date, _ = timestamp.split('_')
+        d[date].add(file)
+    return d
+
+
+def vacuum():
+    files_by_date = collect_files_by_date(listdir())
+    dates_but_last = sorted(files_by_date)[:-1]
+    for date in dates_but_last:
+        files_but_last = sorted(files_by_date[date])[:-1]
+        if files_but_last:
+            logging.info('Vaccuming date %s', date)
+        for file in files_but_last:
+            logging.info('Removing file %s', file)
+            remove(file)
+
+
+def wait_random():
+    wait_sec = randint(600, 3600)
+    dt = timedelta(seconds=wait_sec)
+    now = datetime.now()
+    logging.info('Waiting %s till %s', dt, now + dt)
+    sleep(wait_sec)
+
+
+def backup():
+    chdir('/var/www/')
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
+    source = 'veche.sqlite3'
+    target = f'veche.{timestamp}.sqlite3'
+    cmd = ['sudo', '--user=www-data', 'sqlite3', source, f'.backup {target}']
+    logging.info('Running %s', cmd)
+    check_call(cmd)
+    vacuum()
+
+
+def fetch():
+    while True:
+        rsync_all()
+        vacuum()
+        try:
+            wait_random()
+        except KeyboardInterrupt:
+            exit()
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    if argv == ['/etc/cron.hourly/veche-backup'] or argv[1:] == ['backup']:
+        # logging.basicConfig(level=logging.WARN)
+        backup()
+    elif argv[1:] == ['fetch']:
+        fetch()
+    else:
+        raise NotImplementedError
