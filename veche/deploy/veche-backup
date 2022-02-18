@@ -11,6 +11,7 @@ from sys import argv
 from time import sleep
 from typing import Dict, List, Set
 import logging
+import shlex
 
 
 def rsync_all():
@@ -22,7 +23,7 @@ def rsync_all():
         'root@veche.montelibero.org:/var/www/veche.2*',
         '.'
     ]
-    logging.info('Running %s', cmd)
+    logging.info('Running %s', shlex.join(cmd))
     check_call(cmd)
 
 
@@ -64,7 +65,7 @@ def backup():
     source = 'veche.sqlite3'
     target = f'veche.{timestamp}.sqlite3'
     cmd = ['sudo', '--user=www-data', 'sqlite3', source, f'.backup {target}']
-    logging.info('Running %s', cmd)
+    logging.info('Running %s', shlex.join(cmd))
     check_call(cmd)
     vacuum()
 
