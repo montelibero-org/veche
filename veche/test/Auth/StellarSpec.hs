@@ -27,6 +27,9 @@ import Stellar.Horizon.Types (Account (..), Signer (..),
                               SignerType (Ed25519PublicKey))
 import Yesod.Auth.Stellar.Internal (python3)
 
+-- package
+import Model.User qualified as User
+
 spec :: Spec
 spec =
     around_ withMockHorizon $
@@ -96,7 +99,7 @@ testAuthenticationOk (address, secretKey) networkPassphrase = do
     get UserR
     statusIs 200 -- authenticated
 
-    users <- runDB $ fmap entityVal <$> selectList [] []
+    users <- runDB $ User.selectValList [] []
     assertEq
         "users after auth"
         users
