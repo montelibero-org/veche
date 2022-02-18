@@ -8,30 +8,14 @@
 
 module Model.User (getBy, getOrInsert, selectValList) where
 
-import ClassyPrelude.Yesod hiding (getBy, id)
+import Import.NoFoundation hiding (getBy, id)
 
 import Database.Persist qualified as Persist
 
-import Model (Unique (UniqueUser), User (..), UserId)
-
-type YesodPersistSql app =
-    (YesodPersist app, BaseBackend (YesodPersistBackend app) ~ SqlBackend)
-
--- type PersistQueryRead' app =
---     (YesodPersistSql app, PersistQueryRead (YesodPersistBackend app))
-
-type PersistStoreWrite' app =
-    (YesodPersistSql app, PersistStoreWrite (YesodPersistBackend app))
-
-type PersistUniqueRead' app =
-    (YesodPersistSql app, PersistUniqueRead (YesodPersistBackend app))
-
-getBy :: PersistUniqueRead' app => Text -> HandlerFor app (Maybe (Entity User))
+getBy :: PersistSql app => Text -> HandlerFor app (Maybe (Entity User))
 getBy = runDB . Persist.getBy . UniqueUser
 
-getOrInsert ::
-    (PersistUniqueRead' app, PersistStoreWrite' app) =>
-    User -> HandlerFor app UserId
+getOrInsert :: PersistSql app => User -> HandlerFor app UserId
 getOrInsert record@User{userStellarAddress} =
     runDB do
         mExisted <- Persist.getBy $ UniqueUser userStellarAddress

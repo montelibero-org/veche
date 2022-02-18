@@ -1,9 +1,12 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Database.Persist.Extra where
 
@@ -39,3 +42,10 @@ instance (FromJSON a, ToJSON a, Typeable a) => PersistFieldSql (JsonString a)
     where
 
     sqlType _ = SqlString
+
+type PersistSql app =
+    ( YesodPersist app
+    , BaseBackend (YesodPersistBackend app) ~ SqlBackend
+    , PersistStoreWrite (YesodPersistBackend app)
+    , PersistUniqueRead (YesodPersistBackend app)
+    )

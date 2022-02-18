@@ -25,6 +25,7 @@ library
     Import
     Import.NoFoundation
     Model
+    Model.Comment
     Model.Types
     Model.User
     Settings

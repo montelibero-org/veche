@@ -5,7 +5,9 @@
 
 module Authorization where
 
-import Import.NoFoundation
+import ClassyPrelude.Yesod
+
+import Model (Issue (..), StellarSignerId, UserId)
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
 -- when presence in the database is required.

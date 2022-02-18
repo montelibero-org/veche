@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Handler.Comment
@@ -11,7 +12,7 @@ import Import
 
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 
-import Genesis (mtlFund)
+import Model.Comment qualified as Comment
 import Templates.Comment (commentWidget)
 import Types.Comment (CommentMaterialized (..))
 
@@ -21,7 +22,7 @@ data CommentRequest = CommentRequest{message :: Text, issue :: IssueId}
 postCommentR :: Handler Value
 postCommentR = do
     -- auth
-    (authorId, author@User{userStellarAddress}) <- requireAuthPair
+    (authorId, author) <- requireAuthPair
 
     -- input
     CommentRequest{message, issue} <- requireCheckJsonBody
@@ -36,9 +37,6 @@ postCommentR = do
             , commentIssue      = issue
             , commentType       = CommentText
             }
-    runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ AddIssueComment signerId
-        insert_ comment
+    Comment.insert_ author comment
 
     returnJson $ renderHtml $ commentWidget CommentMaterialized{author, comment}

@@ -38,7 +38,6 @@ import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
 -- component
-import Form (BForm)
 import Model.User qualified as User
 
 -- | The foundation datatype for your application. This can be a good place to
@@ -349,44 +348,9 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
 
-constraintFail :: Text -> Handler a
-constraintFail msg =
-    sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg
-
-getBy403 ::
-    ( MonadHandler m
-    , PersistRecordBackend val backend
-    , PersistUniqueRead backend
-    ) =>
-    Unique val -> ReaderT backend m (Entity val)
-getBy403 key = do
-    mres <- getBy key
-    case mres of
-        Nothing  -> permissionDenied "Not authorized"
-        Just res -> return res
-
-getEntity404 ::
-    (MonadIO m, PersistStoreRead backend, PersistRecordBackend val backend) =>
-    Key val -> ReaderT backend m (Entity val)
-getEntity404 key = Entity key <$> get404 key
-
 isAuthRMay :: Maybe (Route App) -> Bool
 isAuthRMay = \case
     Just (AuthR _)  -> True
     _               -> False
 
-maxOn :: Ord b => (a -> b) -> a -> a -> a
-maxOn f x y
-    | f x > f y = x
-    | otherwise = y
-
 type Form = BForm Handler
-
-upsert_ ::
-    ( MonadIO m
-    , PersistUniqueWrite backend
-    , OnlyOneUniqueKey record
-    , PersistEntityBackend record ~ BaseBackend backend
-    ) =>
-    record -> [Update record] -> ReaderT backend m ()
-upsert_ record updates = void $ upsert record updates
