@@ -39,6 +39,7 @@ import Yesod.Auth.Stellar qualified
 
 -- component
 import Form (BForm)
+import Model.User qualified as User
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -271,19 +272,10 @@ instance YesodAuth App where
     authenticate
         :: (MonadHandler m, HandlerSite m ~ App)
         => Creds App -> m (AuthenticationResult App)
-    authenticate Creds{credsIdent = stellarAddress} =
+    authenticate Creds{credsIdent = userStellarAddress} =
+        fmap Authenticated $
         liftHandler $
-        runDB do
-            mExistingUser <- getBy $ UniqueUser stellarAddress
-            case mExistingUser of
-                Just (Entity uid _) -> pure $ Authenticated uid
-                Nothing ->
-                    Authenticated <$>
-                    insert
-                        User
-                            { userName              = Nothing
-                            , userStellarAddress    = stellarAddress
-                            }
+        User.getOrInsert User{userName = Nothing, userStellarAddress}
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]

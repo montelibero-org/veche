@@ -26,6 +26,7 @@ library
     Import.NoFoundation
     Model
     Model.Types
+    Model.User
     Settings
     Settings.StaticFiles
     Templates.Comment
