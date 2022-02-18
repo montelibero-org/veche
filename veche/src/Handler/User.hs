@@ -16,9 +16,11 @@ import Import
 import Data.Char (isAscii, isPrint)
 import Data.Text qualified as Text
 
+import Model.User qualified as User
+
 getUserR :: Handler Html
 getUserR = do
-    (_, User{userName, userStellarAddress}) <- requireAuthPair
+    Entity _ User{userName, userStellarAddress} <- requireAuth
     defaultLayout do
         setTitle "Profile"
         $(widgetFile "user")
@@ -35,8 +37,8 @@ putUserR = do
     UserEditRequest{name = Text.strip -> name} <- requireCheckJsonBody
     userId <- requireAuthId
 
-    if  | Text.null name    -> runDB $ update userId [UserName =. Nothing]
-        | isValid name      -> runDB $ update userId [UserName =. Just name]
+    if  | Text.null name    -> User.setName userId Nothing
+        | isValid name      -> User.setName userId $ Just name
         | otherwise         ->
             sendResponseStatus status400 $
             object ["error" .= String "Name must be ASCII only"]

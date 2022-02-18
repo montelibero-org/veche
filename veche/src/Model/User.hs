@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Model.User (getBy, getOrInsert, selectValList) where
+module Model.User (getBy, getOrInsert, selectValList, setName) where
 
 import Import.NoFoundation hiding (getBy, id)
 
@@ -27,3 +27,6 @@ selectValList ::
     MonadIO m =>
     [Filter User] -> [SelectOpt User] -> ReaderT SqlBackend m [User]
 selectValList filters options = map entityVal <$> selectList filters options
+
+setName :: PersistSql app => UserId -> Maybe Text -> HandlerFor app ()
+setName id mname = runDB $ update id [UserName =. mname]
