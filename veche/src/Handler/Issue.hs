@@ -73,10 +73,9 @@ getIssueR issueId = do
 
 getIssueNewR :: Handler Html
 getIssueNewR = do
-    runDB do
-        (_, User{userStellarAddress}) <- requireAuthPair
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ CreateIssue signerId
+    Entity _ User{userStellarAddress} <- requireAuth
+    Entity signerId _ <- StellarSigner.getByAddress403 userStellarAddress
+    requireAuthz $ CreateIssue signerId
     formWidget <- generateFormPostB newIssueForm
     defaultLayout formWidget
 
