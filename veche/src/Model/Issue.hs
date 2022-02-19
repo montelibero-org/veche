@@ -2,12 +2,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.Issue (
     IssueMaterialized (..),
+    countOpenAndClosed,
     getContentForEdit,
     load,
     selectList,
@@ -17,10 +20,11 @@ module Model.Issue (
 import Import hiding (selectList)
 
 -- global
+import Data.Coerce (coerce)
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist qualified as Persist
-import Database.Persist.Sql (rawSql)
+import Database.Persist.Sql (Single (..), rawSql)
 
 -- component
 import Genesis (mtlFund)
@@ -41,6 +45,16 @@ data IssueMaterialized = IssueMaterialized
     , isVoteAllowed         :: Bool
     , votes                 :: Map Choice (HashSet User)
     }
+
+countOpenAndClosed :: Handler (Int, Int)
+countOpenAndClosed = do
+    counts' :: [(Single Bool, Single Int)] <-
+        runDB $ rawSql "SELECT open, COUNT(*) FROM issue GROUP BY open" []
+    let counts = coerce counts' :: [(Bool, Int)]
+    pure
+        ( findWithDefault 0 True  counts
+        , findWithDefault 0 False counts
+        )
 
 loadComments :: MonadIO m => IssueId -> SqlPersistT m [CommentMaterialized]
 loadComments issueId = do

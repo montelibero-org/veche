@@ -84,9 +84,7 @@ getIssuesR = do
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
     issues <- Issue.selectList [IssueOpen ==. stateOpen]
-    (openIssueCount, closedIssueCount) <-
-        runDB $
-            (,) <$> count [IssueOpen ==. True] <*> count [IssueOpen ==. False]
+    (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed
     defaultLayout $(widgetFile "issues")
 
 postIssuesR :: Handler Html
