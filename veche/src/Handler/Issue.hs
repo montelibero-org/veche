@@ -79,11 +79,10 @@ loadIssue issueId = do
 
     issue@Issue{issueAuthor, issueCreated, issueCurVersion} <- get404 issueId
     versionId <-
-        issueCurVersion
-        ?| lift (constraintFail "Issue.current_version must be valid")
+        issueCurVersion ?| constraintFail "Issue.current_version must be valid"
     author <-
         get issueAuthor
-        ?|> lift (constraintFail "Issue.author must exist in User table")
+        ?|> constraintFail "Issue.author must exist in User table"
     comments' <- loadIssueComments issueId
     let startingPseudoComment =
             CommentMaterialized
@@ -101,9 +100,8 @@ loadIssue issueId = do
     let comments = startingPseudoComment : comments'
     IssueVersion{issueVersionBody = body} <-
         get versionId
-        ?|> lift
-                (constraintFail
-                    "Issue.current_version must exist in IssueVersion table")
+        ?|> constraintFail
+                "Issue.current_version must exist in IssueVersion table"
     votes <- loadIssueVotes issueId
 
     let issueE = Entity issueId issue
@@ -342,13 +340,11 @@ getIssueEditR issueId = do
             requireAuthz $ EditIssue issue userId
             versionId <-
                 issueCurVersion
-                ?| lift (constraintFail "Issue.current_version must be valid")
+                ?| constraintFail "Issue.current_version must be valid"
             IssueVersion{issueVersionBody} <-
                 get versionId
-                ?|> lift
-                        (constraintFail
-                            "Issue.current_version must exist\
-                            \ in IssueVersion table")
+                ?|> constraintFail
+                        "Issue.current_version must exist in IssueVersion table"
             pure IssueContent{title = issueTitle, body = issueVersionBody}
     formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
     defaultLayout formWidget

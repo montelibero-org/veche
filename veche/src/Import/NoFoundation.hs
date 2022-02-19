@@ -25,7 +25,7 @@ inflect :: Int -> String -> String -> String
 inflect 1 single _ = "1 " <> single
 inflect n _ plural = show n <> " " <> plural
 
-constraintFail :: Text -> HandlerFor app a
+constraintFail :: MonadHandler m => Text -> m a
 constraintFail msg =
     sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg
 
