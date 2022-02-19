@@ -84,7 +84,7 @@ library
     , yesod-auth-stellar
 
   if flag(dev)
-    ghc-options: -Wall -fwarn-tabs -O0 -j
+    ghc-options: -Wall -fwarn-tabs -O0
     cpp-options: -DDEVELOPMENT
 
   else

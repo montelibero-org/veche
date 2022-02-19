@@ -10,6 +10,7 @@ module Handler.Dashboard (getDashboardR) where
 import Import
 
 import Model.Issue qualified as Issue
+import Templates.Issue (issueTable)
 
 getDashboardR :: Handler Html
 getDashboardR = do

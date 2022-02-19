@@ -198,6 +198,7 @@ create IssueContent{title, body} = do
                 { issueTitle        = title
                 , issueAuthor       = userId
                 , issueOpen         = True
+                , issueCommentNum   = Just 0
                 , issueCreated      = now
                 , issueCurVersion   = Nothing
                 }

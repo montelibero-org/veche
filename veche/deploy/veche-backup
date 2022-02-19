@@ -81,11 +81,11 @@ def fetch():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     if argv == ['/etc/cron.hourly/veche-backup'] or argv[1:] == ['backup']:
         logging.basicConfig(level=logging.WARN)
         backup()
     elif argv[1:] == ['fetch']:
+        logging.basicConfig(level=logging.INFO)
         fetch()
     else:
         raise NotImplementedError

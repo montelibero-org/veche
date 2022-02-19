@@ -9,8 +9,4 @@
 
 <div .clearfix style="margin-bottom: 1em;">
 
-<table .table .table-striped>
-    $forall Entity issueId Issue{issueTitle} <- issues
-        <tr>
-            <td>
-                <a href=@{IssueR issueId}>#{issueTitle}
+^{issueTable issues}

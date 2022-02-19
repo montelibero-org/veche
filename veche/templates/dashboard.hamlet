@@ -1,7 +1,3 @@
 <h2>Voting required (#{show $ length issues})
 
-<table .table .table-striped>
-    $forall Entity issueId Issue{issueTitle} <- issues
-        <tr>
-            <td>
-                <a href=@{IssueR issueId}>#{issueTitle}
+^{issueTable issues}

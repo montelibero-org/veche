@@ -6,11 +6,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Templates.Issue
     ( actionForm
     , closeReopenForm
     , editIssueForm
+    , issueTable
     , newIssueForm
     , voteForm
     ) where
@@ -106,3 +108,6 @@ newIssueForm =
         , footer =
             [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
         }
+
+issueTable :: [Entity Issue] -> Widget
+issueTable issues = $(widgetFile "issue-table")

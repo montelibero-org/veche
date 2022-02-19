@@ -1,0 +1,8 @@
+<table .table .table-striped>
+    $forall Entity issueId Issue{issueTitle, issueCommentNum} <- issues
+        <tr>
+            <td>
+                <a href=@{IssueR issueId}>#{issueTitle}
+            <td .text-right>
+                <i .fa-regular .fa-comments>
+                #{show $ fromMaybe 0 issueCommentNum}
