@@ -8,9 +8,9 @@ root: ..
 # have HTTPS either enabled or disabled.
 listeners:
 
-    # # HTTP
-    # - host: "*4" # Listen on all IPv4 hosts
-    #   #port: 80 # Could be used to modify port
+    # HTTP
+    - host: "*4" # Listen on all IPv4 hosts
+      #port: 80
 
     # HTTPS
     - host: "*4"
