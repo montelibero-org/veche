@@ -42,7 +42,7 @@ data IssueMaterialized = IssueMaterialized
     , isEditAllowed         :: Bool
     , issue                 :: Issue
     , isVoteAllowed         :: Bool
-    , votes                 :: [VoteMaterialized]
+    , votes                 :: Map Choice (HashSet User)
     }
 
 loadIssueComments :: IssueId -> SqlPersistT Handler [CommentMaterialized]
@@ -71,44 +71,47 @@ loadIssueVotes issueId = do
         | (Entity _ Vote{voteChoice}, Entity _ voter) <- votes
         ]
 
-loadIssue :: IssueId -> SqlPersistT Handler IssueMaterialized
-loadIssue issueId = do
-    Entity userId User{userStellarAddress} <- requireAuth
-    Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-    requireAuthz $ ReadIssue signerId
+loadIssue :: IssueId -> Handler IssueMaterialized
+loadIssue issueId =
+    runDB do
+        Entity userId User{userStellarAddress} <- requireAuth
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        requireAuthz $ ReadIssue signerId
 
-    issue@Issue{issueAuthor, issueCreated, issueCurVersion} <- get404 issueId
-    versionId <-
-        issueCurVersion ?| constraintFail "Issue.current_version must be valid"
-    author <-
-        get issueAuthor
-        ?|> constraintFail "Issue.author must exist in User table"
-    comments' <- loadIssueComments issueId
-    let startingPseudoComment =
-            CommentMaterialized
-                { comment =
-                    Comment
-                        { commentAuthor     = issueAuthor
-                        , commentCreated    = issueCreated
-                        , commentMessage    = ""
-                        , commentParent     = Nothing
-                        , commentIssue      = issueId
-                        , commentType       = CommentStart
-                        }
-                , author
-                }
-    let comments = startingPseudoComment : comments'
-    IssueVersion{issueVersionBody = body} <-
-        get versionId
-        ?|> constraintFail
-                "Issue.current_version must exist in IssueVersion table"
-    votes <- loadIssueVotes issueId
+        issue@Issue{issueAuthor, issueCreated, issueCurVersion} <-
+            get404 issueId
+        versionId <-
+            issueCurVersion
+            ?| constraintFail "Issue.current_version must be valid"
+        author <-
+            get issueAuthor
+            ?|> constraintFail "Issue.author must exist in User table"
+        comments' <- loadIssueComments issueId
+        let startingPseudoComment =
+                CommentMaterialized
+                    { comment =
+                        Comment
+                            { commentAuthor     = issueAuthor
+                            , commentCreated    = issueCreated
+                            , commentMessage    = ""
+                            , commentParent     = Nothing
+                            , commentIssue      = issueId
+                            , commentType       = CommentStart
+                            }
+                    , author
+                    }
+        let comments = startingPseudoComment : comments'
+        IssueVersion{issueVersionBody = body} <-
+            get versionId
+            ?|> constraintFail
+                    "Issue.current_version must exist in IssueVersion table"
+        votes <- collectChoices <$> loadIssueVotes issueId
 
-    let issueE = Entity issueId issue
-        isEditAllowed        = isAllowed $ EditIssue        issueE userId
-        isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-        isVoteAllowed        = isAllowed $ AddVote signerId
-    pure IssueMaterialized{..}
+        let issueE = Entity issueId issue
+            isEditAllowed        = isAllowed $ EditIssue        issueE userId
+            isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
+            isVoteAllowed        = isAllowed $ AddVote signerId
+        pure IssueMaterialized{..}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
 Nothing ?| action   = action
@@ -128,7 +131,7 @@ getIssueR issueId = do
         , isVoteAllowed
         , votes
         } <-
-            runDB $ loadIssue issueId
+            loadIssue issueId
 
     signers <- runDB $ selectList [StellarSignerTarget ==. mtlFund] []
     let weights =
@@ -140,7 +143,7 @@ getIssueR issueId = do
                 ]
         voteResults =
             [ (choice, percentage, share)
-            | (choice, users) <- Map.assocs $ collectChoices votes
+            | (choice, users) <- Map.assocs votes
             , let
                 choiceWeight =
                     sum
