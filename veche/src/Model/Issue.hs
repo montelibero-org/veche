@@ -10,14 +10,16 @@ module Model.Issue (
     IssueMaterialized (..),
     getContentForEdit,
     load,
+    selectList,
     selectWithoutVoteFromUser,
 ) where
 
-import Import
+import Import hiding (selectList)
 
 -- global
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
+import Database.Persist qualified as Persist
 import Database.Persist.Sql (rawSql)
 
 -- component
@@ -122,6 +124,14 @@ collectChoices votes =
         [ (choice, HashSet.singleton voter)
         | VoteMaterialized{choice, voter} <- votes
         ]
+
+selectList :: [Filter Issue] -> Handler [Entity Issue]
+selectList filters =
+    runDB do
+        Entity _ User{userStellarAddress} <- requireAuth
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        requireAuthz $ ListIssues signerId
+        Persist.selectList filters []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =

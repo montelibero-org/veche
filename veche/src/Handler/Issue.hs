@@ -83,16 +83,10 @@ getIssuesR :: Handler Html
 getIssuesR = do
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
-    (_, User{userStellarAddress}) <- requireAuthPair
-    (openIssueCount, closedIssueCount, issues) <-
-        runDB do
-            Entity signerId _ <-
-                getBy403 $ UniqueMember mtlFund userStellarAddress
-            requireAuthz $ ListIssues signerId
-            (,,)
-                <$> count [IssueOpen ==. True]
-                <*> count [IssueOpen ==. False]
-                <*> selectList [IssueOpen ==. stateOpen] []
+    issues <- Issue.selectList [IssueOpen ==. stateOpen]
+    (openIssueCount, closedIssueCount) <-
+        runDB $
+            (,) <$> count [IssueOpen ==. True] <*> count [IssueOpen ==. False]
     defaultLayout $(widgetFile "issues")
 
 postIssuesR :: Handler Html
