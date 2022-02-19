@@ -27,6 +27,7 @@ library
     Model
     Model.Comment
     Model.Issue
+    Model.StellarSigner
     Model.Types
     Model.User
     Settings

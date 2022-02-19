@@ -24,6 +24,7 @@ import Data.Map.Strict qualified as Map
 import Genesis (mtlFund)
 import Model.Issue (IssueMaterialized (..))
 import Model.Issue qualified as Issue
+import Model.StellarSigner qualified as StellarSigner
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
@@ -42,7 +43,7 @@ getIssueR issueId = do
         } <-
             Issue.load issueId
 
-    signers <- runDB $ selectList [StellarSignerTarget ==. mtlFund] []
+    signers <- StellarSigner.selectList
     let weights =
             Map.fromList
                 [ (stellarSignerKey, stellarSignerWeight)
