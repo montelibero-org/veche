@@ -10,14 +10,17 @@
 
 module Model.Issue (
     IssueMaterialized (..),
+    -- * Create
+    Model.Issue.insert,
+    -- * Retrieve
     countOpenAndClosed,
     getContentForEdit,
     load,
-    selectList,
+    Model.Issue.selectList,
     selectWithoutVoteFromUser,
 ) where
 
-import Import hiding (selectList)
+import Import
 
 -- global
 import Data.Coerce (coerce)
@@ -177,3 +180,28 @@ getContentForEdit issueId =
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
         pure IssueContent{title = issueTitle, body = issueVersionBody}
+
+insert :: IssueContent -> Handler IssueId
+insert IssueContent{title, body} = do
+    now <- liftIO getCurrentTime
+    Entity userId User{userStellarAddress} <- requireAuth
+    runDB do
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        requireAuthz $ CreateIssue signerId
+        let issue = Issue
+                { issueTitle        = title
+                , issueAuthor       = userId
+                , issueOpen         = True
+                , issueCreated      = now
+                , issueCurVersion   = Nothing
+                }
+        issueId <- Persist.insert issue
+        let version = IssueVersion
+                { issueVersionIssue     = issueId
+                , issueVersionBody      = body
+                , issueVersionCreated   = now
+                , issueVersionAuthor    = userId
+                }
+        versionId <- Persist.insert version
+        update issueId [IssueCurVersion =. Just versionId]
+        pure issueId

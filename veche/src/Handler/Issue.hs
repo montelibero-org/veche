@@ -91,38 +91,10 @@ postIssuesR :: Handler Html
 postIssuesR = do
     (result, formWidget) <- runFormPostB newIssueForm
     case result of
-        FormSuccess issue -> do
-            issueId <- addIssue issue
+        FormSuccess content -> do
+            issueId <- Issue.insert content
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
-
-  where
-
-    addIssue :: IssueContent -> Handler IssueId
-    addIssue IssueContent{title, body} = do
-        now <- liftIO getCurrentTime
-        runDB do
-            (user, User{userStellarAddress}) <- requireAuthPair
-            Entity signerId _ <-
-                getBy403 $ UniqueMember mtlFund userStellarAddress
-            requireAuthz $ CreateIssue signerId
-            let issue = Issue
-                    { issueTitle        = title
-                    , issueAuthor       = user
-                    , issueOpen         = True
-                    , issueCreated      = now
-                    , issueCurVersion   = Nothing
-                    }
-            issueId <- insert issue
-            let version = IssueVersion
-                    { issueVersionIssue     = issueId
-                    , issueVersionBody      = body
-                    , issueVersionCreated   = now
-                    , issueVersionAuthor    = user
-                    }
-            versionId <- insert version
-            update issueId [IssueCurVersion =. Just versionId]
-            pure issueId
 
 data StateAction = Close | Reopen
 
