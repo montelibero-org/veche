@@ -13,7 +13,7 @@ module Model.Issue (
     selectWithoutVoteFromUser,
 ) where
 
-import Import.NoFoundation
+import Import
 
 -- global
 import Data.HashSet qualified as HashSet
@@ -66,9 +66,7 @@ loadVotes issueId = do
         | (Entity _ Vote{voteChoice}, Entity _ voter) <- votes
         ]
 
-load ::
-    (PersistSql app, AuthId app ~ UserId, AuthEntity app ~ User) =>
-    IssueId -> HandlerFor app IssueMaterialized
+load :: IssueId -> Handler IssueMaterialized
 load issueId =
     runDB do
         Entity userId User{userStellarAddress} <- requireAuth
@@ -125,8 +123,7 @@ collectChoices votes =
         | VoteMaterialized{choice, voter} <- votes
         ]
 
-selectWithoutVoteFromUser ::
-    PersistSql app => Entity User -> HandlerFor app [Entity Issue]
+selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
     runDB do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
@@ -141,9 +138,7 @@ selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
             \ WHERE vote.id IS NULL AND issue.open"
             [toPersistValue userId]
 
-getContentForEdit ::
-    (PersistSql app, AuthId app ~ UserId) =>
-    IssueId -> HandlerFor app IssueContent
+getContentForEdit :: IssueId -> Handler IssueContent
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
