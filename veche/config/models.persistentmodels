@@ -23,7 +23,7 @@ Issue
     created     UTCTime -- must be equal to min version.created
     curVersion  IssueVersionId Maybe    -- must be equal to max version
                                         -- must be Just
-    commentNum  Word Maybe  -- Number of text comments. Must be recalculated
+    commentNum  Int Maybe   -- Number of text comments. Must be recalculated
                             -- on every addition/removal of text comments.
 
     deriving Show

@@ -21,22 +21,8 @@ data CommentRequest = CommentRequest{message :: Text, issue :: IssueId}
 
 postCommentR :: Handler Value
 postCommentR = do
-    -- auth
-    (authorId, author) <- requireAuthPair
-
-    -- input
+    userE@(Entity _ user) <- requireAuth
     CommentRequest{message, issue} <- requireCheckJsonBody
-    now <- liftIO getCurrentTime
-
-    -- put comment to database
-    let comment = Comment
-            { commentAuthor     = authorId
-            , commentCreated    = now
-            , commentMessage    = message
-            , commentParent     = Nothing
-            , commentIssue      = issue
-            , commentType       = CommentText
-            }
-    Comment.insert_ author comment
-
-    returnJson $ renderHtml $ commentWidget CommentMaterialized{author, comment}
+    comment <- Comment.addText userE issue message
+    returnJson $
+        renderHtml $ commentWidget CommentMaterialized{author = user, comment}
