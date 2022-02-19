@@ -17,6 +17,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Text qualified as Text
 import Data.Typeable (typeRep)
 import Database.Persist.Sql (PersistFieldSql, sqlType)
+import Yesod.Auth (YesodAuthPersist)
 
 -- | Provides Persist instances using JSON-encoding as a String.
 -- Useful for enums.
@@ -45,8 +46,8 @@ instance (FromJSON a, ToJSON a, Typeable a) => PersistFieldSql (JsonString a)
 
 type PersistSql app =
     ( YesodPersist app
-    , BackendCompatible SqlBackend (YesodPersistBackend app)
-    , BaseBackend (YesodPersistBackend app) ~ SqlBackend
+    , YesodPersistBackend app ~ SqlBackend
+    , YesodAuthPersist app
     , PersistStoreWrite (YesodPersistBackend app)
     , PersistUniqueRead (YesodPersistBackend app)
     )

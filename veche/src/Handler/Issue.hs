@@ -18,107 +18,16 @@ module Handler.Issue
 import Import hiding (share)
 
 -- global
-import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
-import Database.Persist.Sql (rawSql)
 
 -- component
 import Genesis (mtlFund)
+import Model.Issue (IssueMaterialized (..))
+import Model.Issue qualified as Issue
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
-import Types.Comment (CommentMaterialized (..))
 import Types.Issue (IssueContent (..))
-
-data VoteMaterialized = VoteMaterialized
-    { choice :: Choice
-    , voter  :: User
-    }
-
-data IssueMaterialized = IssueMaterialized
-    { comments              :: [CommentMaterialized]
-    , body                  :: Text
-    , isCloseReopenAllowed  :: Bool
-    , isEditAllowed         :: Bool
-    , issue                 :: Issue
-    , isVoteAllowed         :: Bool
-    , votes                 :: Map Choice (HashSet User)
-    }
-
-loadIssueComments :: IssueId -> SqlPersistT Handler [CommentMaterialized]
-loadIssueComments issueId = do
-    comments <-
-        rawSql
-            "SELECT ??, ??\
-            \ FROM comment, user ON comment.author == user.id\
-            \ WHERE comment.issue == ?"
-            [toPersistValue issueId]
-    pure
-        [ CommentMaterialized{comment, author}
-        | (Entity _ comment, Entity _ author) <- comments
-        ]
-
-loadIssueVotes :: IssueId -> SqlPersistT Handler [VoteMaterialized]
-loadIssueVotes issueId = do
-    votes <-
-        rawSql
-            "SELECT ??, ??\
-            \ FROM vote, user ON vote.user == user.id\
-            \ WHERE vote.issue == ?"
-            [toPersistValue issueId]
-    pure
-        [ VoteMaterialized{choice = voteChoice, voter}
-        | (Entity _ Vote{voteChoice}, Entity _ voter) <- votes
-        ]
-
-loadIssue :: IssueId -> Handler IssueMaterialized
-loadIssue issueId =
-    runDB do
-        Entity userId User{userStellarAddress} <- requireAuth
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ ReadIssue signerId
-
-        issue@Issue{issueAuthor, issueCreated, issueCurVersion} <-
-            get404 issueId
-        versionId <-
-            issueCurVersion
-            ?| constraintFail "Issue.current_version must be valid"
-        author <-
-            get issueAuthor
-            ?|> constraintFail "Issue.author must exist in User table"
-        comments' <- loadIssueComments issueId
-        let startingPseudoComment =
-                CommentMaterialized
-                    { comment =
-                        Comment
-                            { commentAuthor     = issueAuthor
-                            , commentCreated    = issueCreated
-                            , commentMessage    = ""
-                            , commentParent     = Nothing
-                            , commentIssue      = issueId
-                            , commentType       = CommentStart
-                            }
-                    , author
-                    }
-        let comments = startingPseudoComment : comments'
-        IssueVersion{issueVersionBody = body} <-
-            get versionId
-            ?|> constraintFail
-                    "Issue.current_version must exist in IssueVersion table"
-        votes <- collectChoices <$> loadIssueVotes issueId
-
-        let issueE = Entity issueId issue
-            isEditAllowed        = isAllowed $ EditIssue        issueE userId
-            isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-            isVoteAllowed        = isAllowed $ AddVote signerId
-        pure IssueMaterialized{..}
-
-(?|) :: Applicative f => Maybe a -> f a -> f a
-Nothing ?| action   = action
-Just x  ?| _        = pure x
-
-(?|>) :: Monad f => f (Maybe a) -> f a -> f a
-m ?|> k = m >>= (?| k)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -131,7 +40,7 @@ getIssueR issueId = do
         , isVoteAllowed
         , votes
         } <-
-            loadIssue issueId
+            Issue.load issueId
 
     signers <- runDB $ selectList [StellarSignerTarget ==. mtlFund] []
     let weights =
@@ -335,27 +244,6 @@ changeState action issueId = do
 
 getIssueEditR :: IssueId -> Handler Html
 getIssueEditR issueId = do
-    userId <- requireAuthId
-    content <-
-        runDB do
-            issue@(Entity _ Issue{issueTitle, issueCurVersion}) <-
-                getEntity404 issueId
-            requireAuthz $ EditIssue issue userId
-            versionId <-
-                issueCurVersion
-                ?| constraintFail "Issue.current_version must be valid"
-            IssueVersion{issueVersionBody} <-
-                get versionId
-                ?|> constraintFail
-                        "Issue.current_version must exist in IssueVersion table"
-            pure IssueContent{title = issueTitle, body = issueVersionBody}
+    content <- Issue.getContentForEdit issueId
     formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
     defaultLayout formWidget
-
-collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
-collectChoices votes =
-    Map.fromListWith
-        (<>)
-        [ (choice, HashSet.singleton voter)
-        | VoteMaterialized{choice, voter} <- votes
-        ]
