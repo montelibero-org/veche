@@ -30,6 +30,7 @@ library
     Model.StellarSigner
     Model.Types
     Model.User
+    Model.Vote
     Settings
     Settings.StaticFiles
     Templates.Comment

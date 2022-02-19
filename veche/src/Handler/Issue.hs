@@ -21,10 +21,10 @@ import Import hiding (share)
 import Data.Map.Strict qualified as Map
 
 -- component
-import Genesis (mtlFund)
 import Model.Issue (IssueMaterialized (..))
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
+import Model.Vote qualified as Vote
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
@@ -103,8 +103,8 @@ postIssueR issueId = do
     case result of
         FormSuccess action ->
             case action of
-                "approve" -> addVote     Approve issueId
-                "reject"  -> addVote     Reject  issueId
+                "approve" -> recordVote  Approve
+                "reject"  -> recordVote  Reject
                 "close"   -> changeState Close   issueId
                 "reopen"  -> changeState Reopen  issueId
                 "edit"    -> edit                issueId
@@ -114,6 +114,11 @@ postIssueR issueId = do
                             \ reopen, edit"
                         ]
         _ -> invalidArgs [tshow result]
+  where
+
+    recordVote choice = do
+        Vote.record choice issueId
+        redirect $ IssueR issueId
 
 edit :: IssueId -> Handler Html
 edit issueId = do
@@ -123,30 +128,6 @@ edit issueId = do
             Issue.edit issueId content
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
-
-addVote :: Choice -> IssueId -> Handler Html
-addVote choice issueId = do
-    now <- liftIO getCurrentTime
-    (user, User{userStellarAddress}) <- requireAuthPair
-    runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ AddVote signerId
-        upsert_
-            Vote{voteUser = user, voteIssue = issueId, voteChoice = choice}
-            [VoteChoice =. choice]
-        insert_
-            Comment
-                { commentAuthor     = user
-                , commentCreated    = now
-                , commentMessage    = ""
-                , commentParent     = Nothing
-                , commentIssue      = issueId
-                , commentType       =
-                    case choice of
-                        Approve -> CommentApprove
-                        Reject  -> CommentReject
-                }
-    redirect $ IssueR issueId
 
 changeState :: StateAction -> IssueId -> Handler a
 changeState action issueId = do
