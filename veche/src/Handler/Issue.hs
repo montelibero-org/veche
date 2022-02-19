@@ -28,7 +28,6 @@ import Model.StellarSigner qualified as StellarSigner
 import Templates.Comment (commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm,
                         newIssueForm, voteForm)
-import Types.Issue (IssueContent (..))
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -92,7 +91,7 @@ postIssuesR = do
     (result, formWidget) <- runFormPostB newIssueForm
     case result of
         FormSuccess content -> do
-            issueId <- Issue.insert content
+            issueId <- Issue.create content
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
 
@@ -121,38 +120,9 @@ edit issueId = do
     (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
     case result of
         FormSuccess content -> do
-            addIssueVersion content
+            Issue.edit issueId content
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
-
-  where
-
-    addIssueVersion :: IssueContent -> Handler ()
-    addIssueVersion IssueContent{title, body} = do
-        now <- liftIO getCurrentTime
-        user <- requireAuthId
-        runDB do
-            issue <- getEntity404 issueId
-            requireAuthz $ EditIssue issue user
-            let version = IssueVersion
-                    { issueVersionAuthor    = user
-                    , issueVersionBody      = body
-                    , issueVersionCreated   = now
-                    , issueVersionIssue     = issueId
-                    }
-            versionId <- insert version
-            update
-                issueId
-                [IssueTitle =. title, IssueCurVersion =. Just versionId]
-            insert_
-                Comment
-                    { commentAuthor     = user
-                    , commentCreated    = now
-                    , commentMessage    = ""
-                    , commentParent     = Nothing
-                    , commentIssue      = issueId
-                    , commentType       = CommentEdit
-                    }
 
 addVote :: Choice -> IssueId -> Handler Html
 addVote choice issueId = do

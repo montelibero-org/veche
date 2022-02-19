@@ -11,13 +11,15 @@
 module Model.Issue (
     IssueMaterialized (..),
     -- * Create
-    Model.Issue.insert,
+    create,
     -- * Retrieve
     countOpenAndClosed,
     getContentForEdit,
     load,
     Model.Issue.selectList,
     selectWithoutVoteFromUser,
+    -- * Update
+    edit,
 ) where
 
 import Import
@@ -181,8 +183,8 @@ getContentForEdit issueId =
                     "Issue.current_version must exist in IssueVersion table"
         pure IssueContent{title = issueTitle, body = issueVersionBody}
 
-insert :: IssueContent -> Handler IssueId
-insert IssueContent{title, body} = do
+create :: IssueContent -> Handler IssueId
+create IssueContent{title, body} = do
     now <- liftIO getCurrentTime
     Entity userId User{userStellarAddress} <- requireAuth
     runDB do
@@ -195,13 +197,40 @@ insert IssueContent{title, body} = do
                 , issueCreated      = now
                 , issueCurVersion   = Nothing
                 }
-        issueId <- Persist.insert issue
+        issueId <- insert issue
         let version = IssueVersion
                 { issueVersionIssue     = issueId
                 , issueVersionBody      = body
                 , issueVersionCreated   = now
                 , issueVersionAuthor    = userId
                 }
-        versionId <- Persist.insert version
+        versionId <- insert version
         update issueId [IssueCurVersion =. Just versionId]
         pure issueId
+
+edit :: IssueId -> IssueContent -> Handler ()
+edit issueId IssueContent{title, body} = do
+    now <- liftIO getCurrentTime
+    user <- requireAuthId
+    runDB do
+        issue <- getEntity404 issueId
+        requireAuthz $ EditIssue issue user
+        let version = IssueVersion
+                { issueVersionAuthor    = user
+                , issueVersionBody      = body
+                , issueVersionCreated   = now
+                , issueVersionIssue     = issueId
+                }
+        versionId <- insert version
+        update
+            issueId
+            [IssueTitle =. title, IssueCurVersion =. Just versionId]
+        insert_
+            Comment
+                { commentAuthor     = user
+                , commentCreated    = now
+                , commentMessage    = ""
+                , commentParent     = Nothing
+                , commentIssue      = issueId
+                , commentType       = CommentEdit
+                }
