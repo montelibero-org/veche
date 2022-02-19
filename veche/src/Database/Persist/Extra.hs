@@ -45,6 +45,7 @@ instance (FromJSON a, ToJSON a, Typeable a) => PersistFieldSql (JsonString a)
 
 type PersistSql app =
     ( YesodPersist app
+    , BackendCompatible SqlBackend (YesodPersistBackend app)
     , BaseBackend (YesodPersistBackend app) ~ SqlBackend
     , PersistStoreWrite (YesodPersistBackend app)
     , PersistUniqueRead (YesodPersistBackend app)
