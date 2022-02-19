@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Handler.Issue
@@ -35,10 +36,13 @@ data VoteMaterialized = VoteMaterialized
     }
 
 data IssueMaterialized = IssueMaterialized
-    { issue      :: Issue
-    , comments   :: [CommentMaterialized]
-    , votes      :: [VoteMaterialized]
-    , curVersion :: IssueVersion
+    { comments              :: [CommentMaterialized]
+    , body                  :: Text
+    , isCloseReopenAllowed  :: Bool
+    , isEditAllowed         :: Bool
+    , issue                 :: Issue
+    , isVoteAllowed         :: Bool
+    , votes                 :: [VoteMaterialized]
     }
 
 loadIssueComments :: IssueId -> SqlPersistT Handler [CommentMaterialized]
@@ -69,6 +73,10 @@ loadIssueVotes issueId = do
 
 loadIssue :: IssueId -> SqlPersistT Handler IssueMaterialized
 loadIssue issueId = do
+    Entity userId User{userStellarAddress} <- requireAuth
+    Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+    requireAuthz $ ReadIssue signerId
+
     issue@Issue{issueAuthor, issueCreated, issueCurVersion} <- get404 issueId
     versionId <-
         issueCurVersion
@@ -91,13 +99,18 @@ loadIssue issueId = do
                 , author
                 }
     let comments = startingPseudoComment : comments'
-    curVersion <-
+    IssueVersion{issueVersionBody = body} <-
         get versionId
         ?|> lift
                 (constraintFail
                     "Issue.current_version must exist in IssueVersion table")
     votes <- loadIssueVotes issueId
-    pure IssueMaterialized{issue, comments, curVersion, votes}
+
+    let issueE = Entity issueId issue
+        isEditAllowed        = isAllowed $ EditIssue        issueE userId
+        isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
+        isVoteAllowed        = isAllowed $ AddVote signerId
+    pure IssueMaterialized{..}
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
 Nothing ?| action   = action
@@ -108,20 +121,16 @@ m ?|> k = m >>= (?| k)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
-    (userId, User{userStellarAddress}) <- requireAuthPair
-    Entity signerId _ <-
-        runDB $ getBy403 $ UniqueMember mtlFund userStellarAddress
-    requireAuthz $ ReadIssue signerId
-
-    IssueMaterialized{comments, issue, curVersion, votes} <-
-        runDB $ loadIssue issueId
-
-    let Issue{issueTitle, issueOpen} = issue
-        IssueVersion{issueVersionBody} = curVersion
-        issueE = Entity issueId issue
-    let isEditAllowed        = isAllowed $ EditIssue        issueE userId
-        isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-        isVoteAllowed        = isAllowed $ AddVote signerId
+    IssueMaterialized
+        { comments
+        , body
+        , isCloseReopenAllowed
+        , isEditAllowed
+        , issue = Issue{issueTitle, issueOpen}
+        , isVoteAllowed
+        , votes
+        } <-
+            runDB $ loadIssue issueId
 
     signers <- runDB $ selectList [StellarSignerTarget ==. mtlFund] []
     let weights =

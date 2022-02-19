@@ -15,7 +15,7 @@ $if isCloseReopenAllowed
 <div .clearfix style="margin-bottom: 1em;">
 
 <div .panel .panel-primary>
-    <div .panel-body>#{issueVersionBody}
+    <div .panel-body>#{body}
 
 $forall (choice, percentage, share) <- voteResults
     <label .col-sm-2 .text-right>#{choice}
