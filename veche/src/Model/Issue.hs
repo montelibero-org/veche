@@ -10,6 +10,7 @@
 
 module Model.Issue (
     IssueMaterialized (..),
+    StateAction (..),
     -- * Create
     create,
     -- * Retrieve
@@ -19,6 +20,7 @@ module Model.Issue (
     Model.Issue.selectList,
     selectWithoutVoteFromUser,
     -- * Update
+    closeReopen,
     edit,
 ) where
 
@@ -50,6 +52,8 @@ data IssueMaterialized = IssueMaterialized
     , isVoteAllowed         :: Bool
     , votes                 :: Map Choice (HashSet User)
     }
+
+data StateAction = Close | Reopen
 
 countOpenAndClosed :: Handler (Int, Int)
 countOpenAndClosed = do
@@ -234,3 +238,30 @@ edit issueId IssueContent{title, body} = do
                 , commentIssue      = issueId
                 , commentType       = CommentEdit
                 }
+
+closeReopen :: IssueId -> StateAction -> Handler ()
+closeReopen issueId stateAction = do
+    now <- liftIO getCurrentTime
+    user <- requireAuthId
+    runDB do
+        issue <- getEntity404 issueId
+        requireAuthz $ CloseReopenIssue issue user
+        update issueId [IssueOpen =. newState]
+        insert_
+            Comment
+                { commentAuthor  = user
+                , commentCreated = now
+                , commentMessage = ""
+                , commentParent  = Nothing
+                , commentIssue   = issueId
+                , commentType
+                }
+  where
+    newState =
+        case stateAction of
+            Close  -> False
+            Reopen -> True
+    commentType =
+        case stateAction of
+            Close  -> CommentClose
+            Reopen -> CommentReopen

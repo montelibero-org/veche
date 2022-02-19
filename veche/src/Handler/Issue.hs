@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,7 +22,7 @@ import Import hiding (share)
 import Data.Map.Strict qualified as Map
 
 -- component
-import Model.Issue (IssueMaterialized (..))
+import Model.Issue (IssueMaterialized (..), StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
@@ -95,30 +96,26 @@ postIssuesR = do
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
 
-data StateAction = Close | Reopen
-
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
     (result, _widget) <- runFormPostB actionForm
     case result of
-        FormSuccess action ->
-            case action of
-                "approve" -> recordVote  Approve
-                "reject"  -> recordVote  Reject
-                "close"   -> changeState Close   issueId
-                "reopen"  -> changeState Reopen  issueId
-                "edit"    -> edit                issueId
-                _ ->
-                    invalidArgs
-                        [   "action must be one of: approve, reject, close,\
-                            \ reopen, edit"
-                        ]
+        FormSuccess action -> doAction action
         _ -> invalidArgs [tshow result]
   where
 
-    recordVote choice = do
-        Vote.record choice issueId
-        redirect $ IssueR issueId
+    doAction = \case
+        "approve" -> Vote.record       issueId Approve >> refresh
+        "reject"  -> Vote.record       issueId Reject  >> refresh
+        "close"   -> Issue.closeReopen issueId Close   >> refresh
+        "reopen"  -> Issue.closeReopen issueId Reopen  >> refresh
+        "edit"    -> edit issueId
+        _         -> invalidArgs [invalidAction]
+
+    refresh = redirect $ IssueR issueId
+
+    invalidAction =
+        "action must be one of: approve, reject, close, reopen, edit"
 
 edit :: IssueId -> Handler Html
 edit issueId = do
@@ -128,34 +125,6 @@ edit issueId = do
             Issue.edit issueId content
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
-
-changeState :: StateAction -> IssueId -> Handler a
-changeState action issueId = do
-    now <- liftIO getCurrentTime
-    user <- requireAuthId
-    runDB do
-        issue <- getEntity404 issueId
-        requireAuthz $ CloseReopenIssue issue user
-        update
-            issueId
-            [ IssueOpen
-                =.  case action of
-                        Close  -> False
-                        Reopen -> True
-            ]
-        insert_
-            Comment
-                { commentAuthor     = user
-                , commentCreated    = now
-                , commentMessage    = ""
-                , commentParent     = Nothing
-                , commentIssue      = issueId
-                , commentType       =
-                    case action of
-                        Close   -> CommentClose
-                        Reopen  -> CommentReopen
-                }
-    redirect $ IssueR issueId
 
 getIssueEditR :: IssueId -> Handler Html
 getIssueEditR issueId = do

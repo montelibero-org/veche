@@ -8,8 +8,8 @@ import Import
 import Genesis (mtlFund)
 
 -- | Create a vote or abrogate existing
-record :: Choice -> IssueId -> Handler ()
-record choice issueId = do
+record :: IssueId -> Choice -> Handler ()
+record issueId choice = do
     now <- liftIO getCurrentTime
     (user, User{userStellarAddress}) <- requireAuthPair
     runDB do
