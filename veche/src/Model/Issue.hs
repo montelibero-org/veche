@@ -74,8 +74,8 @@ loadComments issueId = do
             \ WHERE comment.issue == ?"
             [toPersistValue issueId]
     pure
-        [ CommentMaterialized{comment, author}
-        | (Entity _ comment, Entity _ author) <- comments
+        [ CommentMaterialized{id, comment, author}
+        | (Entity id comment, Entity _ author) <- comments
         ]
 
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
@@ -109,7 +109,8 @@ load issueId =
         comments' <- loadComments issueId
         let startingPseudoComment =
                 CommentMaterialized
-                    { comment =
+                    { id = fromBackendKey 0
+                    , comment =
                         Comment
                             { commentAuthor     = issueAuthor
                             , commentCreated    = issueCreated

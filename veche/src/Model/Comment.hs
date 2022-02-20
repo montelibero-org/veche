@@ -7,7 +7,7 @@ import Import
 
 import Genesis (mtlFund)
 
-addText :: Entity User -> IssueId -> Text -> Handler Comment
+addText :: Entity User -> IssueId -> Text -> Handler (Entity Comment)
 addText (Entity userId User{userStellarAddress}) issue message = do
     now <- liftIO getCurrentTime
     let comment =
@@ -22,9 +22,9 @@ addText (Entity userId User{userStellarAddress}) issue message = do
     runDB do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ AddIssueComment signerId
-        insert_ comment
+        commentId <- insert comment
         updateIssueCommentNum issue Nothing
-    pure comment
+        pure $ Entity commentId comment
 
 updateIssueCommentNum ::
     IssueId ->

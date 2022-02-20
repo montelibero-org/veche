@@ -1,4 +1,6 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
@@ -10,9 +12,9 @@ import Templates.User (userNameWidget)
 import Types.Comment (CommentMaterialized (..))
 
 commentWidget :: CommentMaterialized -> Html
-commentWidget CommentMaterialized{author, comment} =
+commentWidget CommentMaterialized{id, author, comment} =
     [shamlet|
-        <div .panel .panel-default>
+        <div ##{commentAnchor id} .panel .panel-default>
             <div .panel-heading>
                 <span .comment_author>#{userNameWidget author}
                 <span .comment_action>#{commentType}
@@ -24,3 +26,6 @@ commentWidget CommentMaterialized{author, comment} =
   where
 
     Comment{commentMessage, commentType, commentCreated} = comment
+
+commentAnchor :: CommentId -> Text
+commentAnchor id = "comment" <> toPathPiece id

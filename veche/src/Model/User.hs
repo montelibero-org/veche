@@ -8,7 +8,7 @@
 
 module Model.User (getBy, getOrInsert, selectValList, setName) where
 
-import Import.NoFoundation hiding (getBy, id)
+import Import.NoFoundation hiding (getBy)
 
 import Database.Persist qualified as Persist
 
