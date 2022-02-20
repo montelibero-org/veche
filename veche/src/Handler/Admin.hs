@@ -21,6 +21,6 @@ getAdminUpdateDatabaseR = do
         for_ issues \(Entity issueId issue) -> do
             sendChunkText $ "Updating issue " <> toPathPiece issueId <> "\n"
             lift $ runDB do
-                Comment.updateIssueCommentNum issueId
-                Vote.updateIssueApproval issueId $ Just issue
+                Comment.updateIssueCommentNum issueId $ Just issue
+                Vote.updateIssueApproval      issueId $ Just issue
         sendChunkText "Updated all issues\n"

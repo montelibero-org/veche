@@ -23,11 +23,17 @@ addText (Entity userId User{userStellarAddress}) issue message = do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ AddIssueComment signerId
         insert_ comment
-        updateIssueCommentNum issue
+        updateIssueCommentNum issue Nothing
     pure comment
 
-updateIssueCommentNum :: IssueId -> SqlPersistT Handler ()
-updateIssueCommentNum issueId = do
-    commentNum <-
-        count [CommentIssue ==. issueId, CommentType ==. CommentText]
-    update issueId [IssueCommentNum =. commentNum]
+updateIssueCommentNum ::
+    IssueId ->
+    -- | If the issue value is given it will be checked for the need of update.
+    Maybe Issue ->
+    SqlPersistT Handler ()
+updateIssueCommentNum issueId mIssue = do
+    commentNum <- count [CommentIssue ==. issueId, CommentType ==. CommentText]
+    case mIssue of
+        Just Issue{issueCommentNum = oldCommentNum}
+            | commentNum == oldCommentNum -> pure ()
+        _ -> update issueId [IssueCommentNum =. commentNum]
