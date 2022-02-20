@@ -1,5 +1,7 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -43,3 +45,14 @@ deriveJSON
     ''CommentType
 deriving via JsonString CommentType instance PersistField    CommentType
 deriving via JsonString CommentType instance PersistFieldSql CommentType
+
+instance ToMarkup CommentType where
+    toMarkup = \case
+        CommentApprove      -> "approved"
+        CommentClose        -> "closed issue"
+        CommentEdit         -> "edited issue"
+        CommentReject       -> "rejected"
+        CommentReopen       -> "reopened issue"
+        CommentRequestInfo  -> "requested additional information"
+        CommentStart        -> "started issue"
+        CommentText         -> "commented"

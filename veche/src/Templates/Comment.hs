@@ -15,7 +15,7 @@ commentWidget CommentMaterialized{author, comment} =
         <div .panel .panel-default>
             <div .panel-heading>
                 <span .comment_author>#{userNameWidget author}
-                <span .comment_action>#{action}
+                <span .comment_action>#{commentType}
                 on
                 <span .comment_timestamp>#{show commentCreated}
             $if commentMessage /= ""
@@ -24,15 +24,3 @@ commentWidget CommentMaterialized{author, comment} =
   where
 
     Comment{commentMessage, commentType, commentCreated} = comment
-
-    action :: Text
-    action =
-        case commentType of
-            CommentApprove      -> "approved"
-            CommentClose        -> "closed issue"
-            CommentEdit         -> "edited issue"
-            CommentReject       -> "rejected"
-            CommentReopen       -> "reopened issue"
-            CommentRequestInfo  -> "requested additional information"
-            CommentStart        -> "started issue"
-            CommentText         -> "commented"

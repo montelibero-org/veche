@@ -30,4 +30,4 @@ updateCommentNum :: IssueId -> SqlPersistT Handler ()
 updateCommentNum issueId = do
     commentNum <-
         count [CommentIssue ==. issueId, CommentType ==. CommentText]
-    update issueId [IssueCommentNum =. Just commentNum]
+    update issueId [IssueCommentNum =. commentNum]
