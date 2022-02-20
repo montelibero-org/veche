@@ -4,6 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Workers.StellarUpdate (stellarDataUpdater) where
 
@@ -54,16 +55,22 @@ stellarDataUpdater baseUrl connPool =
                                 {stellarSignerKey, stellarSignerWeight} =
                                     entityVal
                         ]
-            let deleted = cached \\ actual
-            let added   = actual \\ cached
-            let modified =
-                    Map.fromList
-                        [ (key, weightActual)
-                        | (key, (weightCached, weightActual)) <-
-                            Map.assocs $ Map.intersectionWith (,) cached actual
-                        , weightCached /= weightActual
-                        ]
-            for_ (Map.keys deleted) $ deleteBy . UniqueMember target
+            handleDeleted $ Map.keys $ cached \\ actual
+            handleAdded $ actual \\ cached
+            handleModified
+                [ (key, weightActual)
+                | (key, (weightCached, weightActual)) <-
+                    Map.assocs $ Map.intersectionWith (,) cached actual
+                , weightCached /= weightActual
+                ]
+            unless (cached == actual)
+                updateAllIssueApprovals
+        pure $ length actual
+      where
+
+        handleDeleted = traverse_ $ deleteBy . UniqueMember target
+
+        handleAdded added =
             insertMany_
                 [ StellarSigner
                     { stellarSignerTarget = target
@@ -72,13 +79,12 @@ stellarDataUpdater baseUrl connPool =
                     }
                 | (stellarSignerKey, stellarSignerWeight) <- Map.assocs added
                 ]
-            for_ (Map.assocs modified) \(key, weight) ->
+
+        handleModified =
+            traverse_ \(key, weight) ->
                 updateWhere
                     [StellarSignerTarget ==. target, StellarSignerKey ==. key]
                     [StellarSignerWeight =. weight]
-            unless (cached == actual)
-                updateAllIssueApprovals
-        pure $ length actual
 
     getAccount' address = do
         manager <- newTlsManager
