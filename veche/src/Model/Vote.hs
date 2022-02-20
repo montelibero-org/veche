@@ -37,6 +37,7 @@ record issueId choice = do
                         Approve -> CommentApprove
                         Reject  -> CommentReject
                 }
+        updateIssueApproval issueId
 
 updateIssueApproval :: IssueId -> SqlPersistT Handler ()
 updateIssueApproval issueId = do
