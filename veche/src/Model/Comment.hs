@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Model.Comment (addText) where
+module Model.Comment (addText, updateIssueCommentNum) where
 
 import Import
 
@@ -23,11 +23,11 @@ addText (Entity userId User{userStellarAddress}) issue message = do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ AddIssueComment signerId
         insert_ comment
-        updateCommentNum issue
+        updateIssueCommentNum issue
     pure comment
 
-updateCommentNum :: IssueId -> SqlPersistT Handler ()
-updateCommentNum issueId = do
+updateIssueCommentNum :: IssueId -> SqlPersistT Handler ()
+updateIssueCommentNum issueId = do
     commentNum <-
         count [CommentIssue ==. issueId, CommentType ==. CommentText]
     update issueId [IssueCommentNum =. commentNum]

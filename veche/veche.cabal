@@ -17,6 +17,7 @@ library
     Form
     Foundation
     Genesis
+    Handler.Admin
     Handler.Comment
     Handler.Common
     Handler.Dashboard

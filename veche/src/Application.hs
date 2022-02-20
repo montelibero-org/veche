@@ -44,6 +44,7 @@ import Servant.Client (parseBaseUrl)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 
 -- component
+import Handler.Admin (getAdminUpdateDatabaseR)
 import Handler.Comment (postCommentR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
