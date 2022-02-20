@@ -40,10 +40,11 @@ record issueId choice = do
         updateIssueApproval issueId Nothing
 
 updateIssueApproval ::
+    MonadIO m =>
     IssueId ->
     -- | If the issue value is given it will be checked for the need of update.
     Maybe Issue ->
-    SqlPersistT Handler ()
+    SqlPersistT m ()
 updateIssueApproval issueId mIssue = do
     weights :: [(Single Int, Maybe UserId)] <-
         rawSql

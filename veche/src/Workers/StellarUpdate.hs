@@ -24,6 +24,7 @@ import Stellar.Horizon.Types (Account (..), Signer (..),
 
 -- component
 import Genesis (mtlFund)
+import Model.Vote qualified as Vote
 
 stellarDataUpdater :: BaseUrl -> ConnectionPool -> IO ()
 stellarDataUpdater baseUrl connPool =
@@ -75,6 +76,8 @@ stellarDataUpdater baseUrl connPool =
                 updateWhere
                     [StellarSignerTarget ==. target, StellarSignerKey ==. key]
                     [StellarSignerWeight =. weight]
+            unless (cached == actual)
+                updateAllIssueApprovals
         pure $ length actual
 
     getAccount' address = do
@@ -89,3 +92,8 @@ stellarDataUpdater baseUrl connPool =
         threadDelay $ delayMinutes * 60 * 1_000_000
 
     db action = runSqlPool action connPool
+
+    updateAllIssueApprovals = do
+        issues <- selectList [] []
+        for_ issues \(Entity issueId issue) ->
+            Vote.updateIssueApproval issueId $ Just issue
