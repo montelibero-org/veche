@@ -114,3 +114,5 @@ issueTable issues = $(widgetFile "issue-table")
 
 issueTableRow :: Entity Issue -> Widget
 issueTableRow (Entity issueId Issue{..}) = $(widgetFile "issue-table-row")
+  where
+    approvalPercent = round $ issueApproval * 100 :: Int

@@ -21,8 +21,7 @@ getAdminUpdateDatabaseR = do
         for_ issues \issueId -> do
             sendChunkText $
                 "Updating issue " <> toPathPiece issueId <> "\n"
-            lift $ runDB $ Comment.updateIssueCommentNum issueId
-        sendChunkText "Updated all comment counters\n"
-        sendChunkText "Updating approvals\n"
-        lift $ runDB Vote.updateIssueApprovals
-        sendChunkText "Updated approvals\n"
+            lift $ runDB do
+                Comment.updateIssueCommentNum issueId
+                Vote.updateIssueApproval issueId
+        sendChunkText "Updated all issues\n"

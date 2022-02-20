@@ -5,12 +5,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Model.Vote (record, updateIssueApprovals) where
+module Model.Vote (record, updateIssueApproval) where
 
 import Import
 
 import Data.Map.Strict qualified as Map
-import Data.Set qualified as Set
 import Database.Persist.Sql (Single (..), rawSql)
 
 import Genesis (mtlFund)
@@ -39,8 +38,8 @@ record issueId choice = do
                         Reject  -> CommentReject
                 }
 
-updateIssueApprovals :: SqlPersistT Handler ()
-updateIssueApprovals = do
+updateIssueApproval :: IssueId -> SqlPersistT Handler ()
+updateIssueApproval issueId = do
     weights :: [(Single Int, Maybe UserId)] <-
         rawSql
             "SELECT stellar_signer.weight, user.id\
@@ -52,20 +51,15 @@ updateIssueApprovals = do
         userWeights =
             Map.fromList
                 [(userId, weight) | (Single weight, Just userId) <- weights]
+    -- TODO(cblp, 2022-02-20) cache weight selection for mass issue update
 
-    approvesForAllIssues <- selectList [VoteChoice ==. Approve] []
-    let approversByIssue =
-            Map.fromListWith
-                (<>)
-                [ (voteIssue, Set.singleton voteUser)
-                | Entity _ Vote{voteIssue, voteUser} <- approvesForAllIssues
+    approves <- selectList [VoteChoice ==. Approve, VoteIssue ==. issueId] []
+    let approvers = map (voteUser . entityVal) approves
+
+    let sumApproveWeights =
+            sum
+                [ Map.findWithDefault 0 userId userWeights
+                | userId <- approvers
                 ]
-
-    for_ (Map.assocs approversByIssue) \(issueId, approvers) -> do
-        let sumApproveWeights =
-                sum
-                    [ Map.findWithDefault 0 userId userWeights
-                    | userId <- toList approvers
-                    ]
-        let approval = fromIntegral sumApproveWeights / sumWeight
-        update issueId [IssueApproval =. approval]
+    let approval = fromIntegral sumApproveWeights / sumWeight
+    update issueId [IssueApproval =. approval]

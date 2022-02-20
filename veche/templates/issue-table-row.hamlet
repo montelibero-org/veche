@@ -3,7 +3,7 @@
         <a href=@{IssueR issueId}>#{issueTitle}
     <td .text-right>
         <i .fa-solid .fa-check>
-        #{issueApproval * 100}%
+        #{approvalPercent}%
     <td .text-right>
         <i .fa-solid .fa-comments>
         #{issueCommentNum}
