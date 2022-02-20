@@ -111,3 +111,6 @@ newIssueForm =
 
 issueTable :: [Entity Issue] -> Widget
 issueTable issues = $(widgetFile "issue-table")
+
+issueTableRow :: Entity Issue -> Widget
+issueTableRow (Entity issueId Issue{..}) = $(widgetFile "issue-table-row")

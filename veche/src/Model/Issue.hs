@@ -195,7 +195,8 @@ create IssueContent{title, body} = do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ CreateIssue signerId
         let issue = Issue
-                { issueTitle        = title
+                { issueApproval     = 0
+                , issueTitle        = title
                 , issueAuthor       = userId
                 , issueOpen         = True
                 , issueCommentNum   = 0

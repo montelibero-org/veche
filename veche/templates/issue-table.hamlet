@@ -1,8 +1,3 @@
 <table .table .table-striped>
-    $forall Entity issueId Issue{issueTitle, issueCommentNum} <- issues
-        <tr>
-            <td>
-                <a href=@{IssueR issueId}>#{issueTitle}
-            <td .text-right>
-                <i .fa-regular .fa-comments>
-                #{issueCommentNum}
+    $forall issue <- issues
+        ^{issueTableRow issue}

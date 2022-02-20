@@ -19,12 +19,15 @@ Issue
     open        Bool
     title       Text
 
-    -- denormalized fields to avoid extra requests for min and max versions
-    created     UTCTime -- must be equal to min version.created
-    curVersion  IssueVersionId Maybe    -- must be equal to max version
-                                        -- must be Just
+    -- denormalized fields to avoid extra requests
+    approval    Double  -- Share of 'approve' votes. Must be recalculated every
+                        -- time somebody votes or the set of voters is changed.
     commentNum  Int -- Number of text comments. Must be recalculated on every
                     -- addition/removal of text comments.
+    created     UTCTime -- Must be equal to min version.created.
+    curVersion  IssueVersionId Maybe    -- Must be equal to max version.
+                                        -- Must be Just after creation.
+                                        -- May be Nothing only during creation.
 
     deriving Show
 
