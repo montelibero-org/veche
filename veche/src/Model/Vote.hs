@@ -47,7 +47,7 @@ updateIssueApproval issueId = do
                 \ ON stellar_signer.key = user.stellar_address\
             \ WHERE stellar_signer.target = ?"
             [toPersistValue mtlFund]
-    let sumWeight = fromIntegral $ sum $ map (unSingle . fst) weights
+    let totalSignersWeight = sum $ map (unSingle . fst) weights
         userWeights =
             Map.fromList
                 [(userId, weight) | (Single weight, Just userId) <- weights]
@@ -56,10 +56,8 @@ updateIssueApproval issueId = do
     approves <- selectList [VoteChoice ==. Approve, VoteIssue ==. issueId] []
     let approvers = map (voteUser . entityVal) approves
 
-    let sumApproveWeights =
-            sum
-                [ Map.findWithDefault 0 userId userWeights
-                | userId <- approvers
-                ]
-    let approval = fromIntegral sumApproveWeights / sumWeight
+    let totalApproveWeights =
+            sum [findWithDefault 0 userId userWeights | userId <- approvers]
+    let approval =
+            fromIntegral totalApproveWeights / fromIntegral totalSignersWeight
     update issueId [IssueApproval =. approval]

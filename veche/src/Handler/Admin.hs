@@ -19,8 +19,7 @@ getAdminUpdateDatabaseR = do
             "Updating issues " <> intercalate ", " (map toPathPiece issues)
             <> "\n"
         for_ issues \issueId -> do
-            sendChunkText $
-                "Updating issue " <> toPathPiece issueId <> "\n"
+            sendChunkText $ "Updating issue " <> toPathPiece issueId <> "\n"
             lift $ runDB do
                 Comment.updateIssueCommentNum issueId
                 Vote.updateIssueApproval issueId
