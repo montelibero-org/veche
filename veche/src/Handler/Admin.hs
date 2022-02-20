@@ -14,13 +14,13 @@ getAdminUpdateDatabaseR :: Handler TypedContent
 getAdminUpdateDatabaseR = do
     _ <- requireAuth
     respondSource "text/plain" do
-        issues <- lift $ runDB $ selectKeysList [] []
+        issues <- lift $ runDB $ selectList [] []
         sendChunkText $
-            "Updating issues " <> intercalate ", " (map toPathPiece issues)
-            <> "\n"
-        for_ issues \issueId -> do
+            "Updating issues "
+            <> intercalate ", " (map (toPathPiece . entityKey) issues) <> "\n"
+        for_ issues \(Entity issueId issue) -> do
             sendChunkText $ "Updating issue " <> toPathPiece issueId <> "\n"
             lift $ runDB do
                 Comment.updateIssueCommentNum issueId
-                Vote.updateIssueApproval issueId
+                Vote.updateIssueApproval issueId $ Just issue
         sendChunkText "Updated all issues\n"

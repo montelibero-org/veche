@@ -37,10 +37,14 @@ record issueId choice = do
                         Approve -> CommentApprove
                         Reject  -> CommentReject
                 }
-        updateIssueApproval issueId
+        updateIssueApproval issueId Nothing
 
-updateIssueApproval :: IssueId -> SqlPersistT Handler ()
-updateIssueApproval issueId = do
+updateIssueApproval ::
+    IssueId ->
+    -- | If the issue value is given it will be checked for the need of update.
+    Maybe Issue ->
+    SqlPersistT Handler ()
+updateIssueApproval issueId mIssue = do
     weights :: [(Single Int, Maybe UserId)] <-
         rawSql
             "SELECT stellar_signer.weight, user.id\
@@ -61,4 +65,7 @@ updateIssueApproval issueId = do
             sum [findWithDefault 0 userId userWeights | userId <- approvers]
     let approval =
             fromIntegral totalApproveWeights / fromIntegral totalSignersWeight
-    update issueId [IssueApproval =. approval]
+    case mIssue of
+        Just Issue{issueApproval = oldApproval} | approval == oldApproval ->
+            pure ()
+        _ -> update issueId [IssueApproval =. approval]
