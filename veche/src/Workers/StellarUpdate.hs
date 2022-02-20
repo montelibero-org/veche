@@ -75,7 +75,7 @@ updateMtlSignersCache baseUrl connPool target = do
         unless (cached == actual)
             updateAllIssueApprovals
     pure $ length actual
-    where
+  where
 
     handleDeleted = traverse_ $ deleteBy . UniqueMember target
 
