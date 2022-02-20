@@ -27,6 +27,7 @@ library
     Import.NoFoundation
     Model
     Model.Comment
+    Model.Request
     Model.Issue
     Model.StellarSigner
     Model.Types

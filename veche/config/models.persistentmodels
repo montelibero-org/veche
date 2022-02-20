@@ -39,6 +39,11 @@ IssueVersion
     issue   IssueId
 
 
+Request
+    user    UserId
+    comment CommentId
+
+
 StellarSigner
     target  Text -- target account address (managed one)
     key     Text -- signer account address

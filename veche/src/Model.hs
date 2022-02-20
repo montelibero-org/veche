@@ -16,11 +16,11 @@
 
 module Model where
 
-import ClassyPrelude.Yesod
+import ClassyPrelude.Yesod hiding (Request)
 
 import Database.Persist.Quasi (lowerCaseSettings)
 
-import Model.Types (CommentType, Choice)
+import Model.Types (Choice, CommentType)
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities

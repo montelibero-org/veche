@@ -1,3 +1,5 @@
 <h2>Voting required (#{show $ length issues})
 
 ^{issueTable issues}
+
+<h2>Questions (#{show $ length requests})

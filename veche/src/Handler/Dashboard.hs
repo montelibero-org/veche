@@ -10,10 +10,12 @@ module Handler.Dashboard (getDashboardR) where
 import Import
 
 import Model.Issue qualified as Issue
+import Model.Request qualified as Request
 import Templates.Issue (issueTable)
 
 getDashboardR :: Handler Html
 getDashboardR = do
-    user <- requireAuth
+    user@(Entity userId _) <- requireAuth
     issues <- Issue.selectWithoutVoteFromUser user
+    requests <- Request.selectByUser userId
     defaultLayout $(widgetFile "dashboard")
