@@ -17,9 +17,9 @@ addText
                 Comment
                     { commentAuthor  = userId
                     , commentCreated = now
+                    , commentIssue   = issue
                     , commentMessage = message
                     , commentParent  = Nothing
-                    , commentIssue   = issue
                     , commentType    = CommentText
                     }
         runDB do
@@ -29,9 +29,10 @@ addText
             commentId <- insert comment
             insertMany_
                 [ Request
-                    { requestUser
-                    , requestComment   = commentId
+                    { requestComment   = commentId
                     , requestFulfilled = False
+                    , requestIssue     = issue
+                    , requestUser
                     }
                 | requestUser <- toList requestUsers
                 ]

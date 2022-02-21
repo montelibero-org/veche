@@ -44,6 +44,9 @@ Request
     comment     CommentId
     fulfilled   Bool
 
+    -- denormalized fields
+    issue       IssueId
+
     UniqueRequest user comment
 
     deriving Show

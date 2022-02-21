@@ -78,16 +78,13 @@ loadComments issueId = do
             \ FROM comment, user ON comment.author = user.id\
             \ WHERE comment.issue = ?"
             [toPersistValue issueId]
-    let commentIds = map (entityKey . fst) comments
     requests <-
         rawSql
             @(Entity Request, Entity User)
-            ("SELECT ??, ??\
-                \ FROM request, user ON request.user = user.id\
-                \ WHERE request.comment IN ("
-                <> intercalate ", " (map toJsonText (commentIds :: [CommentId]))
-                <> ")")
-            []
+            "SELECT ??, ??\
+            \ FROM request, user ON request.user = user.id\
+            \ WHERE request.issue = ?"
+            [toPersistValue issueId]
     let requestsByComment =
             Map.fromListWith
                 (++)
