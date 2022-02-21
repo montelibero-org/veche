@@ -11,7 +11,7 @@ import Import
 
 import Model.Issue qualified as Issue
 import Model.Request qualified as Request
-import Templates.Issue (issueTable)
+import Templates.Issue (issueRequestTable, issueTable)
 
 getDashboardR :: Handler Html
 getDashboardR = do

@@ -1,0 +1,5 @@
+<tr>
+    <td>
+        <a href=@{IssueR issueId}##{commentAnchor commentId}>#{issueTitle}
+    <td>
+        <a href=@{IssueR issueId}##{commentAnchor commentId}>#{commentMessage}

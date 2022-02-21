@@ -1,17 +1,32 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
-module Model.Request (selectByUser) where
+module Model.Request (
+    RequestMaterialized (..),
+    selectByUser,
+) where
 
 import Import
 
 import Database.Persist.Sql (rawSql)
 
-selectByUser :: UserId -> Handler [Entity Comment]
-selectByUser userId =
-    runDB $
-    rawSql
-        "SELECT ??\
-            \ FROM comment, request ON comment.id = request.comment\
-            \ WHERE request.user = ?"
-        [toPersistValue userId]
+data RequestMaterialized = RequestMaterialized
+    { issue   :: Entity Issue
+    , comment :: Entity Comment
+    }
+
+selectByUser :: UserId -> Handler [RequestMaterialized]
+selectByUser userId = do
+    requests <-
+        runDB $
+            rawSql
+                @(Entity Issue, Entity Comment)
+                "SELECT ??, ??\
+                \ FROM request\
+                \ JOIN issue ON request.issue = issue.id\
+                \ JOIN comment ON request.comment = comment.id\
+                \ WHERE request.user = ?"
+                [toPersistValue userId]
+    pure [RequestMaterialized{issue, comment} | (issue, comment) <- requests]

@@ -12,6 +12,7 @@ module Templates.Issue
     ( actionForm
     , closeReopenForm
     , editIssueForm
+    , issueRequestTable
     , issueTable
     , newIssueForm
     , voteForm
@@ -24,6 +25,8 @@ import GHC.Stack (HasCallStack)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
+import Model.Request (RequestMaterialized (..))
+import Templates.Comment (commentAnchor)
 import Types.Issue (IssueContent (..))
 
 actionButton :: Text -> Text -> [Text] -> AForm Handler Void
@@ -116,3 +119,13 @@ issueTableRow :: Entity Issue -> Widget
 issueTableRow (Entity issueId Issue{..}) = $(widgetFile "issue-table-row")
   where
     approvalPercent = round $ issueApproval * 100 :: Int
+
+issueRequestTable :: [RequestMaterialized] -> Widget
+issueRequestTable requests = $(widgetFile "issue-request-table")
+
+issueRequestTableRow :: RequestMaterialized -> Widget
+issueRequestTableRow RequestMaterialized{issue, comment} =
+    $(widgetFile "issue-request-table-row")
+  where
+    Entity issueId Issue{issueTitle} = issue
+    Entity commentId Comment{commentMessage} = comment

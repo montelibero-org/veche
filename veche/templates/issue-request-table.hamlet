@@ -1,0 +1,6 @@
+<table .table .table-striped>
+    <tr>
+        <th>Issue
+        <th>Comment
+    $forall request <- requests
+        ^{issueRequestTableRow request}

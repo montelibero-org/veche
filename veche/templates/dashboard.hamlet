@@ -2,4 +2,6 @@
 
 ^{issueTable issues}
 
-<h2>Questions (#{show $ length requests})
+<h2>Information requests (#{show $ length requests})
+
+^{issueRequestTable requests}
