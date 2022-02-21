@@ -46,6 +46,8 @@ Request
 
     UniqueRequest user comment
 
+    deriving Show
+
 
 StellarSigner
     target  Text -- target account address (managed one)

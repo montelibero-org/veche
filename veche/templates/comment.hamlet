@@ -1,0 +1,12 @@
+<div ##{commentAnchor id} .panel .panel-default .comment>
+    <div .panel-heading>
+        <span .comment_author>#{userNameWidget author}
+        <span .comment_action>#{commentType}
+        $if not $ null requestedUsers
+            and requested information from
+            $forall user <- requestedUsers
+                <span .requested_user>#{userNameWidget user}
+        on
+        <span .comment_timestamp>#{show commentCreated}
+    $if commentMessage /= ""
+        <div .panel-body>#{commentMessage}

@@ -5,7 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.Issue (
@@ -57,8 +57,12 @@ data StateAction = Close | Reopen
 
 countOpenAndClosed :: Handler (Int, Int)
 countOpenAndClosed = do
-    counts' :: [(Single Bool, Single Int)] <-
-        runDB $ rawSql "SELECT open, COUNT(*) FROM issue GROUP BY open" []
+    counts' <-
+        runDB $
+        rawSql
+            @(Single Bool, Single Int)
+            "SELECT open, COUNT(*) FROM issue GROUP BY open"
+            []
     let counts = coerce counts' :: [(Bool, Int)]
     pure
         ( findWithDefault 0 True  counts
@@ -69,22 +73,39 @@ loadComments :: MonadIO m => IssueId -> SqlPersistT m [CommentMaterialized]
 loadComments issueId = do
     comments <-
         rawSql
+            @(Entity Comment, Entity User)
             "SELECT ??, ??\
-            \ FROM comment, user ON comment.author == user.id\
-            \ WHERE comment.issue == ?"
+            \ FROM comment, user ON comment.author = user.id\
+            \ WHERE comment.issue = ?"
             [toPersistValue issueId]
-    pure
-        [ CommentMaterialized{id, comment, author}
-        | (Entity id comment, Entity _ author) <- comments
-        ]
+    let commentIds = map (entityKey . fst) comments
+    requests <-
+        rawSql
+            @(Entity Request, Entity User)
+            ("SELECT ??, ??\
+                \ FROM request, user ON request.user = user.id\
+                \ WHERE request.comment IN ("
+                <> intercalate ", " (map toJsonText (commentIds :: [CommentId]))
+                <> ")")
+            []
+    let requestsByComment =
+            Map.fromListWith
+                (++)
+                [ (requestComment, [user])
+                | (Entity _ Request{requestComment}, Entity _ user) <- requests
+                ]
+    for comments \(Entity id comment, Entity _ author) -> do
+        let requestedUsers = findWithDefault [] id requestsByComment
+        pure CommentMaterialized{id, comment, author, requestedUsers}
 
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
 loadVotes issueId = do
     votes <-
         rawSql
+            @(Entity Vote, Entity User)
             "SELECT ??, ??\
-            \ FROM vote, user ON vote.user == user.id\
-            \ WHERE vote.issue == ?"
+            \ FROM vote, user ON vote.user = user.id\
+            \ WHERE vote.issue = ?"
             [toPersistValue issueId]
     pure
         [ VoteMaterialized{choice = voteChoice, voter}
@@ -98,30 +119,17 @@ load issueId =
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ ReadIssue signerId
 
-        issue@Issue{issueAuthor, issueCreated, issueCurVersion} <-
+        issue@Issue{issueAuthor = authorId, issueCreated, issueCurVersion} <-
             get404 issueId
         versionId <-
             issueCurVersion
             ?| constraintFail "Issue.current_version must be valid"
         author <-
-            get issueAuthor
+            get authorId
             ?|> constraintFail "Issue.author must exist in User table"
         comments' <- loadComments issueId
-        let startingPseudoComment =
-                CommentMaterialized
-                    { id = fromBackendKey 0
-                    , comment =
-                        Comment
-                            { commentAuthor     = issueAuthor
-                            , commentCreated    = issueCreated
-                            , commentMessage    = ""
-                            , commentParent     = Nothing
-                            , commentIssue      = issueId
-                            , commentType       = CommentStart
-                            }
-                    , author
-                    }
-        let comments = startingPseudoComment : comments'
+        let comments =
+                startingPseudoComment authorId author issueCreated : comments'
         IssueVersion{issueVersionBody = body} <-
             get versionId
             ?|> constraintFail
@@ -133,6 +141,22 @@ load issueId =
             isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
             isVoteAllowed        = isAllowed $ AddVote signerId
         pure IssueMaterialized{..}
+  where
+    startingPseudoComment commentAuthor author commentCreated =
+        CommentMaterialized
+            { id = fromBackendKey 0
+            , comment =
+                Comment
+                    { commentAuthor
+                    , commentCreated
+                    , commentMessage = ""
+                    , commentParent  = Nothing
+                    , commentIssue   = issueId
+                    , commentType    = CommentStart
+                    }
+            , author
+            , requestedUsers = []
+            }
 
 collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
 collectChoices votes =
@@ -156,6 +180,7 @@ selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
         requireAuthz $ ListIssues signerId
         rawSql
+            @(Entity Issue)
             "SELECT ??\
             \ FROM\
                 \ issue\

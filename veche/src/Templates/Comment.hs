@@ -5,7 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Templates.Comment (
     CommentInput (..),
@@ -26,20 +26,10 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
 import Templates.User (userNameWidget)
 import Types.Comment (CommentMaterialized (..))
 
-commentWidget :: CommentMaterialized -> Html
-commentWidget CommentMaterialized{id, author, comment} =
-    [shamlet|
-        <div ##{commentAnchor id} .panel .panel-default>
-            <div .panel-heading>
-                <span .comment_author>#{userNameWidget author}
-                <span .comment_action>#{commentType}
-                on
-                <span .comment_timestamp>#{show commentCreated}
-            $if commentMessage /= ""
-                <div .panel-body>#{commentMessage}
-    |]
+commentWidget :: CommentMaterialized -> Widget
+commentWidget CommentMaterialized{id, author, comment, requestedUsers} =
+    $(widgetFile "comment")
   where
-
     Comment{commentMessage, commentType, commentCreated} = comment
 
 commentAnchor :: CommentId -> Text
