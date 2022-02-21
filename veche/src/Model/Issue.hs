@@ -134,13 +134,6 @@ load issueId =
             isVoteAllowed        = isAllowed $ AddVote signerId
         pure IssueMaterialized{..}
 
-(?|) :: Applicative f => Maybe a -> f a -> f a
-Nothing ?| action   = action
-Just x  ?| _        = pure x
-
-(?|>) :: Monad f => f (Maybe a) -> f a -> f a
-m ?|> k = m >>= (?| k)
-
 collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
 collectChoices votes =
     Map.fromListWith

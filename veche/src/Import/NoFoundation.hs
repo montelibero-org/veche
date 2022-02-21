@@ -59,3 +59,10 @@ upsert_ ::
     ) =>
     record -> [Update record] -> ReaderT backend m ()
 upsert_ record updates = void $ upsert record updates
+
+(?|) :: Applicative f => Maybe a -> f a -> f a
+Nothing ?| action   = action
+Just x  ?| _        = pure x
+
+(?|>) :: Monad f => f (Maybe a) -> f a -> f a
+m ?|> k = m >>= (?| k)
