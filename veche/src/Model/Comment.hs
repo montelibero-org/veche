@@ -6,25 +6,37 @@ module Model.Comment (addText, updateIssueCommentNum) where
 import Import
 
 import Genesis (mtlFund)
+import Templates.Comment (CommentInput (..))
 
-addText :: Entity User -> IssueId -> Text -> Handler (Entity Comment)
-addText (Entity userId User{userStellarAddress}) issue message = do
-    now <- liftIO getCurrentTime
-    let comment =
-            Comment
-                { commentAuthor  = userId
-                , commentCreated = now
-                , commentMessage = message
-                , commentParent  = Nothing
-                , commentIssue   = issue
-                , commentType    = CommentText
-                }
-    runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ AddIssueComment signerId
-        commentId <- insert comment
-        updateIssueCommentNum issue Nothing
-        pure $ Entity commentId comment
+addText :: Entity User -> CommentInput -> Handler CommentId
+addText
+    (Entity userId User{userStellarAddress})
+    CommentInput{issue, message, requestUsers} = do
+        now <- liftIO getCurrentTime
+        let comment =
+                Comment
+                    { commentAuthor  = userId
+                    , commentCreated = now
+                    , commentMessage = message
+                    , commentParent  = Nothing
+                    , commentIssue   = issue
+                    , commentType    = CommentText
+                    }
+        runDB do
+            Entity signerId _ <-
+                getBy403 $ UniqueMember mtlFund userStellarAddress
+            requireAuthz $ AddIssueComment signerId
+            commentId <- insert comment
+            insertMany_
+                [ Request
+                    { requestUser
+                    , requestComment   = commentId
+                    , requestFulfilled = False
+                    }
+                | requestUser <- toList requestUsers
+                ]
+            updateIssueCommentNum issue Nothing
+            pure commentId
 
 updateIssueCommentNum ::
     IssueId ->

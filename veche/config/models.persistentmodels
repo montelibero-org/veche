@@ -40,8 +40,11 @@ IssueVersion
 
 
 Request
-    user    UserId
-    comment CommentId
+    user        UserId
+    comment     CommentId
+    fulfilled   Bool
+
+    UniqueRequest user comment
 
 
 StellarSigner

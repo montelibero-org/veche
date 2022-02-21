@@ -1,6 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -16,6 +17,7 @@ module Templates.Comment (
 import Import
 
 -- global
+import Data.Set qualified as Set
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), bfs,
                               renderBootstrap3)
@@ -46,7 +48,7 @@ commentAnchor id = "comment" <> toPathPiece id
 data CommentInput = CommentInput
     { issue        :: IssueId
     , message      :: Text
-    -- , requestUsers :: [UserId]
+    , requestUsers :: Set UserId
     }
     deriving Show
 
@@ -67,6 +69,4 @@ commentForm mIssueId =
                     textareaField
                     (bfs ("Comment" :: Text)){fsName = Just "message"}
                     Nothing
-            -- requestUsers <-
-            --     many $ areq hiddenField ""{fsName = Just "request_user"} Nothing
-            pure CommentInput{issue, message}
+            pure CommentInput{issue, message, requestUsers = Set.empty}
