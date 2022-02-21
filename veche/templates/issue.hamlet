@@ -29,10 +29,20 @@ $if isVoteAllowed
 
 <div .clearfix style="margin-bottom: 1em;">
 
-<div #commentListId>
+<div #comments>
     $forall comment <- comments
         ^{commentWidget comment}
-<form #commentFormId>
-    <textarea .form-control #commentTextareaId
-        placeholder="Your comment here..." required>
-    <button .btn .btn-primary type=submit>Add comment
+
+<form #commentForm .form-horizontal>
+    <div .form-group>
+        <label .col-sm-2 .control-label>Comment
+        <div .col-sm-10>
+            <textarea .form-control #commentTextarea required>
+    <div .form-group>
+        <label .col-sm-2 .control-label>Request info from
+        <div .col-sm-10>
+            <span #commentRequestUsers>
+            <input .form-control #commentRequestUserInput>
+    <div .form-group>
+        <div .col-sm-offset-2 .col-sm-10>
+            <button .btn .btn-primary type=submit>Add comment

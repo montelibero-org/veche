@@ -178,19 +178,12 @@ instance Yesod App where
         -- to minimize DB requests.
         case route of
             -- Routes not requiring authentication.
-            AuthR _                 -> pure Authorized
-            FaviconR                -> pure Authorized
-            RobotsR                 -> pure Authorized
-            StaticR _               -> pure Authorized
-            -- Routes requiring authentication.
-            CommentR                -> isAuthenticated
-            DashboardR              -> isAuthenticated
-            IssueEditR _            -> isAuthenticated
-            IssueNewR               -> isAuthenticated
-            IssueR _                -> isAuthenticated
-            IssuesR                 -> isAuthenticated
-            AdminUpdateDatabaseR    -> isAuthenticated
-            UserR                   -> isAuthenticated
+            AuthR _   -> pure Authorized
+            FaviconR  -> pure Authorized
+            RobotsR   -> pure Authorized
+            StaticR _ -> pure Authorized
+            -- All other routes require authentication.
+            _         -> isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

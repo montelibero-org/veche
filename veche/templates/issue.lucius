@@ -1,0 +1,4 @@
+#commentRequestUsers .user {
+    display: inline-block;
+    margin-right: 1em;
+}

@@ -18,6 +18,7 @@ library
     Foundation
     Genesis
     Handler.Admin
+    Handler.API
     Handler.Comment
     Handler.Common
     Handler.Dashboard
@@ -27,8 +28,8 @@ library
     Import.NoFoundation
     Model
     Model.Comment
-    Model.Request
     Model.Issue
+    Model.Request
     Model.StellarSigner
     Model.Types
     Model.User
