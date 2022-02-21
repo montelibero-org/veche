@@ -33,11 +33,9 @@ $if isVoteAllowed
     $forall comment <- comments
         ^{commentWidget comment}
 
-<form #commentForm .form-horizontal>
-    <div .form-group>
-        <label .col-sm-2 .control-label>Comment
-        <div .col-sm-10>
-            <textarea .form-control #commentTextarea required>
+<form #commentForm .form-horizontal
+        action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
+    ^{commentFormFields}
     <div .form-group>
         <label .col-sm-2 .control-label>Request info from
         <div .col-sm-10>

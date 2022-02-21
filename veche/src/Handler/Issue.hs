@@ -26,7 +26,7 @@ import Model.Issue (IssueMaterialized (..), StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
-import Templates.Comment (commentWidget)
+import Templates.Comment (commentForm, commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm, issueTable,
                         newIssueForm, voteForm)
 
@@ -68,6 +68,8 @@ getIssueR issueId = do
 
     closeReopenWidget <- generateFormPostB $ closeReopenForm issueId issueOpen
     voteWidget        <- generateFormPostB $ voteForm        issueId
+    (commentFormFields, commentFormEnctype) <-
+        generateFormPost $ commentForm $ Just issueId
 
     defaultLayout $(widgetFile "issue")
 

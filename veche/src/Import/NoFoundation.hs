@@ -61,8 +61,8 @@ upsert_ ::
 upsert_ record updates = void $ upsert record updates
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
-Nothing ?| action   = action
-Just x  ?| _        = pure x
+Nothing ?| act = act
+Just x  ?| _   = pure x
 
 (?|>) :: Monad f => f (Maybe a) -> f a -> f a
 m ?|> k = m >>= (?| k)

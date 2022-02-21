@@ -2,36 +2,6 @@ $(() => {
   const commentRequestUserInput = $('#commentRequestUserInput');
   const commentRequestUsers = $('#commentRequestUsers');
 
-  $('#commentForm').submit((event) => {
-    event.preventDefault();
-
-    const commentTextarea = $('#commentTextarea');
-    const message = commentTextarea.val();
-    // (Browsers that enforce the "required" attribute on the textarea won't see this alert)
-    if (!message) {
-      alert("Please fill out the comment form first.");
-      return;
-    }
-
-    // Make an AJAX request to the server to create a new comment
-    $.ajax({
-      url: '@{CommentR}',
-      type: 'POST',
-      contentType: "application/json",
-      data: JSON.stringify({
-        message: message,
-        issue: #{toJSON issueId},
-      }),
-      success: data => {
-        $('#comments').html((_, old) => old + data);
-        commentTextarea.val(null);
-      },
-      error: data => {
-        console.log("Error creating comment: " + data);
-      },
-    });
-  });
-
   commentRequestUserInput.autocomplete({
     source: "@{ApiCompleteUserR}",
     minLength: 1,
@@ -42,6 +12,7 @@ $(() => {
         old
         + `<span class="user" data-user-id="${value}">
             ${ui.item.label}
+            <input type="hidden" name="request_user" value="${value}">
             <a  class="badge dismiss"
                 onclick='comment_request_user_dimiss(${JSON.stringify(value)})'
                 >

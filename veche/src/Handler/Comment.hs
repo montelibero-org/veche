@@ -1,30 +1,22 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Handler.Comment(
-    postCommentR,
+    postCommentsR,
 ) where
 
 import Import
 
-import Text.Blaze.Html.Renderer.Text (renderHtml)
-
 import Model.Comment qualified as Comment
-import Templates.Comment (commentWidget)
-import Types.Comment (CommentMaterialized (..))
+import Templates.Comment (CommentInput (..), commentAnchor, commentForm)
 
-data CommentInput = CommentInput{message :: Text, issue :: IssueId}
-    deriving (FromJSON, Generic)
-
-postCommentR :: Handler Value
-postCommentR = do
-    userE@(Entity _ user) <- requireAuth
-    CommentInput{message, issue} <- requireCheckJsonBody
-    Entity id comment <- Comment.addText userE issue message
-    returnJson $
-        renderHtml $
-        commentWidget CommentMaterialized{author = user, id, comment}
+postCommentsR :: Handler Html
+postCommentsR = do
+    user <- requireAuth
+    ((result, _widget), _enctype) <- runFormPost $ commentForm Nothing
+    case result of
+        FormSuccess CommentInput{issue, message} -> do
+            Entity id _ <- Comment.addText user issue message
+            redirect $ IssueR issue :#: commentAnchor id
+        _ -> invalidArgs [tshow result]

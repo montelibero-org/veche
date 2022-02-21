@@ -46,7 +46,7 @@ import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 -- component
 import Handler.API (getApiCompleteUserR)
 import Handler.Admin (getAdminUpdateDatabaseR)
-import Handler.Comment (postCommentR)
+import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
 import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,

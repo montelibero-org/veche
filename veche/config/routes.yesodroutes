@@ -5,7 +5,7 @@
 /admin/update-database  AdminUpdateDatabaseR    GET
 /api/complete-user      ApiCompleteUserR        GET
 /auth                   AuthR                   Auth getAuth
-/comments               CommentR                POST
+/comments               CommentsR               POST
 /favicon.ico            FaviconR                GET
 /issue-new              IssueNewR               GET
 /issues                 IssuesR                 GET POST
