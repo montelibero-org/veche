@@ -1,4 +1,0 @@
-.comment .requested_user::after {
-    /* TODO: except last */
-    text: ", "
-}
