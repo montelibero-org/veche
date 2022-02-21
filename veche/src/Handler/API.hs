@@ -1,12 +1,18 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Handler.API (getApiCompleteUserR) where
 
 import Import
 
+import Model.User qualified as User
+import Templates.User (userNameText)
+
 getApiCompleteUserR :: Handler Value
-getApiCompleteUserR =
-    returnJson
-        [ object ["label" .= String "hello", "value" .= String "HELLO"]
-        , object ["label" .= String "world", "value" .= String "WORLD"]
-        ]
+getApiCompleteUserR = do
+    users <- User.selectList
+    pure $
+        array
+            [ object ["label" .= userNameText user, "value" .= userId]
+            | Entity userId user <- users
+            ]

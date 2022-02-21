@@ -99,7 +99,7 @@ testAuthenticationOk (address, secretKey) networkPassphrase = do
     get UserR
     statusIs 200 -- authenticated
 
-    users <- runDB $ User.selectValList [] []
+    users <- runDB User.selectValList
     assertEq
         "users after auth"
         users
