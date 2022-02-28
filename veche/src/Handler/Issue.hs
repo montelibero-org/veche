@@ -39,6 +39,7 @@ getIssueR issueId = do
         , isEditAllowed
         , issue = Issue{issueTitle, issueOpen}
         , isVoteAllowed
+        , requests
         , votes
         } <-
             Issue.load issueId
@@ -69,7 +70,7 @@ getIssueR issueId = do
     closeReopenWidget <- generateFormPostB $ closeReopenForm issueId issueOpen
     voteWidget        <- generateFormPostB $ voteForm        issueId
     (commentFormFields, commentFormEnctype) <-
-        generateFormPost $ commentForm $ Just issueId
+        generateFormPost $ commentForm (Just issueId) requests
 
     defaultLayout $(widgetFile "issue")
 

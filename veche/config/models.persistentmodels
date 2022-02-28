@@ -29,6 +29,7 @@ Issue
                                         -- Must be Just after creation.
                                         -- May be Nothing only during creation.
 
+    deriving Eq
     deriving Show
 
 
@@ -49,6 +50,7 @@ Request
 
     UniqueRequest user comment
 
+    deriving Eq
     deriving Show
 
 

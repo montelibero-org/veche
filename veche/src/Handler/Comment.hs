@@ -18,7 +18,7 @@ import Templates.Comment (CommentInput (..), commentAnchor, commentForm)
 postCommentsR :: Handler Html
 postCommentsR = do
     user <- requireAuth
-    ((result, _widget), _enctype) <- runFormPost $ commentForm Nothing
+    ((result, _widget), _enctype) <- runFormPost $ commentForm Nothing []
     requestUsers <- lookupRequestUsers
     case result of
         FormSuccess commentInput@CommentInput{issue} -> do

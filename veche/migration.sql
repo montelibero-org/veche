@@ -1,3 +1,5 @@
+ALTER TABLE "comment" ADD "requests" VARCHAR NOT NULL DEFAULT "[]";
+
 CREATE TABLE "request" (
     "id" INTEGER PRIMARY KEY,
     "user" INTEGER NOT NULL

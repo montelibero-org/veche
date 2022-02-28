@@ -35,6 +35,8 @@ import Database.Persist.Sql (Single (..), rawSql)
 
 -- component
 import Genesis (mtlFund)
+import Model.Request (IssueRequestMaterialized)
+import Model.Request qualified as Request
 import Types.Comment (CommentMaterialized (..))
 import Types.Issue (IssueContent (..))
 
@@ -50,6 +52,7 @@ data IssueMaterialized = IssueMaterialized
     , isEditAllowed         :: Bool
     , issue                 :: Issue
     , isVoteAllowed         :: Bool
+    , requests              :: [IssueRequestMaterialized]
     , votes                 :: Map Choice (HashSet User)
     }
 
@@ -132,6 +135,7 @@ load issueId =
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
         votes <- collectChoices <$> loadVotes issueId
+        requests <- Request.selectActiveByIssueAndUser issueId userId
 
         let issueE = Entity issueId issue
             isEditAllowed        = isAllowed $ EditIssue        issueE userId
