@@ -1,5 +1,5 @@
-<div ##{commentAnchor id} .panel .panel-default .comment>
-    <div .panel-heading>
+<div ##{commentAnchor id} .comment>
+    <h6 .text-muted>
         <span .comment_author>#{userNameWidget author}
         <span .comment_action>
             $if null requestedUsers
@@ -11,4 +11,5 @@
         on
         <span .comment_timestamp>#{show commentCreated}
     $if commentMessage /= ""
-        <div .panel-body>#{commentMessage}
+        <div .panel .panel-default>
+            <div .panel-body>#{commentMessage}
