@@ -41,7 +41,7 @@ $if isVoteAllowed
         <div .col-sm-10>
             <span #commentRequestUsers>
             <input .form-control #commentRequestUserInput
-                placeholder="Start to type a user name">
+                placeholder="Start typing a user name or an address">
     <div .form-group>
         <div .col-sm-offset-2 .col-sm-10>
             <button .btn .btn-primary type=submit>Add comment
