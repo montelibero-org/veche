@@ -8,7 +8,7 @@ module Model.Request (
     IssueRequestMaterialized (..),
     RequestMaterialized (..),
     selectActiveByIssueAndUser,
-    selectByUser,
+    selectActiveByUser,
 ) where
 
 import Import
@@ -32,8 +32,8 @@ data IssueRequestMaterialized = IssueRequestMaterialized
     }
     deriving (Eq, Show)
 
-selectByUser :: UserId -> Handler [RequestMaterialized]
-selectByUser userId = do
+selectActiveByUser :: UserId -> Handler [RequestMaterialized]
+selectActiveByUser userId = do
     requests <-
         runDB $
             rawSql
@@ -43,7 +43,7 @@ selectByUser userId = do
                 \ JOIN issue ON request.issue = issue.id\
                 \ JOIN comment ON request.comment = comment.id\
                 \ JOIN user ON request.user = user.id\
-                \ WHERE request.user = ?"
+                \ WHERE request.fulfilled = FALSE AND request.user = ?"
                 [toPersistValue userId]
     pure
         [ RequestMaterialized{id, issue, comment, requestor}
@@ -60,7 +60,7 @@ selectActiveByIssueAndUser issueId userId = do
             \ FROM request\
             \ JOIN comment ON request.comment = comment.id\
             \ JOIN user ON request.user = user.id\
-            \ WHERE   request.fulfilled = 0\
+            \ WHERE   request.fulfilled = FALSE\
                 \ AND request.issue = ?\
                 \ AND request.user = ?"
             [toPersistValue issueId, toPersistValue userId]

@@ -11,7 +11,7 @@ import Templates.Comment (CommentInput (..))
 addText :: Entity User -> CommentInput -> Handler CommentId
 addText
     (Entity userId User{userStellarAddress})
-    CommentInput{issue, message, requestUsers} = do
+    CommentInput{issue, message, requestUsers, provideInfo} = do
         now <- liftIO getCurrentTime
         let comment =
                 Comment
@@ -37,6 +37,13 @@ addText
                 | requestUser <- toList requestUsers
                 ]
             updateIssueCommentNum issue Nothing
+            updateWhere
+                [ RequestId <-. toList provideInfo
+                -- following filters present only for security
+                , RequestUser ==. userId
+                , RequestIssue ==. issue
+                ]
+                [RequestFulfilled =. True]
             pure commentId
 
 updateIssueCommentNum ::

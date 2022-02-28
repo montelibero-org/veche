@@ -96,7 +96,16 @@ requestLabel IssueRequestMaterialized{requestor, comment} =
 
 checkboxesFieldList' ::
     (Eq a, PathPiece a) => [(Text, a)] -> Field (HandlerFor site) [a]
-checkboxesFieldList' opts = (checkboxesFieldList opts){fieldView} where
+checkboxesFieldList' opts =
+    Field{fieldParse, fieldView, fieldEnctype = UrlEncoded}
+  where
+
+    fieldParse optlist _ =
+        pure
+            case traverse fromPathPiece optlist of
+                Nothing  -> Left "Error parsing values"
+                Just res -> Right $ Just res
+
     fieldView _id name attrs _val _isReq =
         [whamlet|
             $forall (display, value) <- opts

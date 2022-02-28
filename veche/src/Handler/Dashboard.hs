@@ -17,5 +17,5 @@ getDashboardR :: Handler Html
 getDashboardR = do
     user@(Entity userId _) <- requireAuth
     issues <- Issue.selectWithoutVoteFromUser user
-    requests <- Request.selectByUser userId
+    requests <- Request.selectActiveByUser userId
     defaultLayout $(widgetFile "dashboard")
