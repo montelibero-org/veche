@@ -77,7 +77,8 @@ commentForm mIssueId activeRequests =
                     | r@IssueRequestMaterialized{id} <- activeRequests
                     ]
                 )
-                "Provide info for"{fsName = Just "provide"}
+                (if null activeRequests then "" else "Provide info for")
+                    {fsName = Just "provide"}
                 Nothing
         pure
             CommentInput
