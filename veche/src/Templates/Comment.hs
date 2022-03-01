@@ -22,6 +22,7 @@ import Import
 
 -- global
 import Data.Set qualified as Set
+import Data.Time (rfc822DateFormat)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), bfs,
                               renderBootstrap3)
@@ -36,6 +37,7 @@ commentWidget CommentMaterialized{id, author, comment, requestedUsers} =
     $(widgetFile "comment")
   where
     Comment{commentMessage, commentType, commentCreated} = comment
+    created = formatTime defaultTimeLocale rfc822DateFormat commentCreated
 
 commentAnchor :: CommentId -> Text
 commentAnchor id = "comment" <> toPathPiece id
@@ -96,7 +98,7 @@ requestLabel IssueRequestMaterialized{requestor, comment} =
     Entity _ Comment{commentMessage} = comment
 
 checkboxesFieldList' ::
-    (Eq a, PathPiece a) => [(Text, a)] -> Field (HandlerFor site) [a]
+    PathPiece a => [(Text, a)] -> Field (HandlerFor site) [a]
 checkboxesFieldList' opts =
     Field{fieldParse, fieldView, fieldEnctype = UrlEncoded}
   where

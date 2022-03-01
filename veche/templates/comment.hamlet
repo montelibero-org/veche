@@ -9,7 +9,7 @@
                 $forall user <- requestedUsers
                     <span .requested_user>#{userNameWidget user}
         on
-        <span .comment_timestamp>#{show commentCreated}
+        <span .comment_timestamp>#{created}
     $if commentMessage /= ""
         <div .panel .panel-default>
             <div .panel-body>#{commentMessage}
