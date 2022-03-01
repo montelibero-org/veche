@@ -29,6 +29,7 @@ import Model.Vote qualified as Vote
 import Templates.Comment (commentForm, commentWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm, issueTable,
                         newIssueForm, voteForm)
+import Templates.User (userNameWidget)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -53,7 +54,7 @@ getIssueR issueId = do
                         signer
                 ]
         voteResults =
-            [ (choice, percentage, share)
+            [ (choice, percentage, share, toList users)
             | (choice, users) <- Map.assocs votes
             , let
                 choiceWeight =
