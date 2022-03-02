@@ -1,6 +1,7 @@
-<div ##{commentAnchor id} .comment>
-    <h6 .text-muted>
+<div ##{commentAnchor id} .comment .row style="margin-bottom: 20px;">
+    <div .col-sm-2>
         <span .comment_author>#{userNameWidget author}
+    <div .col-sm-10>
         <span .comment_action>
             $if null requestedUsers
                 #{commentType}
@@ -8,8 +9,11 @@
                 requested information from #
                 $forall user <- requestedUsers
                     <span .requested_user>#{userNameWidget user}
-        on
-        <span .comment_timestamp>#{created}
-    $if commentMessage /= ""
-        <div .panel .panel-default>
-            <div .panel-body>#{commentMessage}
+        $if commentMessage /= ""
+            <div .panel .panel-default style="margin-bottom: 4px;">
+                <div .panel-body>
+                    <p>#{commentMessage}
+    <div .col-sm-offset-2 .col-sm-10>
+        <a .btn .btn-default .btn-xs>Reply
+        <a .btn .btn-default .btn-xs>Request Info
+        <span .comment_timestamp .pull-right>#{created}

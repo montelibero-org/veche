@@ -48,12 +48,18 @@ closeReopenForm issueId issueOpen =
 -- | Generate-only form; for its input, one must use 'actionForm'
 voteForm :: IssueId -> Form Void
 voteForm issueId =
-    (bform
-        (  actionButton "approve" "Approve" ["btn-success"]
-        *> actionButton "reject"  "Reject"  ["btn-danger"]
-        )
-    )
-        {action = Just $ IssueR issueId, classes = ["form-inline"]}
+    BForm
+        { aform = pure $ error "Void"
+        , action = Just $ IssueR issueId
+        , classes = ["form-inline"]
+        , footer =
+            [whamlet|
+                <button .btn .btn-success name=action type=submit value=approve>
+                    Approve
+                <button .btn .btn-danger name=action type=submit value=reject>
+                    Reject
+            |]
+        }
 
 actionForm :: HasCallStack => Form Text
 actionForm =

@@ -55,4 +55,4 @@ instance ToMarkup CommentType where
         CommentReopen       -> "reopened issue"
         CommentRequestInfo  -> "requested additional information"
         CommentStart        -> "started issue"
-        CommentText         -> "commented"
+        CommentText         -> ""
