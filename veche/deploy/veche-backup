@@ -39,13 +39,36 @@ def collect_files_by_date(files: List[str]) -> Dict[str, Set[str]]:
     return d
 
 
+def collect_files_by_month(files: List[str]) -> Dict[str, Set[str]]:
+    d = defaultdict(set)
+    for file in files:
+        parts = file.split('.')
+        if len(parts) != 3 or parts[0] != 'veche' or parts[2] != 'sqlite3':
+            continue
+        timestamp = parts[1]
+        date, _ = timestamp.split('_')
+        month = date[:7]
+        d[month].add(file)
+    return d
+
+
 def vacuum():
     files_by_date = collect_files_by_date(listdir())
     dates_but_last = sorted(files_by_date)[:-1]
     for date in dates_but_last:
         files_but_last = sorted(files_by_date[date])[:-1]
         if files_but_last:
-            logging.info('Vaccuming date %s', date)
+            logging.info('Vacuuming date %s', date)
+        for file in files_but_last:
+            logging.info('Removing file %s', file)
+            remove(file)
+
+    files_by_month = collect_files_by_month(listdir())
+    months_but_last = sorted(files_by_month)[:-1]
+    for month in months_but_last:
+        files_but_last = sorted(files_by_month[month])[:-1]
+        if files_but_last:
+            logging.info('Vacuuming month %s', month)
         for file in files_but_last:
             logging.info('Removing file %s', file)
             remove(file)
