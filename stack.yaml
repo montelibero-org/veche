@@ -1,4 +1,4 @@
-resolver: lts-17.10
+resolver: lts-18.20
 
 packages:
   - stellar-horizon
@@ -10,7 +10,3 @@ extra-deps:
     - classy-prelude-yesod-1.5.0
   # stellar-horizon:exe
     - servant-cli-0.1.0.2
-  # servant-cli; TODO(2022-05-29, cblp, #27) update servant-cli deps
-    - functor-combinators-0.4.1.0
-    - nonempty-containers-0.3.4.4
-    - trivial-constraint-0.7.0.0

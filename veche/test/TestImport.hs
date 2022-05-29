@@ -8,24 +8,27 @@ module TestImport
     ) where
 
 import ClassyPrelude as X hiding (Handler, delete, deleteBy)
-import Control.Monad.Logger (runLoggingT)
+
 import Database.Persist as X hiding (get)
-import Database.Persist.Sql (SqlPersistM, connEscapeName, rawExecute, rawSql,
+import Database.Persist.Sql (SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
-import Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
-                                mkSqliteConnectionInfo, sqlDatabase)
-import Lens.Micro (set)
 import Test.Hspec as X
 import Yesod.Auth as X
-import Yesod.Core (messageLoggerSource)
 import Yesod.Core.Unsafe (fakeHandlerGetLogger)
 import Yesod.Default.Config2 (loadYamlSettings, useEnv)
 import Yesod.Test as X
 
+-- Wiping the database
+import Control.Monad.Logger (runLoggingT)
+import Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
+                                mkSqliteConnectionInfo, sqlDatabase)
+import Lens.Micro (set)
+import Settings (appDatabaseConf)
+import Yesod.Core (messageLoggerSource)
+
 import Application (makeFoundation, makeLogWare)
 import Foundation as X
 import Model as X
-import Settings (appDatabaseConf)
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
@@ -70,9 +73,8 @@ wipeDB app = do
 
     (`runSqlPersistMPool` pool) $ do
         tables <- getTables
-        sqlBackend <- ask
         let queries =
-                [ "DELETE FROM " ++ connEscapeName sqlBackend (DBName t)
+                [ "DELETE FROM " ++ escapeWith id (EntityNameDB t)
                 | t <- tables
                 ]
         for_ queries (`rawExecute` [])
