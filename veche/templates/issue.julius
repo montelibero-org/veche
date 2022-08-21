@@ -30,6 +30,10 @@ $(() => {
       );
     },
   });
+
+  $('a.comment-reply').click(event => {
+    console.log('Reply', $(event.target).data('comment-id'));
+  });
 });
 
 function comment_request_user_dimiss(user_id) {

@@ -14,6 +14,9 @@
                 <div .panel-body>
                     <p>#{commentMessage}
     <div .col-sm-offset-2 .col-sm-10>
-        <a .btn .btn-default .btn-xs>Reply
-        <a .btn .btn-default .btn-xs>Request Info
+        <a .btn .btn-default .btn-xs .comment-reply
+            data-comment-id=#{toPathPiece id}
+            >
+                Reply
+        <a .btn .btn-default .btn-xs disabled>Request Info
         <span .comment_timestamp .pull-right>#{created}
