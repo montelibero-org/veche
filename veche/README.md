@@ -20,14 +20,16 @@ As your code changes, your site will be automatically recompiled and redeployed 
 ## Tests
 
 ```
-stack test --flag veche:library-only --flag veche:dev
+stack test --flag veche:dev
 ```
 
 (Because `yesod devel` passes the `library-only` and `dev` flags, matching those flags means you don't need to recompile between tests and development, and it disables optimization to speed up your test compile times).
 
 ## Update Letsencrypt certificates
 
-    # service keter stop
-    # certbot certonly --standalone
-    > veche.montelibero.org
-    # service keter start
+```sh
+# service keter stop
+# certbot certonly --standalone
+> veche.montelibero.org
+# service keter start
+```
