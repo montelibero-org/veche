@@ -1,6 +1,6 @@
 <h1>User profile
 
-<form .form-horizontal>
+<form .form-horizontal #nameEditForm>
     <div .form-group>
         <label .col-sm-2 .control-label>Name
         <div .col-sm-10 #nameView>
@@ -10,7 +10,7 @@
             <div .input-group>
                 <input type=text .form-control #nameEditText>
                 <div .input-group-btn>
-                    <button type=button .btn .btn-default #nameEditSave>
+                    <button type=submit .btn .btn-default>
                         Save
                     <button type=button .btn .btn-default #nameEditCancel>
                         Cancel

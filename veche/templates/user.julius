@@ -2,13 +2,14 @@ $(function() {
   const nameEdit        = $('#nameEdit');
   const nameEditCancel  = $('#nameEditCancel');
   const nameEditError   = $('#nameEditError');
-  const nameEditSave    = $('#nameEditSave');
+  const nameEditForm    = $('#nameEditForm');
   const nameEditText    = $('#nameEditText');
   const nameView        = $('#nameView');
   const nameViewText    = $('#nameViewText');
 
   nameView.click(function() {
     nameView.hide();
+    nameEditText.val(nameViewText.text());
     nameEdit.show();
   });
 
@@ -19,7 +20,8 @@ $(function() {
     nameEdit.hide();
   }
 
-  nameEditSave.click(function() {
+  nameEditForm.submit(function(event) {
+    event.preventDefault();
     const name = nameEditText.val();
     $.ajax({
       url: '@{UserR}',
