@@ -15,7 +15,7 @@ module Templates.Comment (
     CommentInput (..),
     commentAnchor,
     commentForm,
-    commentWidget,
+    commentListWidget,
 ) where
 
 import Import
@@ -32,8 +32,17 @@ import Model.Request (IssueRequestMaterialized (..))
 import Templates.User (userNameText, userNameWidget)
 import Types.Comment (CommentMaterialized (..))
 
+commentListWidget :: [CommentMaterialized] -> Widget
+commentListWidget comments =
+    [whamlet|
+        <ul>
+            $forall comment <- comments
+                ^{commentWidget comment}
+    |]
+
 commentWidget :: CommentMaterialized -> Widget
-commentWidget CommentMaterialized{id, author, comment, requestedUsers} =
+commentWidget
+        CommentMaterialized{id, author, comment, requestedUsers, subComments} =
     $(widgetFile "comment")
   where
     Comment{commentMessage, commentType, commentCreated} = comment
@@ -47,6 +56,7 @@ data CommentInput = CommentInput
     , message      :: Text
     , requestUsers :: Set UserId
     , provideInfo  :: Set RequestId
+    , parent       :: Maybe CommentId
     }
     deriving Show
 
@@ -57,38 +67,42 @@ commentForm ::
 commentForm mIssueId activeRequests =
     renderBootstrap3
         (BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10))
-        aform
-  where
+        (commentAForm mIssueId activeRequests)
 
-    aform = do
-        issue <-
-            areq
-                hiddenField
-                (bfs ("" :: Text)){fsName = Just "issue"}
-                mIssueId
-        message <-
-            unTextarea <$>
-            areq
-                textareaField
-                (bfs ("Comment" :: Text)){fsName = Just "message"}
-                Nothing
-        provideInfo <-
-            aopt
-                ( checkboxesFieldList'
-                    [ (requestLabel r, id)
-                    | r@IssueRequestMaterialized{id} <- activeRequests
-                    ]
-                )
-                (if null activeRequests then "" else "Provide info for")
-                    {fsName = Just "provide"}
-                Nothing
-        pure
-            CommentInput
-                { issue
-                , message
-                , requestUsers = Set.empty
-                , provideInfo = maybe Set.empty Set.fromList provideInfo
-                }
+commentAForm ::
+    Maybe IssueId -> [IssueRequestMaterialized] -> AForm Handler CommentInput
+commentAForm mIssueId activeRequests = do
+    issue <-
+        areq
+            hiddenField
+            (bfs ("" :: Text)){fsName = Just "issue"}
+            mIssueId
+    message <-
+        unTextarea <$>
+        areq
+            textareaField
+            (bfs ("Comment" :: Text)){fsName = Just "message"}
+            Nothing
+    provideInfo <-
+        aopt
+            ( checkboxesFieldList'
+                [ (requestLabel r, id)
+                | r@IssueRequestMaterialized{id} <- activeRequests
+                ]
+            )
+            (if null activeRequests then "" else "Provide info for")
+                {fsName = Just "provide"}
+            Nothing
+    parent <-
+        aopt hiddenField (bfs ("" :: Text)){fsName = Just "parent"} Nothing
+    pure
+        CommentInput
+            { issue
+            , message
+            , requestUsers = Set.empty
+            , provideInfo = maybe Set.empty Set.fromList provideInfo
+            , parent
+            }
 
 requestLabel :: IssueRequestMaterialized -> Text
 requestLabel IssueRequestMaterialized{requestor, comment} =

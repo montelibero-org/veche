@@ -1,6 +1,7 @@
 $(() => {
+  const commentForm             = $('#commentForm');
   const commentRequestUserInput = $('#commentRequestUserInput');
-  const commentRequestUsers = $('#commentRequestUsers');
+  const commentRequestUsers     = $('#commentRequestUsers');
 
   commentRequestUserInput.autocomplete({
     source: "@{ApiCompleteUserR}",
@@ -32,7 +33,9 @@ $(() => {
   });
 
   $('a.comment-reply').click(event => {
-    console.log('Reply', $(event.target).data('comment-id'));
+    const parent = $(event.target).closest('.comment');
+    commentForm.appendTo(parent);
+    commentForm.find('input[name=parent]').val(parent.data('comment-id'));
   });
 });
 

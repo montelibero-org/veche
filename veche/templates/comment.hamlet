@@ -1,22 +1,21 @@
-<div ##{commentAnchor id} .comment .row style="margin-bottom: 20px;">
-    <div .col-sm-2>
-        <span .comment_author>#{userNameWidget author}
-    <div .col-sm-10>
-        <span .comment_action>
-            $if null requestedUsers
-                #{commentType}
-            $else
-                requested information from #
-                $forall user <- requestedUsers
-                    <span .requested_user>#{userNameWidget user}
-        $if commentMessage /= ""
-            <div .panel .panel-default style="margin-bottom: 4px;">
-                <div .panel-body>
-                    <p>#{commentMessage}
-    <div .col-sm-offset-2 .col-sm-10>
-        <a .btn .btn-default .btn-xs .comment-reply
-            data-comment-id=#{toPathPiece id}
-            >
-                Reply
+<li ##{commentAnchor id} .comment
+        data-comment-id=#{toPathPiece id} style="margin-bottom: 20px;">
+    <span .comment_author>#{userNameWidget author}
+    <span .comment_action>
+        $if null requestedUsers
+            #{commentType}
+        $else
+            requested information from #
+            $forall user <- requestedUsers
+                <span .requested_user>#{userNameWidget user}
+    <span .comment_timestamp .pull-right>#{created}
+    $if commentMessage /= ""
+        <div .panel .panel-default style="margin-bottom: 4px;">
+            <div .panel-body>
+                <p>#{commentMessage}
+    <div>
+        $if commentType /= CommentStart
+            <a .btn .btn-default .btn-xs .comment-reply>Reply
         <a .btn .btn-default .btn-xs disabled>Request Info
-        <span .comment_timestamp .pull-right>#{created}
+
+    ^{commentListWidget subComments}

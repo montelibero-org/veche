@@ -35,14 +35,14 @@ $if isVoteAllowed
     <hr>
 
 <div #comments>
-    $forall comment <- comments
-        ^{commentWidget comment}
+    ^{commentListWidget comments}
 
 <hr>
 
 <form #commentForm .form-horizontal
         action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
     ^{commentFormFields}
+    <input type=hidden name=parent value="">
     <div .form-group>
         <label .col-sm-2 .control-label>Request info from
         <div .col-sm-10>

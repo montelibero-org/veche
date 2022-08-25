@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -13,7 +14,9 @@ import Import
 import Data.Set qualified as Set
 
 import Model.Comment qualified as Comment
-import Templates.Comment (CommentInput (..), commentAnchor, commentForm)
+import Templates.Comment (CommentInput (CommentInput), commentAnchor,
+                          commentForm)
+import Templates.Comment qualified as CommentInput
 
 postCommentsR :: Handler Html
 postCommentsR = do
@@ -22,7 +25,8 @@ postCommentsR = do
     requestUsers <- lookupRequestUsers
     case result of
         FormSuccess commentInput@CommentInput{issue} -> do
-            commentId <- Comment.addText user commentInput{requestUsers}
+            commentId <-
+                Comment.addText user commentInput{CommentInput.requestUsers}
             redirect $ IssueR issue :#: commentAnchor commentId
         _ -> invalidArgs [tshow result]
 

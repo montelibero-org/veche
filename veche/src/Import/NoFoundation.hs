@@ -7,6 +7,7 @@ module Import.NoFoundation
     ) where
 
 import ClassyPrelude.Yesod as Import hiding (Request, id)
+import Control.Arrow as Import ((>>>))
 import Data.Function as Import ((&))
 import Data.Kind as Import (Type)
 import Yesod.Auth as Import

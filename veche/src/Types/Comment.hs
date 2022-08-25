@@ -7,4 +7,6 @@ data CommentMaterialized = CommentMaterialized
     , comment        :: Comment
     , author         :: User
     , requestedUsers :: [User]
+    , subComments    :: [CommentMaterialized]
     }
+    deriving (Show)

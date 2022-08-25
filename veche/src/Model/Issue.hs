@@ -31,14 +31,16 @@ import Data.Coerce (coerce)
 import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist qualified as Persist
-import Database.Persist.Sql (Single (..), rawSql)
+import Database.Persist.Sql (Single (Single), rawSql)
 
 -- component
 import Genesis (mtlFund)
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
-import Types.Comment (CommentMaterialized (..))
-import Types.Issue (IssueContent (..))
+import Types.Comment (CommentMaterialized (CommentMaterialized))
+import Types.Comment qualified
+import Types.Issue (IssueContent (IssueContent))
+import Types.Issue qualified
 
 data VoteMaterialized = VoteMaterialized
     { choice :: Choice
@@ -74,29 +76,64 @@ countOpenAndClosed = do
 
 loadComments :: MonadIO m => IssueId -> SqlPersistT m [CommentMaterialized]
 loadComments issueId = do
-    comments <-
+    comments <- loadRawComments
+    traceM $ "comments = " <> show comments
+    requests <- loadRawRequests
+    let commentsByParent = indexCommentsByParent comments
+    traceM $ "commentsByParent = " <> show commentsByParent
+    let topLeveComments = findWithDefault [] Nothing commentsByParent
+    let requestsByComment = indexRequestsByComment requests
+    pure $ map (materialize commentsByParent requestsByComment) topLeveComments
+  where
+
+    loadRawComments ::
+        MonadIO m => SqlPersistT m [(Entity Comment, Entity User)]
+    loadRawComments =
         rawSql
-            @(Entity Comment, Entity User)
             "SELECT ??, ??\
             \ FROM comment, user ON comment.author = user.id\
             \ WHERE comment.issue = ?"
             [toPersistValue issueId]
-    requests <-
+
+    loadRawRequests ::
+        MonadIO m => SqlPersistT m [(Entity Request, Entity User)]
+    loadRawRequests =
         rawSql
-            @(Entity Request, Entity User)
             "SELECT ??, ??\
             \ FROM request, user ON request.user = user.id\
             \ WHERE request.issue = ?"
             [toPersistValue issueId]
-    let requestsByComment =
-            Map.fromListWith
-                (++)
-                [ (requestComment, [user])
-                | (Entity _ Request{requestComment}, Entity _ user) <- requests
-                ]
-    for comments \(Entity id comment, Entity _ author) -> do
-        let requestedUsers = findWithDefault [] id requestsByComment
-        pure CommentMaterialized{id, comment, author, requestedUsers}
+
+    indexCommentsByParent comments =
+        Map.fromListWith
+            (++)
+            [ (commentParent, [commentAndAuthor])
+            | commentAndAuthor@(Entity _ Comment{commentParent}, _) <- comments
+            ]
+        <&> sortOn (fst >>> entityVal >>> commentCreated)
+
+    indexRequestsByComment requests =
+        Map.fromListWith
+            (++)
+            [ (requestComment, [user])
+            | (Entity _ Request{requestComment}, Entity _ user) <- requests
+            ]
+
+    materialize commentsByParent requestsByComment = go where
+        go (Entity id comment, Entity _ author) =
+            trace ("go: id=" ++ show id) $
+            trace
+                (   "go: subs="
+                    ++ show (map go $ findWithDefault [] (Just id) commentsByParent)
+                ) $
+            CommentMaterialized
+            { id
+            , comment
+            , author
+            , requestedUsers = findWithDefault [] id requestsByComment
+            , subComments =
+                map go $ findWithDefault [] (Just id) commentsByParent
+            }
 
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
 loadVotes issueId = do
@@ -157,6 +194,7 @@ load issueId =
                     }
             , author
             , requestedUsers = []
+            , subComments = []
             }
 
 collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
