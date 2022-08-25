@@ -24,6 +24,7 @@ import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
 import Data.Time (addUTCTime, secondsToNominalDiffTime)
+import Data.Version (showVersion)
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Servant.Client (BaseUrl)
 import Text.Hamlet (hamletFile)
@@ -36,6 +37,9 @@ import Yesod.Default.Util (addStaticContentExternal)
 -- project
 import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
+
+-- package
+import Paths_veche (version)
 
 -- component
 import Model.User qualified as User

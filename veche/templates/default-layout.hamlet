@@ -54,3 +54,4 @@
     <div .container>
         <p .text-muted>
             #{appCopyright $ appSettings master}
+            <span .pull-right>Version: #{showVersion version}
