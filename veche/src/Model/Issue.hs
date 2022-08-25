@@ -76,13 +76,8 @@ countOpenAndClosed = do
 
 loadComments ::
     MonadIO m => IssueId -> SqlPersistT m (Forest CommentMaterialized)
-loadComments issueId = do
-    comments <- loadRawComments
-    requests <- loadRawRequests
-    let commentsByParent = indexCommentsByParent comments
-    let topLeveComments = findWithDefault [] Nothing commentsByParent
-    let requestsByComment = indexRequestsByComment requests
-    pure $ map (materialize commentsByParent requestsByComment) topLeveComments
+loadComments issueId =
+    materializeComments <$> loadRawComments <*> loadRawRequests
   where
 
     loadRawComments ::
@@ -103,31 +98,38 @@ loadComments issueId = do
             \ WHERE request.issue = ?"
             [toPersistValue issueId]
 
-    indexCommentsByParent comments =
+materializeComments ::
+    [(Entity Comment, Entity User)] ->
+    [(Entity Request, Entity User)] ->
+    Forest CommentMaterialized
+materializeComments comments requests =
+    unfoldForest materialize topLevelComments
+  where
+
+    commentsByParent =
         Map.fromListWith
             (++)
             [ (commentParent, [commentAndAuthor])
             | commentAndAuthor@(Entity _ Comment{commentParent}, _) <- comments
             ]
-        <&> sortOn (fst >>> entityVal >>> commentCreated)
+        <&> sortOn (fst >>> entityKey)
+            -- assume keys are monotonically increasing
 
-    indexRequestsByComment requests =
+    topLevelComments = findWithDefault [] Nothing commentsByParent
+
+    requestsByComment =
         Map.fromListWith
             (++)
             [ (requestComment, [user])
             | (Entity _ Request{requestComment}, Entity _ user) <- requests
             ]
 
-    materialize commentsByParent requestsByComment = go where
-        go (Entity id comment, Entity _ author) =
-            Node
-                CommentMaterialized
-                    { id
-                    , comment
-                    , author
-                    , requestedUsers = findWithDefault [] id requestsByComment
-                    }
-                (map go $ findWithDefault [] (Just id) commentsByParent)
+    materialize (Entity id comment, Entity _ author) =
+        ( CommentMaterialized{id, comment, author, requestedUsers}
+        , findWithDefault [] (Just id) commentsByParent
+        )
+      where
+        requestedUsers = findWithDefault [] id requestsByComment
 
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
 loadVotes issueId = do
