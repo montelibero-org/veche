@@ -15,7 +15,7 @@ module Templates.Comment (
     CommentInput (..),
     commentAnchor,
     commentForm,
-    commentListWidget,
+    commentForestWidget,
 ) where
 
 import Import
@@ -32,17 +32,19 @@ import Model.Request (IssueRequestMaterialized (..))
 import Templates.User (userNameText, userNameWidget)
 import Types.Comment (CommentMaterialized (..))
 
-commentListWidget :: [CommentMaterialized] -> Widget
-commentListWidget comments =
+commentForestWidget :: Forest CommentMaterialized -> Widget
+commentForestWidget comments =
     [whamlet|
         <ul>
             $forall comment <- comments
                 ^{commentWidget comment}
     |]
 
-commentWidget :: CommentMaterialized -> Widget
+commentWidget :: Tree CommentMaterialized -> Widget
 commentWidget
-        CommentMaterialized{id, author, comment, requestedUsers, subComments} =
+        (Node
+            CommentMaterialized{id, author, comment, requestedUsers}
+            subComments) =
     $(widgetFile "comment")
   where
     Comment{commentMessage, commentType, commentCreated} = comment

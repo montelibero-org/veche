@@ -48,7 +48,7 @@ data VoteMaterialized = VoteMaterialized
     }
 
 data IssueMaterialized = IssueMaterialized
-    { comments              :: [CommentMaterialized]
+    { comments              :: Forest CommentMaterialized
     , body                  :: Text
     , isCloseReopenAllowed  :: Bool
     , isEditAllowed         :: Bool
@@ -74,13 +74,12 @@ countOpenAndClosed = do
         , findWithDefault 0 False counts
         )
 
-loadComments :: MonadIO m => IssueId -> SqlPersistT m [CommentMaterialized]
+loadComments ::
+    MonadIO m => IssueId -> SqlPersistT m (Forest CommentMaterialized)
 loadComments issueId = do
     comments <- loadRawComments
-    traceM $ "comments = " <> show comments
     requests <- loadRawRequests
     let commentsByParent = indexCommentsByParent comments
-    traceM $ "commentsByParent = " <> show commentsByParent
     let topLeveComments = findWithDefault [] Nothing commentsByParent
     let requestsByComment = indexRequestsByComment requests
     pure $ map (materialize commentsByParent requestsByComment) topLeveComments
@@ -121,19 +120,14 @@ loadComments issueId = do
 
     materialize commentsByParent requestsByComment = go where
         go (Entity id comment, Entity _ author) =
-            trace ("go: id=" ++ show id) $
-            trace
-                (   "go: subs="
-                    ++ show (map go $ findWithDefault [] (Just id) commentsByParent)
-                ) $
-            CommentMaterialized
-            { id
-            , comment
-            , author
-            , requestedUsers = findWithDefault [] id requestsByComment
-            , subComments =
-                map go $ findWithDefault [] (Just id) commentsByParent
-            }
+            Node
+                CommentMaterialized
+                    { id
+                    , comment
+                    , author
+                    , requestedUsers = findWithDefault [] id requestsByComment
+                    }
+                (map go $ findWithDefault [] (Just id) commentsByParent)
 
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
 loadVotes issueId = do
@@ -181,21 +175,22 @@ load issueId =
         pure IssueMaterialized{..}
   where
     startingPseudoComment commentAuthor author commentCreated =
-        CommentMaterialized
-            { id = fromBackendKey 0
-            , comment =
-                Comment
-                    { commentAuthor
-                    , commentCreated
-                    , commentMessage = ""
-                    , commentParent  = Nothing
-                    , commentIssue   = issueId
-                    , commentType    = CommentStart
-                    }
-            , author
-            , requestedUsers = []
-            , subComments = []
-            }
+        Node
+            CommentMaterialized
+                { id = fromBackendKey 0
+                , comment =
+                    Comment
+                        { commentAuthor
+                        , commentCreated
+                        , commentMessage = ""
+                        , commentParent  = Nothing
+                        , commentIssue   = issueId
+                        , commentType    = CommentStart
+                        }
+                , author
+                , requestedUsers = []
+                }
+            []
 
 collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
 collectChoices votes =

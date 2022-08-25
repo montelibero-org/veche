@@ -26,7 +26,7 @@ import Model.Issue (IssueMaterialized (..), StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
-import Templates.Comment (commentForm, commentListWidget)
+import Templates.Comment (commentForm, commentForestWidget)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm, issueTable,
                         newIssueForm, voteForm)
 import Templates.User (userNameWidget)

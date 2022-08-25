@@ -10,6 +10,7 @@ import ClassyPrelude.Yesod as Import hiding (Request, id)
 import Control.Arrow as Import ((>>>))
 import Data.Function as Import ((&))
 import Data.Kind as Import (Type)
+import Data.Tree as Import (Forest, Tree (Node))
 import Yesod.Auth as Import
 import Yesod.Core.Types as Import (loggerSet)
 import Yesod.Default.Config2 as Import

@@ -18,4 +18,4 @@
             <a .btn .btn-default .btn-xs .comment-reply>Reply
         <a .btn .btn-default .btn-xs disabled>Request Info
 
-    ^{commentListWidget subComments}
+    ^{commentForestWidget subComments}

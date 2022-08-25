@@ -35,7 +35,7 @@ $if isVoteAllowed
     <hr>
 
 <div #comments>
-    ^{commentListWidget comments}
+    ^{commentForestWidget comments}
 
 <hr>
 
