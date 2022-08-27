@@ -47,11 +47,12 @@ getAccounts ::
     Maybe Asset -> Maybe Text -> Maybe Natural -> ClientM (Records Account)
 getAccount :<|> getAccounts = client api
 
-getAllAccounts :: Maybe Asset -> ClientM [Account]
+getAllAccounts :: Asset -> ClientM [Account]
 getAllAccounts asset = go Nothing where
     limit = 200
     go cursor = do
-        Records{_embedded_records} <- getAccounts asset cursor (Just limit)
+        Records{_embedded_records} <-
+            getAccounts (Just asset) cursor (Just limit)
         case nonEmpty _embedded_records of
             Just neRecords | length _embedded_records == fromIntegral limit ->
                 let Account{paging_token} = last neRecords
