@@ -45,7 +45,9 @@ instance FromHttpApiData Asset where
 instance ToHttpApiData Asset where
     toUrlPiece Asset{code, issuer} = code <> ":" <> issuer
 
-newtype Records a = Records{_embedded_records :: [a]}
+newtype Records a =
+    Records
+        [a] -- ^ _embedded.records
     deriving (Show)
 
 instance FromJSON a => FromJSON (Records a) where
@@ -54,14 +56,11 @@ instance FromJSON a => FromJSON (Records a) where
             _embedded <- obj .: "_embedded"
             parse1 _embedded
       where
-        parse1 =
-            withObject "Records" \obj -> do
-                _embedded_records <- obj .: "records"
-                pure Records{_embedded_records}
+        parse1 = withObject "Records" \obj -> Records <$> obj .: "records"
 
 instance ToJSON a => ToJSON (Records a) where
-    toJSON Records{_embedded_records} =
-        object ["_embedded" .= object ["records" .= _embedded_records]]
+    toJSON (Records records) =
+        object ["_embedded" .= object ["records" .= records]]
 
 data Signer = Signer
     { weight :: Int

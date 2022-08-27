@@ -31,7 +31,6 @@ import Servant.API ((:<|>) ((:<|>)))
 import Stellar.Horizon.API (api)
 import Stellar.Horizon.Types (Account (Account, paging_token), Asset,
                               Records (Records))
-import Stellar.Horizon.Types qualified
 
 publicServerBase :: BaseUrl
 publicServerBase = unsafePerformIO $ parseBaseUrl "https://horizon.stellar.org/"
@@ -51,10 +50,9 @@ getAllAccounts :: Asset -> ClientM [Account]
 getAllAccounts asset = go Nothing where
     limit = 200
     go cursor = do
-        Records{_embedded_records} <-
-            getAccounts (Just asset) cursor (Just limit)
-        case nonEmpty _embedded_records of
-            Just neRecords | length _embedded_records == fromIntegral limit ->
+        Records records <- getAccounts (Just asset) cursor (Just limit)
+        case nonEmpty records of
+            Just neRecords | length records == fromIntegral limit ->
                 let Account{paging_token} = last neRecords
-                in (_embedded_records <>) <$> go (Just paging_token)
-            _ -> pure _embedded_records
+                in (records <>) <$> go (Just paging_token)
+            _ -> pure records
