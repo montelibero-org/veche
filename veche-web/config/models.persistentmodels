@@ -54,6 +54,14 @@ Request
     deriving Show
 
 
+StellarHolder
+    assetCode   Text
+    assetIssuer Text
+    key         Text -- holder account address
+
+    UniqueHolder assetCode assetIssuer key
+
+
 StellarSigner
     target  Text -- target account address (managed one)
     key     Text -- signer account address
