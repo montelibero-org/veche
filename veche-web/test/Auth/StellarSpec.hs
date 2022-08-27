@@ -16,6 +16,7 @@ import Control.Monad.Except (throwError)
 import Data.Text qualified as Text
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
+import Servant ((:<|>) ((:<|>)))
 import Servant.Server (Server, err404, serve)
 import Servant.Server qualified as Servant
 import Text.Shakespeare.Text (stextFile)
@@ -125,13 +126,20 @@ horizonTestApp = serve api horizonTestServer
   where
 
     horizonTestServer :: Server API
-    horizonTestServer = getAccount
+    horizonTestServer = getAccount :<|> getAccounts
 
     getAccount :: Text -> Servant.Handler Account
     getAccount address
         | address == testGoodPublicKey =
-            pure Account{signers = [signer testGoodPublicKey]}
+            pure
+                Account
+                { account_id    = address
+                , paging_token  = address
+                , signers       = [signer address]
+                }
         | otherwise = throwError err404
+
+    getAccounts = error "getAccounts is not implemented"
 
     signer key = Signer{key, type_ = Ed25519PublicKey, weight = 1}
 
