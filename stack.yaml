@@ -2,7 +2,7 @@ resolver: lts-18.20
 
 packages:
   - stellar-horizon
-  - veche
+  - veche-web
   - yesod-auth-stellar
 
 extra-deps:
