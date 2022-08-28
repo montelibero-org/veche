@@ -55,11 +55,10 @@ Request
 
 
 StellarHolder
-    assetCode   Text
-    assetIssuer Text
-    key         Text -- holder account address
+    asset   Asset
+    key     Text -- holder account address
 
-    UniqueHolder assetCode assetIssuer key
+    UniqueHolder asset key
 
 
 StellarSigner

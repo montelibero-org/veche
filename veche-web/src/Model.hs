@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-orphans #-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -19,8 +21,13 @@ module Model where
 import ClassyPrelude.Yesod hiding (Request)
 
 import Database.Persist.Quasi (lowerCaseSettings)
+import Database.Persist.Sql (PersistFieldSql)
+import Stellar.Horizon.Types (Asset (Asset))
 
 import Model.Types (Choice, CommentType)
+
+deriving newtype instance PersistField Asset
+deriving newtype instance PersistFieldSql Asset
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities

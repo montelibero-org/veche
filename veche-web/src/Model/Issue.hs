@@ -34,7 +34,7 @@ import Database.Persist qualified as Persist
 import Database.Persist.Sql (Single (Single), rawSql)
 
 -- component
-import Genesis (mtlFund)
+import Genesis (mtlAsset, mtlFund)
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 import Types.Comment (CommentMaterialized (CommentMaterialized))
@@ -206,14 +206,14 @@ selectList :: [Filter Issue] -> Handler [Entity Issue]
 selectList filters =
     runDB do
         Entity _ User{userStellarAddress} <- requireAuth
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
         requireAuthz $ ListIssues signerId
         Persist.selectList filters []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
         requireAuthz $ ListIssues signerId
         rawSql
             @(Entity Issue)

@@ -9,3 +9,10 @@ CREATE TABLE "request" (
         REFERENCES "issue" ON DELETE RESTRICT ON UPDATE RESTRICT,
     CONSTRAINT "unique_request" UNIQUE ("user","comment")
 );
+
+CREATE TABLE "stellar_holder" (
+    "id" INTEGER PRIMARY KEY,
+    "asset" VARCHAR NOT NULL,
+    "key" VARCHAR NOT NULL,
+    CONSTRAINT "unique_holder" UNIQUE ("asset","key")
+);

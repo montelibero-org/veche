@@ -5,6 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Workers.StellarUpdate (stellarDataUpdater) where
@@ -13,16 +14,20 @@ import Import hiding (cached)
 
 -- global
 import Control.Concurrent (threadDelay)
+import Data.Decimal (Decimal)
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
+import Data.Text qualified as Text
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Servant.Client (BaseUrl, ClientEnv, ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
+import Text.Read (readMaybe)
 
 -- project
 import Stellar.Horizon.Client (getAccount, getAllAccounts)
-import Stellar.Horizon.Types (Account (Account), Asset (Asset), Signer (Signer),
+import Stellar.Horizon.Types (Account (Account), Asset (Asset),
+                              Balance (Balance), Signer (Signer),
                               SignerType (Ed25519PublicKey))
 import Stellar.Horizon.Types qualified
 
@@ -69,10 +74,8 @@ updateSignersCache clientEnv connPool target = do
                 Map.fromList
                     [ (stellarSignerKey, stellarSignerWeight)
                     | Entity{entityVal} <- cached'
-                    , let
-                        StellarSigner
-                            {stellarSignerKey, stellarSignerWeight} =
-                                entityVal
+                    , let StellarSigner{stellarSignerKey, stellarSignerWeight} =
+                            entityVal
                     ]
         handleDeleted $ Map.keys $ cached \\ actual
         handleAdded $ actual \\ cached
@@ -116,16 +119,16 @@ updateHoldersCache ::
     Asset ->
     -- | Actual number of holders
     IO Int
-updateHoldersCache clientEnv connPool asset@Asset{code, issuer} = do
+updateHoldersCache clientEnv connPool asset = do
     holders <- runClientM' clientEnv $ getAllAccounts asset
-    let actual = Set.fromList [account_id | Account{account_id} <- holders]
-    (`runSqlPool` connPool) do
-        cached' <-
-            selectList
-                [ StellarHolderAssetCode    ==. code
-                , StellarHolderAssetIssuer  ==. issuer
+    let actual =
+            Set.fromList
+                [ account_id
+                | Account{account_id, balances} <- holders
+                , amount asset balances > 0
                 ]
-                []
+    (`runSqlPool` connPool) do
+        cached' <- selectList [StellarHolderAsset ==. asset] []
         let cached =
                 Set.fromList
                     [ stellarHolderKey
@@ -137,18 +140,25 @@ updateHoldersCache clientEnv connPool asset@Asset{code, issuer} = do
 
   where
 
-    handleDeleted = traverse_ $ deleteBy . UniqueHolder code issuer
+    handleDeleted = traverse_ $ deleteBy . UniqueHolder asset
 
     handleAdded added =
         insertMany_
-            [ StellarHolder
-                { stellarHolderAssetCode    = code
-                , stellarHolderAssetIssuer  = issuer
-                , stellarHolderKey
-                }
+            [ StellarHolder{stellarHolderAsset = asset, stellarHolderKey}
             | stellarHolderKey <- toList added
             ]
 
 runClientM' :: ClientEnv -> ClientM a -> IO a
 runClientM' clientEnv action =
     runClientM action clientEnv >>= either throwIO pure
+
+amount :: Asset -> [Balance] -> Decimal
+amount (Asset asset) balances =
+    fromMaybe 0 $
+    asum
+        [ readMaybe @Decimal $ Text.unpack balance
+        | Balance
+                {balance, asset_code = Just code, asset_issuer = Just issuer} <-
+            balances
+        , asset == code <> ":" <> issuer
+        ]
