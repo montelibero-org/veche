@@ -1,6 +1,6 @@
 <li ##{commentAnchor id} .comment
         data-comment-id=#{toPathPiece id} style="margin-bottom: 20px;">
-    <span .comment_author>#{userNameWidget author}
+    <span .comment_author>#{userNameWidget commentAuthor}
     <span .comment_action>
         $if null requestedUsers
             #{commentType}

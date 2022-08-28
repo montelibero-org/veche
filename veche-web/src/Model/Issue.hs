@@ -124,7 +124,7 @@ materializeComments comments requests =
             | (Entity _ Request{requestComment}, Entity _ user) <- requests
             ]
 
-    materialize (Entity id comment, Entity _ author) =
+    materialize (Entity id comment, author) =
         ( CommentMaterialized{id, comment, author, requestedUsers}
         , findWithDefault [] (Just id) commentsByParent
         )
@@ -158,7 +158,7 @@ load issueId =
             issueCurVersion
             ?| constraintFail "Issue.current_version must be valid"
         author <-
-            get authorId
+            getEntity authorId
             ?|> constraintFail "Issue.author must exist in User table"
         comments' <- loadComments issueId
         let comments =
