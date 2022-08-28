@@ -42,3 +42,7 @@ $(() => {
 function comment_request_user_dimiss(user_id) {
   $(`[data-user-id="${user_id}"]`).remove();
 }
+
+  $('a.comment-request-info').click(event => {
+    console.log('test')
+  });

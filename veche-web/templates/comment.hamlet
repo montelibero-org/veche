@@ -16,6 +16,6 @@
     <div>
         $if commentType /= CommentStart
             <a .btn .btn-default .btn-xs .comment-reply>Reply
-        <a .btn .btn-default .btn-xs disabled>Request Info
+        <a .btn .btn-default .btn-xs .comment-request-info data-author-id=#{to id} >Request Info
 
     ^{commentForestWidget subComments}
