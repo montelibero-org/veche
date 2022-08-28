@@ -3,11 +3,6 @@ name:          veche
 version:       2022.8.28.18
 build-type:    Simple
 
-flag dev
-  description: Turn on development settings, like auto-reload templates.
-  manual:      False
-  default:     False
-
 library
   default-extensions: EmptyCase
   exposed-modules:
@@ -87,20 +82,14 @@ library
       stellar-horizon
     , yesod-auth-stellar
 
-  if flag(dev)
-    ghc-options: -Wall -fwarn-tabs -O0
-    cpp-options: -DDEVELOPMENT
-
-  else
-    ghc-options: -Wall -fwarn-tabs -O2
-
   default-language:   Haskell2010
+  ghc-options:        -O2
 
 executable veche
   main-is:          main.hs
   other-modules:    DevelMain
   hs-source-dirs:   app
-  ghc-options:      -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:      -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       base           >=4.9.1.0 && <5
     , foreign-store

@@ -70,12 +70,6 @@ data AppSettings = AppSettings
 instance FromJSON AppSettings where
     parseJSON =
         withObject "AppSettings" $ \o -> do
-            let defaultDev =
-#ifdef DEVELOPMENT
-                    True
-#else
-                    False
-#endif
             appStaticDir              <- o .: "static-dir"
             appDatabaseConf           <- o .: "database"
             appDatabaseMigrate        <- o .:? "database-migrate" .!= False
@@ -83,9 +77,7 @@ instance FromJSON AppSettings where
             appHost                   <- fromString <$> o .: "host"
             appPort                   <- o .: "port"
             appIpFromHeader           <- o .: "ip-from-header"
-
-            dev                       <- o .:? "development"      .!= defaultDev
-
+            dev                       <- o .:? "development"      .!= False
             appDetailedRequestLogging <- o .:? "detailed-logging" .!= dev
             appShouldLogAll           <- o .:? "should-log-all"   .!= dev
             appReloadTemplates        <- o .:? "reload-templates" .!= dev
