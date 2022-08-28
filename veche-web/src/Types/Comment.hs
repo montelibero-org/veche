@@ -5,7 +5,7 @@ import Import
 data CommentMaterialized = CommentMaterialized
     { id             :: CommentId
     , comment        :: Comment
-    , author         :: User
+    , author         :: Entity User
     , requestedUsers :: [User]
     }
     deriving (Show)

@@ -1,3 +1,5 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,12 +9,13 @@ module Authorization where
 
 import ClassyPrelude.Yesod
 
-import Model (Issue (..), StellarSignerId, UserId)
+import Model (Issue (Issue), StellarHolderId, StellarSignerId, UserId)
+import Model qualified
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
 -- when presence in the database is required.
 data AuthzRequest
-    = ListIssues      StellarSignerId
+    = ListIssues      StellarHolderId
     | CreateIssue     StellarSignerId
     | ReadIssue       StellarSignerId
     | AddIssueComment StellarSignerId
@@ -22,7 +25,7 @@ data AuthzRequest
 
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
-    ListIssues      (_proof :: StellarSignerId) -> True
+    ListIssues      (_proof :: StellarHolderId) -> True
     CreateIssue     (_proof :: StellarSignerId) -> True
     ReadIssue       (_proof :: StellarSignerId) -> True
     AddIssueComment (_proof :: StellarSignerId) -> True

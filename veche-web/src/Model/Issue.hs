@@ -34,7 +34,7 @@ import Database.Persist qualified as Persist
 import Database.Persist.Sql (Single (Single), rawSql)
 
 -- component
-import Genesis (mtlFund)
+import Genesis (mtlAsset, mtlFund)
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 import Types.Comment (CommentMaterialized (CommentMaterialized))
@@ -124,7 +124,7 @@ materializeComments comments requests =
             | (Entity _ Request{requestComment}, Entity _ user) <- requests
             ]
 
-    materialize (Entity id comment, Entity _ author) =
+    materialize (Entity id comment, author) =
         ( CommentMaterialized{id, comment, author, requestedUsers}
         , findWithDefault [] (Just id) commentsByParent
         )
@@ -158,7 +158,7 @@ load issueId =
             issueCurVersion
             ?| constraintFail "Issue.current_version must be valid"
         author <-
-            get authorId
+            getEntity authorId
             ?|> constraintFail "Issue.author must exist in User table"
         comments' <- loadComments issueId
         let comments =
@@ -206,14 +206,14 @@ selectList :: [Filter Issue] -> Handler [Entity Issue]
 selectList filters =
     runDB do
         Entity _ User{userStellarAddress} <- requireAuth
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
         requireAuthz $ ListIssues signerId
         Persist.selectList filters []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
         requireAuthz $ ListIssues signerId
         rawSql
             @(Entity Issue)

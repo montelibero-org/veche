@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -134,12 +135,13 @@ horizonTestApp = serve api horizonTestServer
             pure
                 Account
                 { account_id    = address
+                , balances      = []
                 , paging_token  = address
                 , signers       = [signer address]
                 }
         | otherwise = throwError err404
 
-    getAccounts = error "getAccounts is not implemented"
+    getAccounts _ _ _ = throwError err404
 
     signer key = Signer{key, type_ = Ed25519PublicKey, weight = 1}
 
