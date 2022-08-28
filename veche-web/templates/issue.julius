@@ -32,14 +32,15 @@ $(() => {
     },
   });
 
-  if(#{isCommentAllowed})
+  if (#{isCommentAllowed}) {
+    $('a.comment-reply').click(event => {
+      const parent = $(event.target).closest('.comment');
+      commentForm.appendTo(parent);
+      commentForm.find('input[name=parent]').val(parent.data('comment-id'));
+    });
+  } else {
     $('a.comment-reply').attr('disabled', true);
-
-  $('a.comment-reply').click(event => {
-    const parent = $(event.target).closest('.comment');
-    commentForm.appendTo(parent);
-    commentForm.find('input[name=parent]').val(parent.data('comment-id'));
-  });
+  }
 });
 
 function comment_request_user_dimiss(user_id) {
