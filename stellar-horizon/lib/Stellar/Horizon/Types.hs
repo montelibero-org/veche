@@ -1,4 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,6 +9,7 @@
 module Stellar.Horizon.Types
     ( Account (..)
     , Asset (..)
+    , Balance (..)
     , Records (..)
     , Signer (..)
     , SignerType (..)
@@ -18,14 +21,14 @@ import Data.Aeson (FromJSON, ToJSON, camelTo2, constructorTagModifier,
 import Data.Aeson qualified
 import Data.Aeson.TH (deriveJSON)
 import Data.List (dropWhileEnd)
-import Data.Text (Text, split)
+import Data.Text (Text)
 import Servant.API (FromHttpApiData, ToHttpApiData)
-import Servant.API qualified
 
 data Account = Account
     { account_id :: Text
         -- ^ This account’s public key encoded in a base32 string
         -- representation.
+    , balances :: [Balance] -- ^ The assets this account holds.
     , paging_token :: Text
     , signers :: [Signer]
         -- ^ The public keys and associated weights that can be used to
@@ -34,16 +37,20 @@ data Account = Account
     }
     deriving (Show)
 
-data Asset = Asset{code, issuer :: Text}
+data Balance = Balance
+    { balance :: Text
+        -- ^ The number of units of an asset held by this account.
+    , asset_code :: Maybe Text
+        -- ^ The code for this asset.
+    , asset_issuer :: Maybe Text
+        -- ^ The Stellar address of this asset’s issuer.
+    }
+    deriving (Show)
 
-instance FromHttpApiData Asset where
-    parseUrlPiece piece =
-        case split (== ':') piece of
-            [code, issuer]  -> pure Asset{code, issuer}
-            _               -> Left "Invalid asset, must be <code>:<issuer>"
-
-instance ToHttpApiData Asset where
-    toUrlPiece Asset{code, issuer} = code <> ":" <> issuer
+newtype Asset =
+    Asset
+        Text -- ^ asset code in format "{code}:{issuer}"
+    deriving newtype (FromHttpApiData, ToHttpApiData)
 
 newtype Records a =
     Records
@@ -90,4 +97,4 @@ concat
                     { constructorTagModifier    = camelTo2 '_'
                     , fieldLabelModifier        = dropWhileEnd (== '_')
                     })
-            [''Account, ''Signer, ''SignerType]
+            [''Account, ''Balance, ''Signer, ''SignerType]
