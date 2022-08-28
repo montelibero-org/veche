@@ -32,6 +32,9 @@ $(() => {
     },
   });
 
+  if(#{isCommentAllowed})
+    $('a.comment-reply').attr('disabled', true);
+
   $('a.comment-reply').click(event => {
     const parent = $(event.target).closest('.comment');
     commentForm.appendTo(parent);

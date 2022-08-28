@@ -37,6 +37,7 @@ getIssueR issueId = do
         { comments
         , body
         , isCloseReopenAllowed
+        , isCommentAllowed
         , isEditAllowed
         , issue = Issue{issueTitle, issueOpen}
         , isVoteAllowed

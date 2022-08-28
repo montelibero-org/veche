@@ -1,10 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -51,6 +51,7 @@ data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
     , body                  :: Text
     , isCloseReopenAllowed  :: Bool
+    , isCommentAllowed      :: Bool
     , isEditAllowed         :: Bool
     , issue                 :: Issue
     , isVoteAllowed         :: Bool
@@ -149,8 +150,10 @@ load :: IssueId -> Handler IssueMaterialized
 load issueId =
     runDB do
         Entity userId User{userStellarAddress} <- requireAuth
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ ReadIssue signerId
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        requireAuthz $ ReadIssue holderId
+        mSignerId <-
+            fmap entityKey <$> getBy (UniqueMember mtlFund userStellarAddress)
 
         issue@Issue{issueAuthor = authorId, issueCreated, issueCurVersion} <-
             get404 issueId
@@ -173,8 +176,20 @@ load issueId =
         let issueE = Entity issueId issue
             isEditAllowed        = isAllowed $ EditIssue        issueE userId
             isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-            isVoteAllowed        = isAllowed $ AddVote signerId
-        pure IssueMaterialized{..}
+            isCommentAllowed     = isAllowed $ AddIssueComment holderId
+            isVoteAllowed        = any (isAllowed . AddVote) mSignerId
+        pure
+            IssueMaterialized
+            { body
+            , comments
+            , isCloseReopenAllowed
+            , isCommentAllowed
+            , isEditAllowed
+            , issue
+            , isVoteAllowed
+            , requests
+            , votes
+            }
   where
     startingPseudoComment commentAuthor author commentCreated =
         Node
@@ -206,15 +221,15 @@ selectList :: [Filter Issue] -> Handler [Entity Issue]
 selectList filters =
     runDB do
         Entity _ User{userStellarAddress} <- requireAuth
-        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
-        requireAuthz $ ListIssues signerId
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        requireAuthz $ ListIssues holderId
         Persist.selectList filters []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
-        requireAuthz $ ListIssues signerId
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        requireAuthz $ ListIssues holderId
         rawSql
             @(Entity Issue)
             "SELECT ??\
