@@ -11,19 +11,17 @@ If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.
 
 Start a development server with:
 
-```
-stack exec --package=yesod-bin -- yesod devel
+```sh
+./server-dev.sh
 ```
 
 As your code changes, your site will be automatically recompiled and redeployed to localhost.
 
 ## Tests
 
+```sh
+stack test
 ```
-stack test --flag veche:dev
-```
-
-(Because `yesod devel` passes the `library-only` and `dev` flags, matching those flags means you don't need to recompile between tests and development, and it disables optimization to speed up your test compile times).
 
 ## Update Letsencrypt certificates
 
