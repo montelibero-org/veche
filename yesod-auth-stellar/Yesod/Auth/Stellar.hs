@@ -20,32 +20,36 @@ module Yesod.Auth.Stellar
     ) where
 
 import Control.Exception (Exception, throwIO)
-import Control.Monad ((>=>))
+import Control.Monad (unless)
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
 import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
 import Data.ByteString.Base64 qualified as Base64
+import Data.Foldable (toList)
 import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (Status (Status))
 import Network.HTTP.Types qualified
-import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, xdrSerialize)
+import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
+                           xdrDeserialize, xdrSerialize)
 import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
-                                transactionBuilder)
-import Network.Stellar.Keypair (decodePublic)
+                                transactionBuilder, verify, viewAccount)
+import Network.Stellar.Keypair (decodePublic, encodePublicKey)
+import Network.Stellar.Network (publicNetwork, testNetwork)
 import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Memo (Memo'MEMO_TEXT),
                                        Operation (Operation),
                                        OperationBody (OperationBody'MANAGE_DATA),
+                                       Transaction (Transaction),
                                        TransactionEnvelope (TransactionEnvelope))
+import Network.Stellar.TransactionXdr qualified
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
 import System.IO.Unsafe (unsafePerformIO)
-import Text.Shakespeare.Text (stextFile)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
                    Route (PluginR), setCredsRedirect)
 import Yesod.Auth qualified
@@ -64,7 +68,7 @@ import Stellar.Horizon.Types (Account (Account), Signer (Signer))
 import Stellar.Horizon.Types qualified
 
 -- component
-import Yesod.Auth.Stellar.Internal (TextL, python3)
+import Yesod.Auth.Stellar.Internal (decodeUtf8Throw)
 
 pluginName :: Text
 pluginName = "stellar"
@@ -207,7 +211,7 @@ makeChallenge address nonce0 = do
         & toEnvelope
         & xdrSerialize
         & Base64.encode
-        & decodeUtf8
+        & decodeUtf8Throw
 
     setTextMemo memo b = b{tbMemo = Just $ Memo'MEMO_TEXT memo}
 
@@ -220,14 +224,34 @@ makeChallenge address nonce0 = do
 
 -- | Returns address and nonce
 verifyResponse :: MonadHandler m => Text -> m (Text, Text)
-verifyResponse envelope = do
-    addressNonce <- python3' $(stextFile "Yesod/Auth/verify.py")
-    case Text.words addressNonce of
-        [address, nonce] -> pure (address, nonce)
-        _ -> invalidArgs ["Bad transaction"]
-
-python3' :: MonadHandler m => TextL -> m Text
-python3' = python3 >=> either (\msg -> invalidArgs [msg]) pure
+verifyResponse envelopeXdrBase64 = do
+    envelopeXdrRaw <-
+        Base64.decode (encodeUtf8 envelopeXdrBase64)
+        ?| "Transaction envelope must be encoded as Base64"
+    TransactionEnvelope tx signatures <-
+        xdrDeserialize envelopeXdrRaw
+        ?| "Transaction envelope must be encoded as XDR"
+    let Transaction{transaction'sourceAccount, transaction'operations} = tx
+        account = viewAccount transaction'sourceAccount
+    signature <-
+        case toList $ unLengthArray signatures of
+            [signature] -> pure signature
+            _ -> invalidArgs ["Expected exactly 1 signature"]
+    let verified =
+            or  [ verify network tx account signature
+                | network <- [publicNetwork, testNetwork]
+                ]
+    unless verified $ invalidArgs ["Signature is not verified"]
+    nonce <-
+        case toList $ unLengthArray transaction'operations of
+            [Operation _ body]
+                | OperationBody'MANAGE_DATA op <- body
+                , ManageDataOp "nonce" (Just nonce) <- op ->
+                    decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
+            _ -> invalidArgs ["Bad operations"]
+    pure (encodePublicKey account, nonce)
+  where
+    e ?| msg = either (const $ invalidArgs [msg]) pure e
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Text -> m ()
