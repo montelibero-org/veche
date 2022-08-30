@@ -107,15 +107,18 @@ test-suite veche-test
   ghc-options:      -Wall
   build-depends:
       base               >=4.9.1.0 && <5
+    , base64-bytestring
     , classy-prelude     >=1.5     && <1.6
+    , ed25519
     , hspec              >=2.0.0
+    , HUnit
     , microlens
     , monad-logger       >=0.3     && <0.4
     , mtl
     , persistent
     , persistent-sqlite
     , servant-server
-    , shakespeare
+    , stellar-sdk
     , text               >=0.11    && <2.0
     , veche
     , wai
@@ -127,8 +130,5 @@ test-suite veche-test
     , yesod-test
 
   -- project
-  build-depends:
-      stellar-horizon
-    , yesod-auth-stellar
-
+  build-depends:    stellar-horizon
   default-language: Haskell2010
