@@ -6,11 +6,14 @@ build-type:    Simple
 library
   build-depends:
       base
+    , base64-bytestring
+    , ed25519
     , http-client-tls
     , http-types
     , nonce
     , servant-client
     , shakespeare
+    , stellar-sdk
     , text
     , typed-process
     , yesod-auth

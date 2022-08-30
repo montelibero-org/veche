@@ -1,4 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
@@ -16,21 +19,36 @@ module Yesod.Auth.Stellar
     , Config (..)
     ) where
 
-import Control.Exception (throwIO)
+import Control.Exception (Exception, throwIO)
 import Control.Monad ((>=>))
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
+import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
+import Data.ByteString.Base64 qualified as Base64
+import Data.Function ((&))
 import Data.Text (Text)
 import Data.Text qualified as Text
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status (..))
+import Network.HTTP.Types (Status (Status))
+import Network.HTTP.Types qualified
+import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, xdrSerialize)
+import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
+                                transactionBuilder)
+import Network.Stellar.Keypair (decodePublic)
+import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
+                                       Memo (Memo'MEMO_TEXT),
+                                       Operation (Operation),
+                                       OperationBody (OperationBody'MANAGE_DATA),
+                                       TransactionEnvelope (TransactionEnvelope))
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Shakespeare.Text (stextFile)
-import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
+import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
                    Route (PluginR), setCredsRedirect)
+import Yesod.Auth qualified
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage,
                    TypedContent, WidgetFor, invalidArgs, liftHandler, liftIO,
                    logErrorS, lookupGetParam, notAuthenticated, whamlet)
@@ -42,7 +60,8 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
 
 -- project
 import Stellar.Horizon.Client (getAccount)
-import Stellar.Horizon.Types (Account (..), Signer (..))
+import Stellar.Horizon.Types (Account (Account), Signer (Signer))
+import Stellar.Horizon.Types qualified
 
 -- component
 import Yesod.Auth.Stellar.Internal (TextL, python3)
@@ -166,8 +185,38 @@ makeResponseForm routeToMaster challenge = do
             <button type=submit .btn .btn-primary>Log in
     |]
 
+data InternalError = InternalErrorNonceTooLong
+    deriving (Exception, Show)
+
 makeChallenge :: MonadHandler m => Text -> Text -> m Text
-makeChallenge address nonce = python3' $(stextFile "Yesod/Auth/challenge.py")
+makeChallenge address nonce0 = do
+    publicKey <- decodePublic address ?| invalidArgs ["Bad address"]
+    nonce <- lengthArray (encodeUtf8 nonce0) ?| internalErrorNonceTooLong
+    pure $ makeChallenge' (PublicKey publicKey) nonce
+  where
+
+    m ?| e = maybe e pure m
+
+    internalErrorNonceTooLong = liftIO $ throwIO InternalErrorNonceTooLong
+
+    makeChallenge' publicKey nonce =
+        transactionBuilder publicKey 0
+        & setTextMemo "Logging into Veche"
+        & addManageDataOp "nonce" nonce
+        & buildWithFee 0
+        & toEnvelope
+        & xdrSerialize
+        & Base64.encode
+        & decodeUtf8
+
+    setTextMemo memo b = b{tbMemo = Just $ Memo'MEMO_TEXT memo}
+
+    addManageDataOp key value b =
+        addOperation b $
+        Operation Nothing $
+        OperationBody'MANAGE_DATA $ ManageDataOp key (Just value)
+
+    toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
 
 -- | Returns address and nonce
 verifyResponse :: MonadHandler m => Text -> m (Text, Text)

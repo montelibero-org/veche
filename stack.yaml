@@ -10,3 +10,8 @@ extra-deps:
     - github: cblp/servant-cli
       commit: ae3f88791806b3bb9a43173c0758af7c73b36e43
       # https://github.com/mstksg/servant-cli/pull/3
+  # stellar-sdk
+    - DRBG-0.5.5
+  # yesod-auth-stellar
+    - github: cblp/haskell-stellar-sdk
+      commit: 002bdbf6be850ba07c4e7b589ef4b3a4b5eb5526
