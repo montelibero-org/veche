@@ -14,7 +14,6 @@ import TestImport
 -- global
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
-import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
 import Data.ByteString.Base64 qualified as Base64
 import Network.ONCRPC.XDR (xdrDeserialize, xdrSerialize)
 import Network.Stellar.Builder qualified as Stellar
@@ -91,8 +90,8 @@ testAuthenticationOk keyPair network = do
         htmlQuery ".stellar_challenge"
     envelopeXdrRaw <- assertRight $ Base64.decode $ encodeUtf8 envelopeXdrBase64
     envelope <- assertRight $ xdrDeserialize envelopeXdrRaw
-    let envelopeSigned = Stellar.sign network envelope [keyPair]
-        envelopeSignedXdrBase64 =
+    envelopeSigned <- assertRightShow $ Stellar.sign network envelope [keyPair]
+    let envelopeSignedXdrBase64 =
             decodeUtf8Throw $ Base64.encode $ xdrSerialize envelopeSigned
 
     request do
@@ -113,8 +112,8 @@ testAuthenticationOk keyPair network = do
         [User{userName = Nothing, userStellarAddress = address}]
 
   where
-    Stellar.KeyPair{kpPublicKey = PublicKey publicKey} = keyPair
-    address = Stellar.encodePublic publicKey
+    Stellar.KeyPair{kpPublicKey} = keyPair
+    address = Stellar.encodePublicKey kpPublicKey
 
 testGoodPublicKey :: Text
 testGoodPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
@@ -160,6 +159,9 @@ the :: HasCallStack => [a] -> a
 the = \case
     [a] -> a
     xs -> error $ "the: " <> show (length xs) <> " items"
+
+assertRightShow :: (HasCallStack, Show e) => Either e a -> YesodExample App a
+assertRightShow = either (liftIO . assertFailure . show) pure
 
 assertRight :: HasCallStack => Either String a -> YesodExample App a
 assertRight = either (liftIO . assertFailure) pure

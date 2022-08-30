@@ -14,4 +14,4 @@ extra-deps:
     - DRBG-0.5.5
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
-      commit: 002bdbf6be850ba07c4e7b589ef4b3a4b5eb5526
+      commit: 1f9cd2370eccca6f4fb4ebfd7c7f7bcee089868f

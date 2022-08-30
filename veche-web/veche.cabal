@@ -109,7 +109,6 @@ test-suite veche-test
       base               >=4.9.1.0 && <5
     , base64-bytestring
     , classy-prelude     >=1.5     && <1.6
-    , ed25519
     , hspec              >=2.0.0
     , HUnit
     , microlens
