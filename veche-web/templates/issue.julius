@@ -2,17 +2,34 @@ $(() => {
   const commentForm             = $('#commentForm');
   const commentRequestUserInput = $('#commentRequestUserInput');
   const commentRequestUsers     = $('#commentRequestUsers');
-
+  const commentReply            = $('a.comment-reply');
+  const commentRequestInfo      = $('a.comment-request-info');
+  
   commentRequestUserInput.autocomplete({
-    source: "@{ApiCompleteUserR}",
-    minLength: 1,
-    select: (event, ui) => {
-      const value = ui.item.value;
-      event.preventDefault();
+  source: "@{ApiCompleteUserR}",
+  minLength: 1,
+  select: (event, ui) => {
+    event.preventDefault();
+    createMarkupRequestUser(ui);
+    commentRequestUserInput.val(null);
+    },
+  });
+
+  function createMarkupRequestUser(ui) {
+
+    const userIdArray=commentRequestUsers
+    .find('.user')
+    .map((_, el) => $(el).data('user-id'))
+    .toArray()
+  
+    const value = ui.item.value;
+    const label = ui.item.label;
+
+    if (($.inArray(value, userIdArray) === -1)) {
       commentRequestUsers.html((_, old) =>
         old
         + `<span class="user" data-user-id="${value}">
-            ${ui.item.label}
+            ${label}
             <input type="hidden" name="request_user" value="${value}">
             <a  class="badge dismiss"
                 onclick='comment_request_user_dimiss(${JSON.stringify(value)})'
@@ -21,28 +38,40 @@ $(() => {
             </a>
           </span>`
       );
-      commentRequestUserInput.val(null);
 
-      console.log(
-        commentRequestUsers
-        .find('.user')
-        .map((_, el) => $(el).data('user-id'))
-        .toArray()
-      );
-    },
-  });
+      if (commentRequestInfo.attr('data-author-id').indexOf(value) !== -1 ) {
+        commentRequestInfo.attr('disabled', 'true');
+      }
+    } else {
+      alert('The username is already being used')
+    }  
+  }
 
-  $('a.comment-reply').click(event => {
+  commentReply.click(event => {
     const parent = $(event.target).closest('.comment');
     commentForm.appendTo(parent);
     commentForm.find('input[name=parent]').val(parent.data('comment-id'));
   });
+ 
+  commentRequestInfo.click(event => {
+    
+    const userLabel=$(event.currentTarget)
+    .closest('.comment')
+    .find('.comment_author')
+    .text();
+
+    const userValue=+$(event.currentTarget)
+    .attr('data-author-id');
+
+    createMarkupRequestUser({item:{value: userValue, label: userLabel}});
+  });
 });
 
-function comment_request_user_dimiss(user_id) {
-  $(`[data-user-id="${user_id}"]`).remove();
+function comment_request_user_dimiss(user_id, label) {
+ $(`[data-user-id="${user_id}"]`).remove();
+ if ($('a.comment-request-info').attr('data-author-id').indexOf(user_id) !== -1 ) {
+      $('a.comment-request-info').removeAttr('disabled', 'true');
+    } 
 }
 
-  $('a.comment-request-info').click(event => {
-    console.log('test')
-  });
+

@@ -1,6 +1,6 @@
 <li ##{commentAnchor id} .comment
         data-comment-id=#{toPathPiece id} style="margin-bottom: 20px;">
-    <span .comment_author>#{userNameWidget commentAuthor}
+        <span .comment_author>#{userNameWidget commentAuthor}
     <span .comment_action>
         $if null requestedUsers
             #{commentType}
@@ -16,6 +16,6 @@
     <div>
         $if commentType /= CommentStart
             <a .btn .btn-default .btn-xs .comment-reply>Reply
-        <a .btn .btn-default .btn-xs .comment-request-info data-author-id=#{to id} >Request Info
+        <a .btn .btn-default .btn-xs .comment-request-info data-author-id=#{toPathPiece authorId}>Request Info
 
     ^{commentForestWidget subComments}
