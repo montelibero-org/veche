@@ -46,6 +46,7 @@ import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Transaction (Transaction),
                                        TransactionEnvelope (TransactionEnvelope))
 import Network.Stellar.TransactionXdr qualified
+import Network.URI (escapeURIString, isReserved)
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
@@ -179,16 +180,18 @@ makeResponseForm routeToMaster challenge = do
                 #{challenge}
         <div>
             [
-                <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challenge}&type=TransactionEnvelope" target="_blank">
+                <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public" target="_blank">
                     View in Lab
             ] [
-                <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challenge}" target="_blank">
+                <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}" target="_blank">
                     Sign in Lab
             ]
         <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
             ^{widget}
             <button type=submit .btn .btn-primary>Log in
     |]
+  where
+    challengeE = escapeURIString (not . isReserved) $ Text.unpack challenge
 
 data InternalError = InternalErrorNonceTooLong
     deriving (Exception, Show)

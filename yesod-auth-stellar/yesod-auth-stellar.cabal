@@ -11,6 +11,7 @@ library
     , ed25519
     , http-client-tls
     , http-types
+    , network-uri
     , nonce
     , servant-client
     , stellar-sdk
