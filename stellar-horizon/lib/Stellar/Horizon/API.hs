@@ -75,7 +75,7 @@ instance ToParam (QueryParam "cursor" Text) where
             \ A number that points to a specific location in a collection of\
             \ responses and is pulled from the `paging_token` value of a\
             \ record.\
-            \ Actually a string, not a number."
+            \ Actually arbitrary string, not a number."
             Normal
 
 instance ToParam (QueryParam "limit" Natural) where
