@@ -1,4 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
@@ -16,21 +19,41 @@ module Yesod.Auth.Stellar
     , Config (..)
     ) where
 
-import Control.Exception (throwIO)
-import Control.Monad ((>=>))
+import Control.Exception (Exception, throwIO)
+import Control.Monad (unless)
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
-import Data.Text (Text)
+import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
+import Data.ByteString.Base64 qualified as Base64
+import Data.Foldable (toList)
+import Data.Function ((&))
+import Data.Text (Text, strip)
 import Data.Text qualified as Text
+import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status (..))
+import Network.HTTP.Types (Status (Status))
+import Network.HTTP.Types qualified
+import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
+                           xdrDeserialize, xdrSerialize)
+import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
+                                transactionBuilder, verify, viewAccount)
+import Network.Stellar.Keypair (decodePublic, encodePublicKey)
+import Network.Stellar.Network (publicNetwork, testNetwork)
+import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
+                                       Memo (Memo'MEMO_TEXT),
+                                       Operation (Operation),
+                                       OperationBody (OperationBody'MANAGE_DATA),
+                                       Transaction (Transaction),
+                                       TransactionEnvelope (TransactionEnvelope))
+import Network.Stellar.TransactionXdr qualified
+import Network.URI (escapeURIString, isReserved)
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
 import System.IO.Unsafe (unsafePerformIO)
-import Text.Shakespeare.Text (stextFile)
-import Yesod.Auth (Auth, AuthHandler, AuthPlugin (..), Creds (..),
+import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
                    Route (PluginR), setCredsRedirect)
+import Yesod.Auth qualified
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage,
                    TypedContent, WidgetFor, invalidArgs, liftHandler, liftIO,
                    logErrorS, lookupGetParam, notAuthenticated, whamlet)
@@ -42,10 +65,11 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
 
 -- project
 import Stellar.Horizon.Client (getAccount)
-import Stellar.Horizon.Types (Account (..), Signer (..))
+import Stellar.Horizon.Types (Account (Account), Signer (Signer))
+import Stellar.Horizon.Types qualified
 
 -- component
-import Yesod.Auth.Stellar.Internal (TextL, python3)
+import Yesod.Auth.Stellar.Internal (decodeUtf8Throw)
 
 pluginName :: Text
 pluginName = "stellar"
@@ -117,7 +141,8 @@ login Config{setVerifyKey} routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
         Nothing -> makeAddressForm
-        Just address -> do
+        Just address0 -> do
+            let address = strip address0
             nonce <- nonce128urlT nonceGenerator
             setVerifyKey address nonce
             challenge <- makeChallenge address nonce
@@ -155,30 +180,82 @@ makeResponseForm routeToMaster challenge = do
                 #{challenge}
         <div>
             [
-                <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challenge}&type=TransactionEnvelope" target="_blank">
+                <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public" target="_blank">
                     View in Lab
             ] [
-                <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challenge}" target="_blank">
+                <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}" target="_blank">
                     Sign in Lab
             ]
         <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
             ^{widget}
             <button type=submit .btn .btn-primary>Log in
     |]
+  where
+    challengeE = escapeURIString (not . isReserved) $ Text.unpack challenge
+
+data InternalError = InternalErrorNonceTooLong
+    deriving (Exception, Show)
 
 makeChallenge :: MonadHandler m => Text -> Text -> m Text
-makeChallenge address nonce = python3' $(stextFile "Yesod/Auth/challenge.py")
+makeChallenge address nonce0 = do
+    publicKey <- decodePublic address ?| invalidArgs ["Bad address"]
+    nonce <- lengthArray (encodeUtf8 nonce0) ?| internalErrorNonceTooLong
+    pure $ makeChallenge' (PublicKey publicKey) nonce
+  where
+
+    m ?| e = maybe e pure m
+
+    internalErrorNonceTooLong = liftIO $ throwIO InternalErrorNonceTooLong
+
+    makeChallenge' publicKey nonce =
+        transactionBuilder publicKey 0
+        & setTextMemo "Logging into Veche"
+        & addManageDataOp "nonce" nonce
+        & buildWithFee 0
+        & toEnvelope
+        & xdrSerialize
+        & Base64.encode
+        & decodeUtf8Throw
+
+    setTextMemo memo b = b{tbMemo = Just $ Memo'MEMO_TEXT memo}
+
+    addManageDataOp key value b =
+        addOperation b $
+        Operation Nothing $
+        OperationBody'MANAGE_DATA $ ManageDataOp key (Just value)
+
+    toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
 
 -- | Returns address and nonce
 verifyResponse :: MonadHandler m => Text -> m (Text, Text)
-verifyResponse envelope = do
-    addressNonce <- python3' $(stextFile "Yesod/Auth/verify.py")
-    case Text.words addressNonce of
-        [address, nonce] -> pure (address, nonce)
-        _ -> invalidArgs ["Bad transaction"]
-
-python3' :: MonadHandler m => TextL -> m Text
-python3' = python3 >=> either (\msg -> invalidArgs [msg]) pure
+verifyResponse envelopeXdrBase64 = do
+    envelopeXdrRaw <-
+        Base64.decode (encodeUtf8 envelopeXdrBase64)
+        ?| "Transaction envelope must be encoded as Base64"
+    TransactionEnvelope tx signatures <-
+        xdrDeserialize envelopeXdrRaw
+        ?| "Transaction envelope must be encoded as XDR"
+    let Transaction{transaction'sourceAccount, transaction'operations} = tx
+        account = viewAccount transaction'sourceAccount
+    signature <-
+        case toList $ unLengthArray signatures of
+            [signature] -> pure signature
+            _ -> invalidArgs ["Expected exactly 1 signature"]
+    let verified =
+            or  [ verify network tx account signature
+                | network <- [publicNetwork, testNetwork]
+                ]
+    unless verified $ invalidArgs ["Signature is not verified"]
+    nonce <-
+        case toList $ unLengthArray transaction'operations of
+            [Operation _ body]
+                | OperationBody'MANAGE_DATA op <- body
+                , ManageDataOp "nonce" (Just nonce) <- op ->
+                    decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
+            _ -> invalidArgs ["Bad operations"]
+    pure (encodePublicKey account, nonce)
+  where
+    e ?| msg = either (const $ invalidArgs [msg]) pure e
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Text -> m ()

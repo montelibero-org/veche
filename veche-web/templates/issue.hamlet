@@ -14,8 +14,9 @@ $if isCloseReopenAllowed
 
 <div .clearfix style="margin-bottom: 1em;">
 
-<div .panel .panel-primary>
-    <div .panel-body>#{body}
+#{body}
+
+<hr>
 
 <div .row>
     $forall (choice, percentage, share, voters) <- voteResults

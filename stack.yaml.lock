@@ -6,21 +6,14 @@
 packages:
 - completed:
     pantry-tree:
-      sha256: ae84d4cc0e1daf985db6cdcf2ac92319531b8e60f547183cc46480d00aafbe20
-      size: 330
-    hackage: classy-prelude-yesod-1.5.0@sha256:8f7e183bdfd6d2ea9674284c4f285294ab086aff60d9be4e5d7d2f3c1a2b05b7,1330
+      sha256: 586ee2257b255cb7f2a3663711199f9de9e70445ce7cb192f5af07dd66eadac2
+      size: 896
+    hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
   original:
-    hackage: classy-prelude-yesod-1.5.0
-- completed:
-    pantry-tree:
-      sha256: 67f2f200f0aa839e3e355e96f743380dc35aac2167cd2df1c369eaa38cf87998
-      size: 585
-    hackage: servant-cli-0.1.0.2@sha256:44192f66590e0e8847573335252f79ec86d9790fbd3ce3555f9eea55b7aaea70,2548
-  original:
-    hackage: servant-cli-0.1.0.2
+    hackage: DRBG-0.5.5
 snapshots:
 - completed:
-    sha256: 8699812d2b2c1f83d6ad1261de9cf628ed36a1cfc14f19d67188e005e7a3a39d
-    size: 586106
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/20.yaml
-  original: lts-18.20
+    sha256: be747117bed6d462806c883352c3206325b23480825103f5c87884e97e52819a
+    size: 619173
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/20.yaml
+  original: lts-19.20

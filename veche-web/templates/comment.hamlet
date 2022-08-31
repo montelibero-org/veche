@@ -1,18 +1,15 @@
-<li ##{commentAnchor id} .comment
-        data-comment-id=#{toPathPiece id} style="margin-bottom: 20px;">
-        <span .comment_author>#{userNameWidget commentAuthor}
-    <span .comment_action>
+<li ##{commentAnchor id} .comment data-comment-id=#{toPathPiece id}>
+    <span .comment_author>#{userNameWidget commentAuthor}
+    <span .comment_action .text-muted>
         $if null requestedUsers
             #{commentType}
         $else
             requested information from #
             $forall user <- requestedUsers
                 <span .requested_user>#{userNameWidget user}
-    <span .comment_timestamp .pull-right>#{created}
+    <span .comment_timestamp .pull-right .text-muted>#{created}
     $if commentMessage /= ""
-        <div .panel .panel-default style="margin-bottom: 4px;">
-            <div .panel-body>
-                <p>#{commentMessage}
+        <div>#{commentMessage}
     <div>
         $if commentType /= CommentStart
             <a .btn .btn-default .btn-xs .comment-reply>Reply

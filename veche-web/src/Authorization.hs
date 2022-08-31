@@ -17,8 +17,8 @@ import Model qualified
 data AuthzRequest
     = ListIssues      StellarHolderId
     | CreateIssue     StellarSignerId
-    | ReadIssue       StellarSignerId
-    | AddIssueComment StellarSignerId
+    | ReadIssue       StellarHolderId
+    | AddIssueComment StellarHolderId
     | AddVote         StellarSignerId
     | EditIssue        (Entity Issue) UserId
     | CloseReopenIssue (Entity Issue) UserId
@@ -27,8 +27,8 @@ isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
     ListIssues      (_proof :: StellarHolderId) -> True
     CreateIssue     (_proof :: StellarSignerId) -> True
-    ReadIssue       (_proof :: StellarSignerId) -> True
-    AddIssueComment (_proof :: StellarSignerId) -> True
+    ReadIssue       (_proof :: StellarHolderId) -> True
+    AddIssueComment (_proof :: StellarHolderId) -> True
     AddVote         (_proof :: StellarSignerId) -> True
     EditIssue        issue user -> authzEditIssue issue user
     CloseReopenIssue issue user -> authzEditIssue issue user

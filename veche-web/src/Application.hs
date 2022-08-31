@@ -37,15 +37,16 @@ import Network.Wai.Handler.Warp (Settings, defaultSettings,
                                  defaultShouldDisplayException, getPort,
                                  runSettings, setHost, setOnException, setPort)
 import Network.Wai.Middleware.RequestLogger (Destination (Logger),
-                                             IPAddrSource (..),
-                                             OutputFormat (..), destination,
-                                             mkRequestLogger, outputFormat)
+                                             IPAddrSource (FromFallback, FromSocket),
+                                             OutputFormat (Apache, Detailed),
+                                             destination, mkRequestLogger,
+                                             outputFormat)
 import Servant.Client (parseBaseUrl)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
 
 -- component
-import Handler.API (getApiCompleteUserR)
 import Handler.Admin (getAdminUpdateDatabaseR)
+import Handler.API (getApiCompleteUserR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
@@ -171,7 +172,16 @@ warpSettings foundation =
 getApplicationDev :: IO (Settings, Application)
 getApplicationDev = do
     settings <- getAppSettings
-    foundation <- makeFoundation settings
+    let settings' =
+            settings
+            { appAuthDummyLogin         = True
+            , appDetailedRequestLogging = True
+            , appMutableStatic          = True
+            , appReloadTemplates        = True
+            , appShouldLogAll           = True
+            , appSkipCombining          = True
+            }
+    foundation <- makeFoundation settings'
     wsettings <- getDevSettings $ warpSettings foundation
     app <- makeApplication foundation
     pure (wsettings, app)

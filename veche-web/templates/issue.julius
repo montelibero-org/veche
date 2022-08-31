@@ -47,12 +47,16 @@ $(() => {
     }  
   }
 
-  commentReply.click(event => {
-    const parent = $(event.target).closest('.comment');
-    commentForm.appendTo(parent);
-    commentForm.find('input[name=parent]').val(parent.data('comment-id'));
-  });
- 
+  if (#{isCommentAllowed}) {
+    commentReply.click(event => {
+      const parent = $(event.target).closest('.comment');
+      commentForm.appendTo(parent);
+      commentForm.find('input[name=parent]').val(parent.data('comment-id'));
+    });
+  } else {
+    commentReply.attr('disabled', true);
+  }
+
   commentRequestInfo.click(event => {
     
     const userLabel=$(event.currentTarget)

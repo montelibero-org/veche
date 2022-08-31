@@ -6,13 +6,16 @@ build-type:    Simple
 library
   build-depends:
       base
+    , base64-bytestring
+    , bytestring
+    , ed25519
     , http-client-tls
     , http-types
+    , network-uri
     , nonce
     , servant-client
-    , shakespeare
+    , stellar-sdk
     , text
-    , typed-process
     , yesod-auth
     , yesod-core
     , yesod-form
@@ -20,6 +23,5 @@ library
   -- project
   build-depends:    stellar-horizon
   default-language: Haskell2010
-  exposed-modules:
-    Yesod.Auth.Stellar
-    Yesod.Auth.Stellar.Internal
+  exposed-modules:  Yesod.Auth.Stellar
+  other-modules:    Yesod.Auth.Stellar.Internal

@@ -1,4 +1,4 @@
-resolver: lts-18.20
+resolver: lts-19.20
 
 packages:
   - stellar-horizon
@@ -6,7 +6,12 @@ packages:
   - yesod-auth-stellar
 
 extra-deps:
-  # veche
-    - classy-prelude-yesod-1.5.0
   # stellar-horizon:exe
-    - servant-cli-0.1.0.2
+    - github: cblp/servant-cli
+      commit: ae3f88791806b3bb9a43173c0758af7c73b36e43
+      # https://github.com/mstksg/servant-cli/pull/3
+  # stellar-sdk
+    - DRBG-0.5.5
+  # yesod-auth-stellar
+    - github: cblp/haskell-stellar-sdk
+      commit: ba52f25128a60d7abd2544fec49e86e949e2d61e

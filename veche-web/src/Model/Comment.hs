@@ -7,7 +7,7 @@ module Model.Comment (addText, updateIssueCommentNum) where
 
 import Import
 
-import Genesis (mtlFund)
+import Genesis (mtlAsset)
 import Templates.Comment (CommentInput (CommentInput))
 import Templates.Comment qualified
 
@@ -25,9 +25,8 @@ addText (Entity userId User{userStellarAddress})
                 , commentType    = CommentText
                 }
     runDB do
-        Entity signerId _ <-
-            getBy403 $ UniqueMember mtlFund userStellarAddress
-        requireAuthz $ AddIssueComment signerId
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        requireAuthz $ AddIssueComment holderId
         commentId <- insert comment
         insertMany_
             [ Request

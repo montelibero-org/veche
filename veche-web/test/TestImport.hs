@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,8 +8,9 @@ module TestImport
     , module X
     ) where
 
-import ClassyPrelude as X hiding (Handler, delete, deleteBy)
+import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy)
 
+import Data.Text.Encoding qualified
 import Database.Persist as X hiding (get)
 import Database.Persist.Sql (SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
@@ -100,3 +102,6 @@ createUser :: Text -> YesodExample App (Entity User)
 createUser stellarAddress =
     runDB $
     insertEntity User{userName = Nothing, userStellarAddress = stellarAddress}
+
+decodeUtf8Throw :: ByteString -> Text
+decodeUtf8Throw = Data.Text.Encoding.decodeUtf8

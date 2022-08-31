@@ -1,4 +1,5 @@
 {-# OPTIONS -Wno-orphans #-}
+{-# OPTIONS -Wno-name-shadowing #-}
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}

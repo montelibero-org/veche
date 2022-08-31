@@ -1,11 +1,11 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Auth.StellarSpec (spec) where
 
@@ -14,20 +14,24 @@ import TestImport
 -- global
 import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
-import Data.Text qualified as Text
+import Data.ByteString.Base64 qualified as Base64
+import Network.ONCRPC.XDR (xdrDeserialize, xdrSerialize)
+import Network.Stellar.Builder qualified as Stellar
+import Network.Stellar.Keypair qualified as Stellar
+import Network.Stellar.Network qualified as Stellar
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant ((:<|>) ((:<|>)))
 import Servant.Server (Server, err404, serve)
 import Servant.Server qualified as Servant
-import Text.Shakespeare.Text (stextFile)
+import Test.HUnit (assertFailure)
 import Text.XML.Cursor (content, descendant)
 
 -- project
 import Stellar.Horizon.API (API, api)
-import Stellar.Horizon.Types (Account (..), Signer (..),
+import Stellar.Horizon.Types (Account (Account), Signer (Signer),
                               SignerType (Ed25519PublicKey))
-import Yesod.Auth.Stellar.Internal (python3)
+import Stellar.Horizon.Types qualified
 
 -- package
 import Model.User qualified as User
@@ -62,15 +66,11 @@ spec =
 
             describe "authentication with tx-response" do
 
-                it "authenticates when correct tx-response (mainnet)" do
-                    testAuthenticationOk
-                        (testGoodPublicKey, testGoodSecretKey)
-                        mainnetPassphrase
+                it "authenticates when correct tx-response (public network)" do
+                    testAuthenticationOk testGoodKeyPair Stellar.publicNetwork
 
-                it "authenticates when correct tx-response (testnet)" $
-                    testAuthenticationOk
-                        (testGoodPublicKey, testGoodSecretKey)
-                        testnetPassphrase
+                it "authenticates when correct tx-response (test network)" do
+                    testAuthenticationOk testGoodKeyPair Stellar.testNetwork
 
                 it "doesn't authenticate when incorrect tx-response" do
                     request do
@@ -79,21 +79,25 @@ spec =
                         addPostParam "response" testGoodTxUnsinged
                     statusIs 400
 
-testAuthenticationOk :: (Text, Text) -> Text -> YesodExample App ()
-testAuthenticationOk (address, secretKey) networkPassphrase = do
+testAuthenticationOk ::
+    Stellar.KeyPair -> Stellar.Network -> YesodExample App ()
+testAuthenticationOk keyPair network = do
     get (AuthR LoginR, [("stellar_address", address)])
     statusIs 200
 
-    transactionXdr <-
+    envelopeXdrBase64 <-
         the . (content <=< descendant) . parseHTML . the <$>
         htmlQuery ".stellar_challenge"
-    response <-
-        either (error . Text.unpack) id <$> python3 $(stextFile "test/sign.py")
+    envelopeXdrRaw <- assertRight $ Base64.decode $ encodeUtf8 envelopeXdrBase64
+    envelope <- assertRight $ xdrDeserialize envelopeXdrRaw
+    envelopeSigned <- assertRightShow $ Stellar.sign network envelope [keyPair]
+    let envelopeSignedXdrBase64 =
+            decodeUtf8Throw $ Base64.encode $ xdrSerialize envelopeSigned
 
     request do
         setMethod "POST"
         setUrl $ AuthR $ PluginR "stellar" []
-        addPostParam "response" response
+        addPostParam "response" envelopeSignedXdrBase64
         addToken_ "#auth_stellar_response_form"
     printBody
     statusIs 303 -- okay redirect
@@ -105,13 +109,19 @@ testAuthenticationOk (address, secretKey) networkPassphrase = do
     assertEq
         "users after auth"
         users
-        [User{userName = Nothing, userStellarAddress = testGoodPublicKey}]
+        [User{userName = Nothing, userStellarAddress = address}]
+
+  where
+    Stellar.KeyPair{kpPublicKey} = keyPair
+    address = Stellar.encodePublicKey kpPublicKey
 
 testGoodPublicKey :: Text
 testGoodPublicKey = "GDLNZNS3HM3I3OAQKYV5WBACXCUU7JWEQLGGCAEV7E4LA4BY2XFOLEWX"
 
-testGoodSecretKey :: Text
-testGoodSecretKey = "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
+testGoodKeyPair :: Stellar.KeyPair
+testGoodKeyPair =
+    Stellar.fromPrivateKey'
+        "SA3KFUDKK5YDG2X2OKLW26JSTPGPUL6DOODIYZ4A2C4ZI3Y5RG2YJQVW"
 
 testGoodTxUnsinged :: Text
 testGoodTxUnsinged =
@@ -150,8 +160,8 @@ the = \case
     [a] -> a
     xs -> error $ "the: " <> show (length xs) <> " items"
 
-mainnetPassphrase :: Text
-mainnetPassphrase = "Public Global Stellar Network ; September 2015"
+assertRightShow :: (HasCallStack, Show e) => Either e a -> YesodExample App a
+assertRightShow = either (liftIO . assertFailure . show) pure
 
-testnetPassphrase :: Text
-testnetPassphrase = "Test SDF Network ; September 2015"
+assertRight :: HasCallStack => Either String a -> YesodExample App a
+assertRight = either (liftIO . assertFailure) pure
