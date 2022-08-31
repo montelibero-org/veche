@@ -27,7 +27,7 @@ import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Function ((&))
-import Data.Text (Text)
+import Data.Text (Text, strip)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -140,7 +140,8 @@ login Config{setVerifyKey} routeToMaster = do
     mAddress <- lookupGetParam addressField
     case mAddress of
         Nothing -> makeAddressForm
-        Just address -> do
+        Just address0 -> do
+            let address = strip address0
             nonce <- nonce128urlT nonceGenerator
             setVerifyKey address nonce
             challenge <- makeChallenge address nonce
