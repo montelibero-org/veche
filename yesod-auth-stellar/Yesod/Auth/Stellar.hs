@@ -20,10 +20,9 @@ module Yesod.Auth.Stellar
     ) where
 
 import Control.Exception (Exception, throwIO)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
-import Crypto.Sign.Ed25519 (PublicKey (PublicKey))
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Function ((&))
@@ -37,7 +36,7 @@ import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
                            xdrDeserialize, xdrSerialize)
 import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
                                 transactionBuilder, verify, viewAccount)
-import Network.Stellar.Keypair (decodePublic, encodePublicKey)
+import Network.Stellar.Keypair (decodePublicKey, encodePublicKey)
 import Network.Stellar.Network (publicNetwork, testNetwork)
 import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Memo (Memo'MEMO_TEXT),
@@ -198,9 +197,9 @@ data InternalError = InternalErrorNonceTooLong
 
 makeChallenge :: MonadHandler m => Text -> Text -> m Text
 makeChallenge address nonce0 = do
-    publicKey <- decodePublic address ?| invalidArgs ["Bad address"]
+    publicKey <- decodePublicKey address ?| invalidArgs ["Bad address"]
     nonce <- lengthArray (encodeUtf8 nonce0) ?| internalErrorNonceTooLong
-    pure $ makeChallenge' (PublicKey publicKey) nonce
+    pure $ makeChallenge' publicKey nonce
   where
 
     m ?| e = maybe e pure m
@@ -209,7 +208,7 @@ makeChallenge address nonce0 = do
 
     makeChallenge' publicKey nonce =
         transactionBuilder publicKey 0
-        & setTextMemo "Logging into Veche"
+        & setMemo loggingIntoVeche
         & addManageDataOp "nonce" nonce
         & buildWithFee 0
         & toEnvelope
@@ -217,7 +216,7 @@ makeChallenge address nonce0 = do
         & Base64.encode
         & decodeUtf8Throw
 
-    setTextMemo memo b = b{tbMemo = Just $ Memo'MEMO_TEXT memo}
+    setMemo memo b = b{tbMemo = Just memo}
 
     addManageDataOp key value b =
         addOperation b $
@@ -225,6 +224,9 @@ makeChallenge address nonce0 = do
         OperationBody'MANAGE_DATA $ ManageDataOp key (Just value)
 
     toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
+
+loggingIntoVeche :: Memo
+loggingIntoVeche = Memo'MEMO_TEXT "Logging into Veche"
 
 -- | Returns address and nonce
 verifyResponse :: MonadHandler m => Text -> m (Text, Text)
@@ -235,7 +237,12 @@ verifyResponse envelopeXdrBase64 = do
     TransactionEnvelope tx signatures <-
         xdrDeserialize envelopeXdrRaw
         ?| "Transaction envelope must be encoded as XDR"
-    let Transaction{transaction'sourceAccount, transaction'operations} = tx
+    let Transaction
+                { transaction'sourceAccount
+                , transaction'operations
+                , transaction'memo
+                } =
+            tx
         account = viewAccount transaction'sourceAccount
     signature <-
         case toList $ unLengthArray signatures of
@@ -246,6 +253,7 @@ verifyResponse envelopeXdrBase64 = do
                 | network <- [publicNetwork, testNetwork]
                 ]
     unless verified $ invalidArgs ["Signature is not verified"]
+    when (transaction'memo /= loggingIntoVeche) $ invalidArgs ["Bad memo"]
     nonce <-
         case toList $ unLengthArray transaction'operations of
             [Operation _ body]
