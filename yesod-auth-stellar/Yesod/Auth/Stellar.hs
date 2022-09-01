@@ -24,7 +24,7 @@ import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
-import Data.ByteString.Base64 qualified as Base64
+import Data.ByteString.Base64 (decodeBase64, encodeBase64)
 import Data.Foldable (toList)
 import Data.Function ((&))
 import Data.Text (Text, strip)
@@ -35,7 +35,7 @@ import Network.HTTP.Types (Status (Status))
 import Network.HTTP.Types qualified
 import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
                            xdrDeserialize, xdrSerialize)
-import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
+import Network.Stellar.Builder (buildWithFee, tbMemo, tbOperations,
                                 transactionBuilder, verify, viewAccount)
 import Network.Stellar.Keypair (decodePublicKey, encodePublicKey)
 import Network.Stellar.Network (publicNetwork, testNetwork)
@@ -67,9 +67,6 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
 import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (Account), Signer (Signer))
 import Stellar.Horizon.Types qualified
-
--- component
-import Yesod.Auth.Stellar.Internal (decodeUtf8Throw)
 
 pluginName :: Text
 pluginName = "stellar"
@@ -209,18 +206,12 @@ makeChallenge address nonce0 = do
     internalErrorNonceTooLong = liftIO $ throwIO InternalErrorNonceTooLong
 
     makeChallenge' publicKey nonce =
-        transactionBuilder publicKey 0
-        & setMemo loggingIntoVeche
-        & addNonce nonce
+        (transactionBuilder publicKey 0)
+            {tbMemo = Just loggingIntoVeche, tbOperations = [NonceOp nonce]}
         & buildWithFee 0
         & toEnvelope
         & xdrSerialize
-        & Base64.encode
-        & decodeUtf8Throw
-
-    setMemo memo b = b{tbMemo = Just memo}
-
-    addNonce value b = addOperation b $ NonceOp value
+        & encodeBase64
 
     toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
 
@@ -256,7 +247,7 @@ verifyResponse envelopeXdrBase64 = do
 
     decodeEnvelope = do
         envelopeXdrRaw <-
-            Base64.decode (encodeUtf8 envelopeXdrBase64)
+            decodeBase64 (encodeUtf8 envelopeXdrBase64)
             ?| "Transaction envelope must be encoded as Base64"
         xdrDeserialize envelopeXdrRaw
             ?| "Transaction envelope must be encoded as XDR"
