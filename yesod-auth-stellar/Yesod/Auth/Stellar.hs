@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -38,7 +39,7 @@ import Network.Stellar.Builder (addOperation, buildWithFee, tbMemo,
                                 transactionBuilder, verify, viewAccount)
 import Network.Stellar.Keypair (decodePublicKey, encodePublicKey)
 import Network.Stellar.Network (publicNetwork, testNetwork)
-import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
+import Network.Stellar.TransactionXdr (DataValue, ManageDataOp (ManageDataOp),
                                        Memo (Memo'MEMO_TEXT),
                                        Operation (Operation),
                                        OperationBody (OperationBody'MANAGE_DATA),
@@ -210,7 +211,7 @@ makeChallenge address nonce0 = do
     makeChallenge' publicKey nonce =
         transactionBuilder publicKey 0
         & setMemo loggingIntoVeche
-        & addManageDataOp "nonce" nonce
+        & addNonce nonce
         & buildWithFee 0
         & toEnvelope
         & xdrSerialize
@@ -219,12 +220,17 @@ makeChallenge address nonce0 = do
 
     setMemo memo b = b{tbMemo = Just memo}
 
-    addManageDataOp key value b =
-        addOperation b $
-        Operation Nothing $
-        OperationBody'MANAGE_DATA $ ManageDataOp key (Just value)
+    addNonce value b = addOperation b $ NonceOp value
 
     toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
+
+pattern NonceOp :: DataValue -> Operation
+pattern NonceOp value =
+    Operation
+    { operation'sourceAccount = Nothing
+    , operation'body =
+        OperationBody'MANAGE_DATA (ManageDataOp "nonce" (Just value))
+    }
 
 loggingIntoVeche :: Memo
 loggingIntoVeche = Memo'MEMO_TEXT "Logging into Veche"
@@ -272,9 +278,7 @@ verifyResponse envelopeXdrBase64 = do
 
     getNonce transaction'operations =
         case toList $ unLengthArray transaction'operations of
-            [Operation _ (OperationBody'MANAGE_DATA op)]
-                | ManageDataOp "nonce" (Just nonce) <- op ->
-                    decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
+            [NonceOp nonce] -> decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
             _ -> invalidArgs ["Bad operations"]
 
 -- | Throws an exception on error
