@@ -20,7 +20,7 @@ module Yesod.Auth.Stellar
     ) where
 
 import Control.Exception (Exception, throwIO)
-import Control.Monad (unless, when)
+import Control.Monad (unless)
 import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
 import Data.ByteString.Base64 qualified as Base64
@@ -114,24 +114,25 @@ responseForm =
         (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
         Nothing
 
+data VerificationData = VerificationData{address, nonce :: Text}
+
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch config@Config{checkAndRemoveVerifyKey} _method _path = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
-            (address, nonce) <- verifyResponse response
+            VerificationData{address, nonce} <- verifyResponse response
             verifyAccount config address
             ok <- liftHandler $ checkAndRemoveVerifyKey address nonce
             if ok then
-                setCredsRedirect
-                    Creds
-                        { credsPlugin = pluginName
-                        , credsIdent  = address
-                        , credsExtra  = []
-                        }
+                setCredsRedirect $ makeCreds address
             else
                 invalidArgs ["Verification key is invalid or expired"]
         _ -> invalidArgs [Text.pack $ show result]
+
+makeCreds :: Text -> Creds app
+makeCreds credsIdent =
+    Creds{credsPlugin = pluginName, credsIdent, credsExtra = []}
 
 login ::
     RenderMessage app FormMessage =>
@@ -228,42 +229,53 @@ makeChallenge address nonce0 = do
 loggingIntoVeche :: Memo
 loggingIntoVeche = Memo'MEMO_TEXT "Logging into Veche"
 
--- | Returns address and nonce
-verifyResponse :: MonadHandler m => Text -> m (Text, Text)
+verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
-    envelopeXdrRaw <-
-        Base64.decode (encodeUtf8 envelopeXdrBase64)
-        ?| "Transaction envelope must be encoded as Base64"
-    TransactionEnvelope tx signatures <-
-        xdrDeserialize envelopeXdrRaw
-        ?| "Transaction envelope must be encoded as XDR"
-    let Transaction
-                { transaction'sourceAccount
+    envelope <- decodeEnvelope
+    let TransactionEnvelope{transactionEnvelope'tx} = envelope
+        Transaction
+                { transaction'memo
                 , transaction'operations
-                , transaction'memo
+                , transaction'sourceAccount
                 } =
-            tx
+            transactionEnvelope'tx
         account = viewAccount transaction'sourceAccount
-    signature <-
-        case toList $ unLengthArray signatures of
-            [signature] -> pure signature
-            _ -> invalidArgs ["Expected exactly 1 signature"]
-    let verified =
-            or  [ verify network tx account signature
-                | network <- [publicNetwork, testNetwork]
-                ]
-    unless verified $ invalidArgs ["Signature is not verified"]
-    when (transaction'memo /= loggingIntoVeche) $ invalidArgs ["Bad memo"]
-    nonce <-
+    verifySignature account envelope
+    verifyMemo transaction'memo
+    nonce <- getNonce transaction'operations
+    pure VerificationData{address = encodePublicKey account, nonce}
+  where
+
+    e ?| msg = either (const $ invalidArgs [msg]) pure e
+
+    decodeEnvelope = do
+        envelopeXdrRaw <-
+            Base64.decode (encodeUtf8 envelopeXdrBase64)
+            ?| "Transaction envelope must be encoded as Base64"
+        xdrDeserialize envelopeXdrRaw
+            ?| "Transaction envelope must be encoded as XDR"
+
+    verifySignature account (TransactionEnvelope tx signatures) = do
+        signature <-
+            case toList $ unLengthArray signatures of
+                [signature] -> pure signature
+                _ -> invalidArgs ["Expected exactly 1 signature"]
+        let verified =
+                or  [ verify network tx account signature
+                    | network <- [publicNetwork, testNetwork]
+                    ]
+        unless verified $ invalidArgs ["Signature is not verified"]
+
+    verifyMemo transaction'memo =
+        unless (transaction'memo == loggingIntoVeche) $
+            invalidArgs ["Bad memo"]
+
+    getNonce transaction'operations =
         case toList $ unLengthArray transaction'operations of
-            [Operation _ body]
-                | OperationBody'MANAGE_DATA op <- body
-                , ManageDataOp "nonce" (Just nonce) <- op ->
+            [Operation _ (OperationBody'MANAGE_DATA op)]
+                | ManageDataOp "nonce" (Just nonce) <- op ->
                     decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
             _ -> invalidArgs ["Bad operations"]
-    pure (encodePublicKey account, nonce)
-  where
-    e ?| msg = either (const $ invalidArgs [msg]) pure e
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Text -> m ()
