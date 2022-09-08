@@ -34,19 +34,19 @@ import Templates.User (userNameWidget)
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
     IssueMaterialized
-        { comments
-        , body
-        , isCloseReopenAllowed
-        , isCommentAllowed
-        , isEditAllowed
-        , issue = Issue{issueTitle, issueOpen}
-        , isVoteAllowed
-        , requests
-        , votes
-        } <-
-            Issue.load issueId
+            { comments
+            , body
+            , isCloseReopenAllowed
+            , isCommentAllowed
+            , isEditAllowed
+            , issue = Issue{issueTitle, issueOpen}
+            , isVoteAllowed
+            , requests
+            , votes
+            } <-
+        Issue.load issueId
 
-    signers <- StellarSigner.selectList
+    signers <- runDB StellarSigner.selectAll
     let weights =
             Map.fromList
                 [ (stellarSignerKey, stellarSignerWeight)
