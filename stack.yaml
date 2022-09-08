@@ -12,6 +12,9 @@ extra-deps:
       # https://github.com/mstksg/servant-cli/pull/3
   # stellar-sdk
     - DRBG-0.5.5
+  # veche-web
+    - github: cblp/haskell-telegram-api
+      commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
       commit: 031faeef3949af463e1a860afb1f7f907d51bc0c

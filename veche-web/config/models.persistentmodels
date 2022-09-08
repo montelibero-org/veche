@@ -89,6 +89,15 @@ User
     deriving Show
 
 
+Telegram
+    Id          UserId
+    chatid      Int64   -- unique, but we don't want to enforce it
+    username    Text    -- unique, but we don't want to enforce it
+
+    deriving Eq
+    deriving Show
+
+
 Verifier
     userIdent   Text
     key         Text

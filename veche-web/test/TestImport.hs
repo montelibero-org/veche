@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -31,6 +32,7 @@ import Yesod.Core (messageLoggerSource)
 import Application (makeFoundation, makeLogWare)
 import Foundation as X
 import Model as X
+import Model.User qualified as User
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
@@ -98,10 +100,13 @@ authenticateAs (Entity _ u) = do
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
-createUser :: Text -> YesodExample App (Entity User)
-createUser stellarAddress =
-    runDB $
-    insertEntity User{userName = Nothing, userStellarAddress = stellarAddress}
+createUser :: Text -> Maybe (Int64, Text) -> YesodExample App (Entity User)
+createUser userStellarAddress mTelegram =
+    runDB do
+        user@(Entity uid _) <-
+            insertEntity User{userName = Nothing, userStellarAddress}
+        for_ mTelegram $ uncurry $ User.dbSetTelegram uid
+        pure user
 
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8

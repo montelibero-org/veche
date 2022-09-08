@@ -11,6 +11,17 @@ packages:
     hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
   original:
     hackage: DRBG-0.5.5
+- completed:
+    sha256: 33f85c8d0ecefeb4906eebb62c16ad342dec0502cd3b3b29a3fa48adb47cc30f
+    name: telegram-api
+    size: 1349719
+    url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
+    pantry-tree:
+      sha256: 9962b8e14b3d58f5413a882f208ca0b48f9068d5acf4e537e3e9f309d0cb90e2
+      size: 2903
+    version: 0.7.1.0
+  original:
+    url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
 snapshots:
 - completed:
     sha256: be747117bed6d462806c883352c3206325b23480825103f5c87884e97e52819a

@@ -2,3 +2,4 @@ database:
   database: veche.sqlite3
 database-migrate: true
 development: true
+telegram-bot-name: veche_test_bot

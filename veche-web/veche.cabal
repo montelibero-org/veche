@@ -18,6 +18,7 @@ library
     Handler.Common
     Handler.Dashboard
     Handler.Issue
+    Handler.Telegram
     Handler.User
     Import
     Import.NoFoundation
@@ -41,6 +42,7 @@ library
     Types.Comment
     Types.Issue
     Workers.StellarUpdate
+    Workers.Telegram
 
   hs-source-dirs:     src
   build-depends:
@@ -64,6 +66,7 @@ library
     , random
     , servant-client
     , shakespeare        >=2.0     && <2.1
+    , telegram-api
     , template-haskell
     , text               >=0.11    && <2.0
     , time

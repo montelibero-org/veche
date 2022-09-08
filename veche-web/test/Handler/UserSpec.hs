@@ -17,14 +17,14 @@ spec =
                 statusIs 403
 
             it "asserts access to my-account for authenticated users" do
-                userEntity <- createUser "foo"
+                userEntity <- createUser "foo" Nothing
                 authenticateAs userEntity
 
                 get UserR
                 statusIs 200
 
             it "asserts user's information is shown" do
-                userEntity <- createUser "bar"
+                userEntity <- createUser "bar" Nothing
                 authenticateAs userEntity
 
                 get UserR

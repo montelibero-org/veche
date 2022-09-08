@@ -58,8 +58,10 @@ import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
 import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
                       postIssueR, postIssuesR)
+import Handler.Telegram (getAuthTelegramR, postAuthTelegramR)
 import Handler.User (getUserR, putUserR)
 import Workers.StellarUpdate (stellarDataUpdater)
+import Workers.Telegram (telegramBot)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -210,6 +212,8 @@ appMain = do
             -- allow environment variables to override
             useEnv
 
+    let AppSettings{appTelegramBotToken} = settings
+
     -- Generate the foundation from the settings
     foundation@App{appConnPool, appHttpManager, appStellarHorizon} <-
         makeFoundation settings
@@ -220,6 +224,7 @@ appMain = do
     -- Backend workers
     asyncLinked $
         stellarDataUpdater appStellarHorizon appConnPool appHttpManager
+    asyncLinked $ telegramBot appConnPool appTelegramBotToken appHttpManager
 
     -- Run the application with Warp
     runSettings (warpSettings foundation) app

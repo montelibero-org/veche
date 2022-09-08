@@ -5,6 +5,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -16,12 +17,25 @@ import Import
 import Data.Aeson (Value (Null, String))
 import Data.Char (isAscii, isPrint)
 import Data.Text qualified as Text
+import Yesod (getsYesod)
 
 import Model.User qualified as User
 
+unlinkTelegramForm :: Form Void
+unlinkTelegramForm =
+    BForm
+        { aform = submit "unlink" "Unlink Telegram account" ["btn-danger"]
+        , action = Just AuthTelegramR
+        , classes = ["form-inline", "unlink-telegram"]
+        , footer = mempty
+        }
+
 getUserR :: Handler Html
 getUserR = do
-    Entity _ User{userName, userStellarAddress} <- requireAuth
+    telegramBotName <- getsYesod $ appTelegramBotName . appSettings
+    Entity uid User{userName, userStellarAddress} <- requireAuth
+    mTelegram <- User.getTelegram uid
+    unlinkTelegram <- generateFormPostB unlinkTelegramForm
     defaultLayout do
         setTitle "Profile"
         $(widgetFile "user")

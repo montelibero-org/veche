@@ -13,3 +13,5 @@ database-migrate: true
 auth-dummy-login: true
 
 stellar-horizon-url: http://localhost:9999
+
+telegram-bot-name: veche_test_bot

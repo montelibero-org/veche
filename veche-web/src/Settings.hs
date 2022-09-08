@@ -71,6 +71,8 @@ data AppSettings = AppSettings
     -- ^ Indicate if auth dummy login should be enabled.
 
     , appStellarHorizonUrl      :: Text
+    , appTelegramBotName        :: Text
+    , appTelegramBotToken       :: Text
     }
 
 instance FromJSON AppSettings where
@@ -96,6 +98,8 @@ instance FromJSON AppSettings where
             appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
 
             appStellarHorizonUrl      <- o .: "stellar-horizon-url"
+            appTelegramBotName        <- o .: "telegram-bot-name"
+            appTelegramBotToken       <- o .: "telegram-bot-token"
 
             return AppSettings{..}
 
