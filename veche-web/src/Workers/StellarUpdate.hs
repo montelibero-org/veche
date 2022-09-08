@@ -19,7 +19,6 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Network.HTTP.Client.TLS (newTlsManager)
 import Servant.Client (BaseUrl, ClientEnv, ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -35,9 +34,8 @@ import Stellar.Horizon.Types qualified
 import Genesis (mtlAsset, mtlFund)
 import Model.Vote qualified as Vote
 
-stellarDataUpdater :: BaseUrl -> ConnectionPool -> IO ()
-stellarDataUpdater baseUrl connPool = do
-    manager <- newTlsManager
+stellarDataUpdater :: BaseUrl -> ConnectionPool -> Manager -> IO ()
+stellarDataUpdater baseUrl connPool manager = do
     let clientEnv = mkClientEnv manager baseUrl
     forever do
         do  putStrLn "stellarDataUpdater: Updating MTL signers"

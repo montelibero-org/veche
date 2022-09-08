@@ -207,13 +207,15 @@ appMain = do
             useEnv
 
     -- Generate the foundation from the settings
-    foundation@App{appConnPool, appStellarHorizon} <- makeFoundation settings
+    foundation@App{appConnPool, appHttpManager, appStellarHorizon} <-
+        makeFoundation settings
 
     -- Generate a WAI Application from the foundation
     app <- makeApplication foundation
 
     -- Backend workers
-    async (stellarDataUpdater appStellarHorizon appConnPool) >>= link
+    asyncLinked $
+        stellarDataUpdater appStellarHorizon appConnPool appHttpManager
 
     -- Run the application with Warp
     runSettings (warpSettings foundation) app

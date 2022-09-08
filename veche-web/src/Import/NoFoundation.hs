@@ -68,3 +68,6 @@ Just x  ?| _   = pure x
 
 (?|>) :: Monad f => f (Maybe a) -> f a -> f a
 m ?|> k = m >>= (?| k)
+
+asyncLinked :: MonadUnliftIO m => m a -> m ()
+asyncLinked = async >=> link
