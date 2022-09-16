@@ -1,13 +1,13 @@
 <h1>User profile
 
-<form .form-horizontal #nameEditForm>
+<div .form-horizontal>
     <div .form-group>
         <label .col-sm-2 .control-label>Name
         <div .col-sm-10 #nameView>
             <span #nameViewText>#{fromMaybe "" userName}
             <button type=button .btn .btn-default>Edit
         <div .col-sm-10 #nameEdit style="display: none">
-            <div .input-group>
+            <form #nameEditForm .input-group>
                 <input type=text .form-control #nameEditText>
                 <div .input-group-btn>
                     <button type=submit .btn .btn-default>
