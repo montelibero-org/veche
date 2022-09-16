@@ -1,0 +1,6 @@
+CREATE TABLE "notification" (
+    "id" INTEGER PRIMARY KEY,
+    "recipient" INTEGER NOT NULL
+        REFERENCES "user" ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "text" VARCHAR NOT NULL
+);

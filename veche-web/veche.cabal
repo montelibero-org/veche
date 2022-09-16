@@ -24,6 +24,7 @@ library
     Model
     Model.Comment
     Model.Issue
+    Model.Notification
     Model.Request
     Model.StellarSigner
     Model.Types
@@ -101,6 +102,7 @@ test-suite veche-test
     Auth.StellarSpec
     Handler.CommonSpec
     Handler.UserSpec
+    Model.NotificationSpec
     TestImport
 
   hs-source-dirs:   test
@@ -109,6 +111,7 @@ test-suite veche-test
       base               >=4.9.1.0 && <5
     , base64-bytestring
     , classy-prelude     >=1.5     && <1.6
+    , hedgehog
     , hspec              >=2.0.0
     , HUnit
     , microlens
