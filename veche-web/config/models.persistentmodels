@@ -86,8 +86,6 @@ User
     UniqueUser stellarAddress
 
     deriving Eq
-    deriving Generic
-    deriving Hashable
     deriving Show
 
 

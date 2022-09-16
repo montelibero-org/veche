@@ -28,7 +28,6 @@ import Import
 
 -- global
 import Data.Coerce (coerce)
-import Data.HashSet qualified as HashSet
 import Data.Map.Strict qualified as Map
 import Database.Persist qualified as Persist
 import Database.Persist.Sql (Single (Single), rawSql)
@@ -44,8 +43,10 @@ import Types.Issue qualified
 
 data VoteMaterialized = VoteMaterialized
     { choice :: Choice
-    , voter  :: User
+    , voter  :: Entity User
     }
+
+type EntitySet a = Map (Key a) a
 
 data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
@@ -56,7 +57,7 @@ data IssueMaterialized = IssueMaterialized
     , issue                 :: Issue
     , isVoteAllowed         :: Bool
     , requests              :: [IssueRequestMaterialized]
-    , votes                 :: Map Choice (HashSet User)
+    , votes                 :: Map Choice (EntitySet User)
     }
 
 data StateAction = Close | Reopen
@@ -143,7 +144,7 @@ loadVotes issueId = do
             [toPersistValue issueId]
     pure
         [ VoteMaterialized{choice = voteChoice, voter}
-        | (Entity _ Vote{voteChoice}, Entity _ voter) <- votes
+        | (Entity _ Vote{voteChoice}, voter) <- votes
         ]
 
 load :: IssueId -> Handler IssueMaterialized
@@ -209,12 +210,12 @@ load issueId =
                 }
             []
 
-collectChoices :: [VoteMaterialized] -> Map Choice (HashSet User)
+collectChoices :: [VoteMaterialized] -> Map Choice (EntitySet User)
 collectChoices votes =
     Map.fromListWith
         (<>)
-        [ (choice, HashSet.singleton voter)
-        | VoteMaterialized{choice, voter} <- votes
+        [ (choice, Map.singleton uid user)
+        | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
 selectList :: [Filter Issue] -> Handler [Entity Issue]
