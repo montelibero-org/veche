@@ -8,19 +8,22 @@
 module Form where
 
 import Data.Text (Text)
+import Data.Void (Void)
+import GHC.Stack (HasCallStack)
 import Yesod.Core (HandlerSite, MonadHandler, RenderMessage, Route, WidgetFor,
                    getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype (UrlEncoded),
                    Field (Field, fieldEnctype, fieldParse, fieldView),
                    FieldSettings (FieldSettings, fsAttrs, fsName), FormMessage,
                    FormResult, addClass, areq, generateFormPost, parseHelper,
-                   runFormPost)
+                   runFormPost, textField)
+import Yesod.Form qualified
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
 
-submitButton ::
+submitField ::
     (Monad m, RenderMessage (HandlerSite m) FormMessage) => Text -> Field m Text
-submitButton label =
+submitField label =
     Field
         { fieldParse = parseHelper Right
         , fieldView = \theId name attrs val isReq ->
@@ -33,24 +36,29 @@ submitButton label =
         , fieldEnctype = UrlEncoded
         }
 
-data SubmitButton = SubmitButton
-    {name, value, label :: Text, classes :: [Text]}
+data Submit = Submit{action, label :: Text, classes :: [Text]}
 
-submitButtonReq ::
+submitReq ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    SubmitButton -> AForm m Text
-submitButtonReq SubmitButton{classes, name, value, label} =
+    Submit -> AForm m Text
+submitReq Submit{classes, action, label} =
     areq
-        (submitButton label)
+        (submitField label)
         fieldSettings
-        (Just value)
+        (Just action)
   where
     fieldSettings0@FieldSettings{fsAttrs} = bfs (mempty :: Text)
     fieldSettings =
         fieldSettings0
-            { fsName  = Just name
+            { fsName  = Just "action"
             , fsAttrs = foldr addClass fsAttrs $ "btn" : classes
             }
+
+submit ::
+    (MonadHandler handler, RenderMessage (HandlerSite handler) FormMessage) =>
+    Text -> Text -> [Text] -> AForm handler Void
+submit action label classes =
+    error "Void" <$ submitReq Submit{action, label, classes}
 
 data BForm m a = BForm
     { action  :: Maybe (Route (HandlerSite m))
@@ -71,11 +79,11 @@ makeFormWidget ::
 makeFormWidget method BForm{action, footer, classes} fields enctype = do
     urlRender <- getUrlRender
     let attrs =
-            ("method", method)
-            :   [("action", urlRender act) | Just act <- [action]]
+            [("method", method), ("role", "form")]
+            ++  [("action", urlRender act) | Just act <- [action]]
             ++  foldr addClass [] classes
     [whamlet|
-        <form *{attrs} enctype=#{enctype} method=post role=form>
+        <form *{attrs} enctype=#{enctype}>
             ^{fields}
             ^{footer}
     |]
@@ -95,3 +103,28 @@ runFormPostB b@BForm{aform} = do
     ((result, fields), enctype) <-
         runFormPost $ renderBootstrap3 BootstrapBasicForm aform
     pure (result, makeFormWidget "post" b fields enctype)
+
+actionForm ::
+    (HasCallStack, MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    BForm m Text
+actionForm =
+    -- We don't use "input form", because we need to check the CSRF token
+    bform $
+    areq
+        textField
+        FieldSettings
+            { fsName    = Just "action"
+            , fsId      = Nothing
+            , fsAttrs   = undef
+            , fsLabel   = undef
+            , fsTooltip = undef
+            }
+        undef
+  where
+    undef :: HasCallStack => a
+    undef = error "actionForm must be user with runFormPostB only"
+
+getPostAction ::
+    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    m (FormResult Text)
+getPostAction = fst <$> runFormPostB actionForm

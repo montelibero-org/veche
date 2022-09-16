@@ -27,7 +27,7 @@ import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
-import Templates.Issue (actionForm, closeReopenForm, editIssueForm, issueTable,
+import Templates.Issue (closeReopenForm, editIssueForm, issueTable,
                         newIssueForm, voteForm)
 import Templates.User (userNameWidget)
 
@@ -106,7 +106,7 @@ postIssuesR = do
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
-    (result, _widget) <- runFormPostB actionForm
+    result <- getPostAction
     case result of
         FormSuccess action -> doAction action
         _ -> invalidArgs [tshow result]

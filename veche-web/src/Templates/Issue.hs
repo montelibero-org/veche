@@ -9,8 +9,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Templates.Issue
-    ( actionForm
-    , closeReopenForm
+    ( closeReopenForm
     , editIssueForm
     , issueRequestTable
     , issueTable
@@ -21,7 +20,6 @@ module Templates.Issue
 import Import
 
 -- global
-import GHC.Stack (HasCallStack)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
@@ -29,23 +27,18 @@ import Model.Request (RequestMaterialized (..))
 import Templates.Comment (commentAnchor)
 import Types.Issue (IssueContent (..))
 
-actionButton :: Text -> Text -> [Text] -> AForm Handler Void
-actionButton value label classes =
-    submitButtonReq SubmitButton{name = "action", value, label, classes}
-    $> error "Void"
-
--- | Generate-only form; for its input, one must use 'actionForm'
+-- | Generate-only form; for its input, one must use 'getPostAction'
 closeReopenForm :: IssueId -> Bool -> Form Void
 closeReopenForm issueId issueOpen =
     (bform
         if issueOpen then
-            actionButton "close" "Close" ["btn-danger"]
+            submit "close" "Close" ["btn-danger"]
         else
-            actionButton "reopen" "Reopen" ["btn-success"]
+            submit "reopen" "Reopen" ["btn-success"]
     )
         {action = Just $ IssueR issueId}
 
--- | Generate-only form; for its input, one must use 'actionForm'
+-- | Generate-only form; for its input, one must use 'getPostAction'
 voteForm :: IssueId -> Form Void
 voteForm issueId =
     BForm
@@ -60,24 +53,6 @@ voteForm issueId =
                     Reject
             |]
         }
-
-actionForm :: HasCallStack => Form Text
-actionForm =
-    -- We don't use "input form", because we need to check the CSRF token
-    bform $
-    areq
-        textField
-        FieldSettings
-            { fsName    = Just "action"
-            , fsId      = Nothing
-            , fsAttrs   = undef
-            , fsLabel   = undef
-            , fsTooltip = undef
-            }
-        undef
-  where
-    undef :: HasCallStack => a
-    undef = error "actionForm must be user with runFormPostB only"
 
 issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
