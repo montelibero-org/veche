@@ -39,45 +39,45 @@ import Model.User qualified as User
 spec :: Spec
 spec =
     around_ withMockHorizon $
-    withApp do
-        describe "Auth.Stellar" do
+    withApp $
+    describe "Auth.Stellar" do
 
-            describe "initial public key form" do
+        describe "initial public key form" do
 
-                it "shows public key form" do
-                    get $ AuthR LoginR
-                    statusIs 200
-                    htmlCount "input[name=stellar_address]" 1
+            it "shows public key form" do
+                get $ AuthR LoginR
+                statusIs 200
+                htmlCount "input[name=stellar_address]" 1
 
-            describe "challenge/response form" do
+        describe "challenge/response form" do
 
-                it "shows challenge for address" do
-                    get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
-                    statusIs 200
-                    htmlCount ".stellar_challenge" 1
+            it "shows challenge for address" do
+                get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
+                statusIs 200
+                htmlCount ".stellar_challenge" 1
 
-                it "shows error for bad address" do
-                    get (AuthR LoginR, [("stellar_address", "")])
-                    statusIs 400
+            it "shows error for bad address" do
+                get (AuthR LoginR, [("stellar_address", "")])
+                statusIs 400
 
-                it "shows error for invalid address" do
-                    get (AuthR LoginR, [("stellar_address", "foo")])
-                    statusIs 400
+            it "shows error for invalid address" do
+                get (AuthR LoginR, [("stellar_address", "foo")])
+                statusIs 400
 
-            describe "authentication with tx-response" do
+        describe "authentication with tx-response" do
 
-                it "authenticates when correct tx-response (public network)" do
-                    testAuthenticationOk testGoodKeyPair Stellar.publicNetwork
+            it "authenticates when correct tx-response (public network)" do
+                testAuthenticationOk testGoodKeyPair Stellar.publicNetwork
 
-                it "authenticates when correct tx-response (test network)" do
-                    testAuthenticationOk testGoodKeyPair Stellar.testNetwork
+            it "authenticates when correct tx-response (test network)" do
+                testAuthenticationOk testGoodKeyPair Stellar.testNetwork
 
-                it "doesn't authenticate when incorrect tx-response" do
-                    request do
-                        setMethod "POST"
-                        setUrl $ AuthR $ PluginR "stellar" []
-                        addPostParam "response" testGoodTxUnsinged
-                    statusIs 400
+            it "doesn't authenticate when incorrect tx-response" do
+                request do
+                    setMethod "POST"
+                    setUrl $ AuthR $ PluginR "stellar" []
+                    addPostParam "response" testGoodTxUnsinged
+                statusIs 400
 
 testAuthenticationOk ::
     Stellar.KeyPair -> Stellar.Network -> YesodExample App ()
