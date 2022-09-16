@@ -23,7 +23,7 @@ import Import.NoFoundation
 import Control.Monad.Logger (LogSource)
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
-import Data.Time (addUTCTime, secondsToNominalDiffTime)
+import Data.Time (secondsToNominalDiffTime)
 import Data.Version (showVersion)
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Servant.Client (BaseUrl)
@@ -43,6 +43,7 @@ import Paths_veche (version)
 
 -- component
 import Model.User qualified as User
+import Model.Verifier qualified as Verifier
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -289,28 +290,13 @@ instance YesodAuth App where
 authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
 authStellarConfig App{appStellarHorizon} =
     Yesod.Auth.Stellar.Config
-        {horizon = appStellarHorizon, setVerifyKey, checkAndRemoveVerifyKey}
+        { horizon = appStellarHorizon
+        , setVerifyKey = \verifierUserIdent ->
+            liftHandler . Verifier.setKey nonceTtl verifierUserIdent
+        , checkAndRemoveVerifyKey = Verifier.checkAndRemoveVerifyKey
+        }
   where
-
-    setVerifyKey :: Text -> Text -> Widget
-    setVerifyKey verifierUserIdent verifierKey =
-        liftHandler do
-            now <- liftIO getCurrentTime
-            let verifierExpires = addUTCTime nonceTtl now
-            runDB $ insert_ Verifier{..}
-
     nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
-
-    checkAndRemoveVerifyKey :: Text -> Text -> Handler Bool
-    checkAndRemoveVerifyKey verifierUserIdent verifierKey =
-        runDB do
-            mVerifier <- getBy $ UniqueVerifier verifierUserIdent verifierKey
-            case mVerifier of
-                Just (Entity verifierId Verifier{verifierExpires}) -> do
-                    delete verifierId
-                    now <- liftIO getCurrentTime
-                    pure $ now <= verifierExpires
-                Nothing -> pure False
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
