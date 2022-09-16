@@ -9,6 +9,9 @@ module Model.Verifier (setKey, checkAndRemoveVerifyKey) where
 import Import.NoFoundation
 
 import Data.Time (NominalDiffTime, addUTCTime)
+import Database.Persist (delete, getBy, insert_)
+import Database.Persist.Sql (SqlBackend)
+import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
 setKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>

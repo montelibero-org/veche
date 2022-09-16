@@ -13,6 +13,7 @@ module Handler.User (getUserR, putUserR) where
 
 import Import
 
+import Data.Aeson (Value (Null, String))
 import Data.Char (isAscii, isPrint)
 import Data.Text qualified as Text
 

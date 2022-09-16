@@ -8,12 +8,13 @@ module Handler.Admin (getAdminUpdateDatabaseR) where
 import Import
 
 import Model.Comment qualified as Comment
+import Model.Issue qualified as Issue
 import Model.Vote qualified as Vote
 
 getAdminUpdateDatabaseR :: Handler TypedContent
 getAdminUpdateDatabaseR = do
     respondSource "text/plain" do
-        issues <- lift $ runDB $ selectList [] []
+        issues <- lift Issue.selectAll
         sendChunkText $
             "Updating issues "
             <> intercalate ", " (map (toPathPiece . entityKey) issues) <> "\n"

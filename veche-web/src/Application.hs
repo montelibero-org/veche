@@ -19,20 +19,22 @@ module Application
     , getApplicationRepl
     , shutdownApp
     -- * for GHCI
-    , handler
-    , db
+    , ghciHandler
+    , ghciRunDB
     ) where
 
 import Import
 
 -- global
-import Control.Monad.Logger (liftLoc, runLoggingT)
+import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
+                             toLogStr)
 import Data.Text qualified as Text
+import Database.Persist.Sql (SqlBackend, runMigration)
 import Database.Persist.Sqlite (Single, createSqlitePool, printMigration,
                                 rawSql, runSqlPool, sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
-import Network.Wai (Middleware)
+import Network.Wai (Application, Middleware)
 import Network.Wai.Handler.Warp (Settings, defaultSettings,
                                  defaultShouldDisplayException, getPort,
                                  runSettings, setHost, setOnException, setPort)
@@ -42,7 +44,11 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              destination, mkRequestLogger,
                                              outputFormat)
 import Servant.Client (parseBaseUrl)
-import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet, toLogStr)
+import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet)
+import Yesod.Core (defaultMiddlewaresNoLogging, messageLoggerSource,
+                   mkYesodDispatch, toWaiAppPlain)
+import Yesod.Persist qualified as Unsafe (runDB)
+import Yesod.Static (static, staticDevel)
 
 -- component
 import Handler.Admin (getAdminUpdateDatabaseR)
@@ -239,9 +245,9 @@ shutdownApp _ = pure ()
 ---------------------------------------------
 
 -- | Run a handler
-handler :: Handler a -> IO a
-handler h = getDevAppSettings >>= makeFoundation >>= (`unsafeHandler` h)
+ghciHandler :: Handler a -> IO a
+ghciHandler h = getDevAppSettings >>= makeFoundation >>= (`unsafeHandler` h)
 
 -- | Run DB queries
-db :: ReaderT SqlBackend Handler a -> IO a
-db = handler . runDB
+ghciRunDB :: ReaderT SqlBackend Handler a -> IO a
+ghciRunDB = ghciHandler . Unsafe.runDB

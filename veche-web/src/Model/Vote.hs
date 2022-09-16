@@ -5,12 +5,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Model.Vote (record, updateIssueApproval, dbUpdateIssueApproval) where
+module Model.Vote (dbUpdateIssueApproval, record, updateIssueApproval) where
 
 import Import
 
 import Data.Map.Strict qualified as Map
+import Database.Persist (insert_, selectList, toPersistValue, update, (=.),
+                         (==.))
 import Database.Persist.Sql (Single (..), rawSql)
+import Yesod.Persist (runDB)
 
 import Genesis (mtlFund)
 

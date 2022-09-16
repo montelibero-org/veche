@@ -12,7 +12,9 @@ module Model.StellarSigner (
 
 import Import hiding (deleteBy)
 
-import Database.Persist (deleteBy)
+import Database.Persist (deleteBy, insertMany_, selectList, updateWhere, (=.),
+                         (==.))
+import Yesod.Persist (runDB)
 
 getByAddress403 :: Text -> Text -> Handler (Entity StellarSigner)
 getByAddress403 target address = runDB $ getBy403 $ UniqueMember target address

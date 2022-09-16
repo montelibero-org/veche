@@ -31,7 +31,10 @@ import Import
 -- global
 import Data.Coerce (coerce)
 import Data.Map.Strict qualified as Map
+import Database.Persist (Filter, get, getBy, getEntity, insert, insert_,
+                         selectList, toPersistValue, update, (=.), (==.))
 import Database.Persist.Sql (Single (Single), rawSql)
+import Yesod.Persist (get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
@@ -196,7 +199,7 @@ load issueId =
     startingPseudoComment commentAuthor author commentCreated =
         Node
             CommentMaterialized
-                { id = fromBackendKey 0
+                { id = CommentKey 0
                 , comment =
                     Comment
                         { commentAuthor

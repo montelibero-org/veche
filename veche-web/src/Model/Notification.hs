@@ -5,6 +5,8 @@ module Model.Notification (dbDelete, dbSelectAll, dbInsert) where
 
 import Import
 
+import Database.Persist (delete, insert_, selectList)
+
 dbDelete :: MonadIO m => NotificationId -> SqlPersistT m ()
 dbDelete = delete
 

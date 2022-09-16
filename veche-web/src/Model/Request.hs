@@ -13,7 +13,9 @@ module Model.Request (
 
 import Import
 
+import Database.Persist (toPersistValue)
 import Database.Persist.Sql (Single (..), rawSql)
+import Yesod.Persist (runDB)
 
 -- | A request for specific user
 data RequestMaterialized = RequestMaterialized

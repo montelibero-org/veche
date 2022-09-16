@@ -10,7 +10,7 @@
 
 module Workers.StellarUpdate (stellarDataUpdater) where
 
-import Import hiding (cached)
+import Import
 
 -- global
 import Control.Concurrent (threadDelay)
@@ -19,6 +19,7 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Network.HTTP.Client (Manager)
 import Servant.Client (BaseUrl, ClientEnv, ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -117,7 +118,7 @@ updateHoldersCache clientEnv connPool asset = do
                 , amount asset balances > 0
                 ]
     (`runSqlPool` connPool) do
-        cached' <- StellarHolder.dbSelectAll
+        cached' <- StellarHolder.dbSelectAll asset
         let cached =
                 Set.fromList
                     [ stellarHolderKey
@@ -128,8 +129,8 @@ updateHoldersCache clientEnv connPool asset = do
     pure $ length actual
 
   where
-    handleDeleted = traverse_ StellarHolder.dbDelete
-    handleAdded = StellarHolder.dbInsertMany . toList
+    handleDeleted = traverse_ $ StellarHolder.dbDelete asset
+    handleAdded = StellarHolder.dbInsertMany asset . toList
 
 runClientM' :: ClientEnv -> ClientM a -> IO a
 runClientM' clientEnv action =

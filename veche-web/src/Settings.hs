@@ -12,18 +12,23 @@
 -- declared in the Foundation.hs file.
 module Settings where
 
-import ClassyPrelude.Yesod
+import ClassyPrelude
 
 import Control.Exception qualified as Exception
-import Data.Aeson (Result (..), fromJSON, withObject, (.!=), (.:?))
+import Data.Aeson (FromJSON, Result (Error, Success), Value, fromJSON,
+                   parseJSON, withObject, (.!=), (.:), (.:?))
+import Data.Default (def)
 import Data.FileEmbed (embedFile)
 import Data.Yaml (decodeEither')
 import Database.Persist.Sqlite (SqliteConf)
 import Language.Haskell.TH.Syntax (Exp, Name, Q)
 import Network.Wai.Handler.Warp (HostPreference)
+import Yesod (Route)
 import Yesod.Default.Config2 (applyEnvValue, configSettingsYml)
 import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
                            widgetFileReload)
+import Yesod.Static (CombineSettings, Static, combineScripts',
+                     combineStylesheets')
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -64,6 +69,7 @@ data AppSettings = AppSettings
 
     , appAuthDummyLogin         :: Bool
     -- ^ Indicate if auth dummy login should be enabled.
+
     , appStellarHorizonUrl      :: Text
     }
 

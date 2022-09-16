@@ -19,15 +19,17 @@
 
 module Model where
 
-import ClassyPrelude.Yesod hiding (Request)
+import ClassyPrelude
 
 import Database.Persist.Quasi (lowerCaseSettings)
-import Database.Persist.Sql (PersistFieldSql)
+import Database.Persist.Sql (PersistField, PersistFieldSql)
+import Database.Persist.TH (mkMigrate, mkPersist, persistFileWith, share,
+                            sqlSettings)
 import Stellar.Horizon.Types (Asset (Asset))
 
 import Model.Types (Choice, CommentType)
 
-deriving newtype instance PersistField Asset
+deriving newtype instance PersistField    Asset
 deriving newtype instance PersistFieldSql Asset
 
 -- You can define all of your database entities in the entities file.

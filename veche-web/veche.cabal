@@ -45,34 +45,38 @@ library
   hs-source-dirs:     src
   build-depends:
       aeson
-    , base                  >=4.9.1.0 && <5
+    , base               >=4.9.1.0 && <5
     , blaze-html
     , case-insensitive
-    , classy-prelude-yesod
+    , classy-prelude
     , containers
+    , data-default
     , Decimal
     , fast-logger
     , file-embed
-    , hjsmin                >=0.1     && <0.3
-    , http-client-tls       >=0.3     && <0.4
-    , monad-logger          >=0.3     && <0.4
+    , hjsmin             >=0.1     && <0.3
+    , http-client
+    , http-client-tls    >=0.3     && <0.4
+    , http-types
+    , monad-logger       >=0.3     && <0.4
     , persistent
     , persistent-sqlite
     , random
     , servant-client
-    , shakespeare           >=2.0     && <2.1
+    , shakespeare        >=2.0     && <2.1
     , template-haskell
-    , text                  >=0.11    && <2.0
+    , text               >=0.11    && <2.0
     , time
     , wai
     , wai-extra
-    , warp                  >=3.0     && <3.4
-    , yaml                  >=0.11    && <0.12
-    , yesod                 >=1.6     && <1.7
-    , yesod-auth            >=1.6     && <1.7
-    , yesod-core            >=1.6     && <1.7
-    , yesod-form            >=1.6
-    , yesod-static          >=1.6     && <1.7
+    , warp               >=3.0     && <3.4
+    , yaml               >=0.11    && <0.12
+    , yesod              >=1.6     && <1.7
+    , yesod-auth         >=1.6     && <1.7
+    , yesod-core         >=1.6     && <1.7
+    , yesod-form         >=1.6
+    , yesod-persistent
+    , yesod-static       >=1.6     && <1.7
 
   -- project
   build-depends:

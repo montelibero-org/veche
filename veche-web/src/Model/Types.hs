@@ -10,11 +10,11 @@ module Model.Types (
     CommentType (..),
 ) where
 
-import ClassyPrelude.Yesod
+import ClassyPrelude
 
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
-import Database.Persist.Sql (PersistFieldSql)
+import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Text.Blaze.Html (ToMarkup, toMarkup)
 
 import Database.Persist.Extra (JsonString (..))

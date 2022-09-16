@@ -8,6 +8,10 @@ module Model.Comment (addText, updateIssueCommentNum) where
 
 import Import
 
+import Database.Persist (count, insert, insertMany_, update, updateWhere, (<-.),
+                         (=.), (==.))
+import Yesod.Persist (runDB)
+
 import Genesis (mtlAsset)
 import Templates.Comment (CommentInput (CommentInput))
 import Templates.Comment qualified

@@ -2,26 +2,47 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Import.NoFoundation
-    ( module Import
+    ( module X
     , module Import.NoFoundation
     ) where
 
-import ClassyPrelude.Yesod as Import hiding (Request, id)
-import Control.Arrow as Import ((>>>))
-import Data.Function as Import ((&))
-import Data.Kind as Import (Type)
-import Data.Tree as Import (Forest, Tree (Node), unfoldForest)
-import Yesod.Auth as Import
-import Yesod.Core.Types as Import (loggerSet)
-import Yesod.Default.Config2 as Import
+import ClassyPrelude as X hiding (Handler, delete, id)
 
-import Authorization as Import
-import Database.Persist.Extra as Import
-import Form as Import
-import Model as Import
-import Model.Types as Import
-import Settings as Import
-import Settings.StaticFiles as Import
+import Control.Arrow as X ((>>>))
+import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))
+import Data.Default as X (def)
+import Data.Function as X ((&))
+import Data.Kind as X (Type)
+import Data.Proxy as X (Proxy (Proxy))
+import Data.Tree as X (Forest, Tree (Node), unfoldForest)
+import Data.Void as X (Void)
+import Data.Yaml as X (array)
+import Database.Persist as X (Entity (..))
+import Database.Persist.Sql as X (SqlPersistT)
+import Network.HTTP.Types as X (internalServerError500, status400)
+import Yesod as X (Fragment ((:#:)), Html, PathPiece,
+                   TypedContent (TypedContent), cacheSeconds, defaultLayout,
+                   fromPathPiece, invalidArgs, lookupGetParam, lookupPostParams,
+                   redirect, requireCheckJsonBody, respondSource, returnJson,
+                   sendChunkText, setTitle, toContent, toHtml, toPathPiece,
+                   typePlain, whamlet)
+import Yesod.Auth as X
+import Yesod.Core as X (HandlerFor, MonadHandler, permissionDenied,
+                        sendResponseStatus)
+import Yesod.Core.Types as X (loggerSet)
+import Yesod.Default.Config2 as X
+import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
+                        FieldSettings (..), FormResult (FormSuccess), MForm,
+                        Textarea (..), aopt, areq, generateFormPost,
+                        hiddenField, runFormPost, textField, textareaField)
+
+import Authorization as X
+import Database.Persist.Extra as X
+import Form as X
+import Model as X
+import Model.Types as X
+import Settings as X
+import Settings.StaticFiles as X
 
 inflect :: Int -> String -> String -> String
 inflect 1 single _ = "1 " <> single
@@ -31,36 +52,10 @@ constraintFail :: MonadHandler m => Text -> m a
 constraintFail msg =
     sendResponseStatus internalServerError500 $ "Constraint failed: " <> msg
 
-getBy403 ::
-    ( MonadHandler m
-    , PersistRecordBackend val backend
-    , PersistUniqueRead backend
-    ) =>
-    Unique val -> ReaderT backend m (Entity val)
-getBy403 key = do
-    mres <- getBy key
-    case mres of
-        Nothing  -> permissionDenied "Not authorized"
-        Just res -> return res
-
-getEntity404 ::
-    (MonadIO m, PersistStoreRead backend, PersistRecordBackend val backend) =>
-    Key val -> ReaderT backend m (Entity val)
-getEntity404 key = Entity key <$> get404 key
-
 maxOn :: Ord b => (a -> b) -> a -> a -> a
 maxOn f x y
     | f x > f y = x
     | otherwise = y
-
-upsert_ ::
-    ( MonadIO m
-    , PersistUniqueWrite backend
-    , OnlyOneUniqueKey record
-    , PersistEntityBackend record ~ BaseBackend backend
-    ) =>
-    record -> [Update record] -> ReaderT backend m ()
-upsert_ record updates = void $ upsert record updates
 
 (?|) :: Applicative f => Maybe a -> f a -> f a
 Nothing ?| act = act

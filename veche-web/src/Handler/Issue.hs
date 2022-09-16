@@ -16,7 +16,7 @@ module Handler.Issue
     , postIssuesR
     ) where
 
-import Import hiding (share)
+import Import
 
 -- global
 import Data.Map.Strict qualified as Map

@@ -7,7 +7,8 @@
 
 module Authorization where
 
-import ClassyPrelude.Yesod
+import Yesod.Core (MonadHandler, permissionDenied)
+import Yesod.Persist (Entity (Entity))
 
 import Model (Issue (Issue), StellarHolderId, StellarSignerId, UserId)
 import Model qualified

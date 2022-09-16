@@ -14,7 +14,7 @@ import Templates.User (userNameText)
 getApiCompleteUserR :: Handler Value
 getApiCompleteUserR = do
     term <- lookupGetParam "term" ?|> invalidArgs ["`term` param must present"]
-    users <- User.selectList
+    users <- User.selectAll
     pure $
         array
             [ object ["label" .= label, "value" .= userId]

@@ -105,7 +105,7 @@ testAuthenticationOk keyPair network = do
     get UserR
     statusIs 200 -- authenticated
 
-    users <- runDB User.selectValList
+    users <- runDB User.dbSelectAll
     assertEq
         "users after auth"
         users

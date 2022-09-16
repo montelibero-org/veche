@@ -9,19 +9,18 @@ module Model.StellarHolder (
 
 import Import hiding (deleteBy, keys)
 
-import Database.Persist (deleteBy)
+import Database.Persist (deleteBy, insertMany_, selectList, (==.))
+import Stellar.Horizon.Types (Asset)
 
-import Genesis (mtlAsset)
+dbSelectAll :: MonadIO m => Asset -> SqlPersistT m [Entity StellarHolder]
+dbSelectAll asset = selectList [StellarHolderAsset ==. asset] []
 
-dbSelectAll :: MonadIO m => SqlPersistT m [Entity StellarHolder]
-dbSelectAll = selectList [StellarHolderAsset ==. mtlAsset] []
+dbDelete :: MonadIO m => Asset -> Text -> SqlPersistT m ()
+dbDelete asset = deleteBy . UniqueHolder asset
 
-dbDelete :: MonadIO m => Text -> SqlPersistT m ()
-dbDelete = deleteBy . UniqueHolder mtlAsset
-
-dbInsertMany :: MonadIO m => [Text] -> SqlPersistT m ()
-dbInsertMany keys =
+dbInsertMany :: MonadIO m => Asset -> [Text] -> SqlPersistT m ()
+dbInsertMany stellarHolderAsset keys =
     insertMany_
-        [ StellarHolder{stellarHolderAsset = mtlAsset, stellarHolderKey}
+        [ StellarHolder{stellarHolderAsset, stellarHolderKey}
         | stellarHolderKey <- keys
         ]
