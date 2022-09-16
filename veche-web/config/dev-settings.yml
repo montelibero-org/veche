@@ -1,0 +1,4 @@
+database:
+  database: veche.sqlite3
+database-migrate: true
+development: true

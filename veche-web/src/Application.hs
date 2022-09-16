@@ -171,23 +171,21 @@ warpSettings foundation =
 -- | For yesod devel, pure the Warp settings and WAI Application.
 getApplicationDev :: IO (Settings, Application)
 getApplicationDev = do
-    settings <- getAppSettings
-    let settings' =
-            settings
-            { appAuthDummyLogin         = True
-            , appDetailedRequestLogging = True
-            , appMutableStatic          = True
-            , appReloadTemplates        = True
-            , appShouldLogAll           = True
-            , appSkipCombining          = True
-            }
-    foundation <- makeFoundation settings'
+    settings <- getDevAppSettings
+    foundation <- makeFoundation settings
     wsettings <- getDevSettings $ warpSettings foundation
     app <- makeApplication foundation
     pure (wsettings, app)
 
-getAppSettings :: IO AppSettings
-getAppSettings = loadYamlSettings [configSettingsYml] [] useEnv
+getDevAppSettings :: IO AppSettings
+getDevAppSettings =
+    loadYamlSettings
+        [ "config/dev-settings.yml"
+        , "config/test-settings.yml"
+        , configSettingsYml
+        ]
+        []
+        useEnv
 
 -- | main function for use by yesod devel
 develMain :: IO ()
@@ -226,7 +224,7 @@ appMain = do
 --------------------------------------------------------------
 getApplicationRepl :: IO (Int, App, Application)
 getApplicationRepl = do
-    settings <- getAppSettings
+    settings <- getDevAppSettings
     foundation <- makeFoundation settings
     wsettings <- getDevSettings $ warpSettings foundation
     app1 <- makeApplication foundation
@@ -242,7 +240,7 @@ shutdownApp _ = pure ()
 
 -- | Run a handler
 handler :: Handler a -> IO a
-handler h = getAppSettings >>= makeFoundation >>= (`unsafeHandler` h)
+handler h = getDevAppSettings >>= makeFoundation >>= (`unsafeHandler` h)
 
 -- | Run DB queries
 db :: ReaderT SqlBackend Handler a -> IO a
