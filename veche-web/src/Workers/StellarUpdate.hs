@@ -32,6 +32,9 @@ import Stellar.Horizon.Types qualified
 
 -- component
 import Genesis (mtlAsset, mtlFund)
+import Model.Issue qualified as Issue
+import Model.StellarHolder qualified as StellarHolder
+import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
 
 stellarDataUpdater :: BaseUrl -> ConnectionPool -> Manager -> IO ()
@@ -67,7 +70,7 @@ updateSignersCache clientEnv connPool target = do
                 , weight > 0
                 ]
     (`runSqlPool` connPool) do
-        cached' <- selectList [StellarSignerTarget ==. target] []
+        cached' <- StellarSigner.dbSelectAll target
         let cached =
                 Map.fromList
                     [ (stellarSignerKey, stellarSignerWeight)
@@ -88,28 +91,16 @@ updateSignersCache clientEnv connPool target = do
     pure $ length actual
   where
 
-    handleDeleted = traverse_ $ deleteBy . UniqueMember target
+    handleDeleted = traverse_ $ StellarSigner.dbDelete target
 
-    handleAdded added =
-        insertMany_
-            [ StellarSigner
-                { stellarSignerTarget = target
-                , stellarSignerKey
-                , stellarSignerWeight
-                }
-            | (stellarSignerKey, stellarSignerWeight) <- Map.assocs added
-            ]
+    handleAdded = StellarSigner.dbInsertMany target . Map.assocs
 
-    handleModified =
-        traverse_ \(key, weight) ->
-            updateWhere
-                [StellarSignerTarget ==. target, StellarSignerKey ==. key]
-                [StellarSignerWeight =. weight]
+    handleModified = traverse_ $ uncurry $ StellarSigner.dbSetWeight target
 
     updateAllIssueApprovals = do
-        issues <- selectList [] []
+        issues <- Issue.dbSelectAll
         for_ issues \(Entity issueId issue) ->
-            Vote.updateIssueApproval issueId $ Just issue
+            Vote.dbUpdateIssueApproval issueId $ Just issue
 
 updateHoldersCache ::
     ClientEnv ->
@@ -126,7 +117,7 @@ updateHoldersCache clientEnv connPool asset = do
                 , amount asset balances > 0
                 ]
     (`runSqlPool` connPool) do
-        cached' <- selectList [StellarHolderAsset ==. asset] []
+        cached' <- StellarHolder.dbSelectAll
         let cached =
                 Set.fromList
                     [ stellarHolderKey
@@ -137,14 +128,8 @@ updateHoldersCache clientEnv connPool asset = do
     pure $ length actual
 
   where
-
-    handleDeleted = traverse_ $ deleteBy . UniqueHolder asset
-
-    handleAdded added =
-        insertMany_
-            [ StellarHolder{stellarHolderAsset = asset, stellarHolderKey}
-            | stellarHolderKey <- toList added
-            ]
+    handleDeleted = traverse_ StellarHolder.dbDelete
+    handleAdded = StellarHolder.dbInsertMany . toList
 
 runClientM' :: ClientEnv -> ClientM a -> IO a
 runClientM' clientEnv action =

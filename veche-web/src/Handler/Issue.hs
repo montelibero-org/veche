@@ -26,10 +26,12 @@ import Model.Issue (IssueMaterialized (..), StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
-import Templates.Comment (commentForm, commentForestWidget)
+import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (actionForm, closeReopenForm, editIssueForm, issueTable,
                         newIssueForm, voteForm)
 import Templates.User (userNameWidget)
+
+import Genesis (mtlFund)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -46,7 +48,7 @@ getIssueR issueId = do
             } <-
         Issue.load issueId
 
-    signers <- runDB StellarSigner.selectAll
+    signers <- StellarSigner.selectAll mtlFund
     let weights =
             Map.fromList
                 [ (stellarSignerKey, stellarSignerWeight)
@@ -79,7 +81,8 @@ getIssueR issueId = do
 getIssueNewR :: Handler Html
 getIssueNewR = do
     Entity _ User{userStellarAddress} <- requireAuth
-    Entity signerId _ <- StellarSigner.getByAddress403 userStellarAddress
+    Entity signerId _ <-
+        StellarSigner.getByAddress403 mtlFund userStellarAddress
     requireAuthz $ CreateIssue signerId
     formWidget <- generateFormPostB newIssueForm
     defaultLayout formWidget
@@ -88,7 +91,7 @@ getIssuesR :: Handler Html
 getIssuesR = do
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
-    issues <- Issue.selectList [IssueOpen ==. stateOpen]
+    issues <- Issue.selectByOpen stateOpen
     (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed
     defaultLayout $(widgetFile "issues")
 

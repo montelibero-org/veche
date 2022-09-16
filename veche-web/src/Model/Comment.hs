@@ -2,6 +2,7 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Model.Comment (addText, updateIssueCommentNum) where
 
@@ -37,7 +38,7 @@ addText (Entity userId User{userStellarAddress})
                 }
             | requestUser <- toList requestUsers
             ]
-        updateIssueCommentNum issue Nothing
+        unsafeUpdateIssueCommentNum issue Nothing
         updateWhere
             [ RequestId <-. toList provideInfo
             -- following filters present only for security
@@ -51,8 +52,15 @@ updateIssueCommentNum ::
     IssueId ->
     -- | If the issue value is given it will be checked for the need of update.
     Maybe Issue ->
+    Handler ()
+updateIssueCommentNum issueId = runDB . unsafeUpdateIssueCommentNum issueId
+
+unsafeUpdateIssueCommentNum ::
+    IssueId ->
+    -- | If the issue value is given it will be checked for the need of update.
+    Maybe Issue ->
     SqlPersistT Handler ()
-updateIssueCommentNum issueId mIssue = do
+unsafeUpdateIssueCommentNum issueId mIssue = do
     commentNum <- count [CommentIssue ==. issueId, CommentType ==. CommentText]
     case mIssue of
         Just Issue{issueCommentNum = oldCommentNum}

@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Model.Vote (record, updateIssueApproval) where
+module Model.Vote (record, updateIssueApproval, dbUpdateIssueApproval) where
 
 import Import
 
@@ -37,15 +37,22 @@ record issueId choice = do
                         Approve -> CommentApprove
                         Reject  -> CommentReject
                 }
-        updateIssueApproval issueId Nothing
+        dbUpdateIssueApproval issueId Nothing
 
 updateIssueApproval ::
+    IssueId ->
+    -- | If the issue value is given it will be checked for the need of update.
+    Maybe Issue ->
+    Handler ()
+updateIssueApproval issueId = runDB . dbUpdateIssueApproval issueId
+
+dbUpdateIssueApproval ::
     MonadIO m =>
     IssueId ->
     -- | If the issue value is given it will be checked for the need of update.
     Maybe Issue ->
     SqlPersistT m ()
-updateIssueApproval issueId mIssue = do
+dbUpdateIssueApproval issueId mIssue = do
     weights :: [(Single Int, Maybe UserId)] <-
         rawSql
             "SELECT stellar_signer.weight, user.id\

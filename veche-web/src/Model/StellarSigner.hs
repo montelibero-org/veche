@@ -1,14 +1,44 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Model.StellarSigner (
+    dbDelete,
+    dbInsertMany,
+    dbSelectAll,
+    dbSetWeight,
     getByAddress403,
     selectAll,
 ) where
 
-import Import
+import Import hiding (deleteBy)
 
-import Genesis (mtlFund)
+import Database.Persist (deleteBy)
 
-getByAddress403 :: Text -> Handler (Entity StellarSigner)
-getByAddress403 address = runDB $ getBy403 $ UniqueMember mtlFund address
+getByAddress403 :: Text -> Text -> Handler (Entity StellarSigner)
+getByAddress403 target address = runDB $ getBy403 $ UniqueMember target address
 
-selectAll :: MonadIO m => SqlPersistT m [Entity StellarSigner]
-selectAll = selectList [StellarSignerTarget ==. mtlFund] []
+selectAll :: Text -> Handler [Entity StellarSigner]
+selectAll = runDB . dbSelectAll
+
+dbSelectAll :: MonadIO m => Text -> SqlPersistT m [Entity StellarSigner]
+dbSelectAll target = selectList [StellarSignerTarget ==. target] []
+
+dbDelete :: MonadIO m => Text -> Text -> SqlPersistT m ()
+dbDelete target = deleteBy . UniqueMember target
+
+dbInsertMany :: MonadIO m => Text -> [(Text, Int)] -> SqlPersistT m ()
+dbInsertMany stellarSignerTarget signers =
+    insertMany_
+        [ StellarSigner
+            { stellarSignerTarget
+            , stellarSignerKey
+            , stellarSignerWeight
+            }
+        | (stellarSignerKey, stellarSignerWeight) <- signers
+        ]
+
+dbSetWeight :: MonadIO m => Text -> Text -> Int -> SqlPersistT m ()
+dbSetWeight target key weight =
+    updateWhere
+        [StellarSignerTarget ==. target, StellarSignerKey ==. key]
+        [StellarSignerWeight =. weight]

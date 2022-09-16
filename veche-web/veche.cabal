@@ -26,6 +26,7 @@ library
     Model.Issue
     Model.Notification
     Model.Request
+    Model.StellarHolder
     Model.StellarSigner
     Model.Types
     Model.User
@@ -71,7 +72,6 @@ library
     , yesod-auth            >=1.6     && <1.7
     , yesod-core            >=1.6     && <1.7
     , yesod-form            >=1.6
-    , yesod-persistent
     , yesod-static          >=1.6     && <1.7
 
   -- project

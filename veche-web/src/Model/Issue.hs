@@ -15,9 +15,11 @@ module Model.Issue (
     create,
     -- * Retrieve
     countOpenAndClosed,
+    dbSelectAll,
     getContentForEdit,
     load,
-    Model.Issue.selectList,
+    selectAll,
+    selectByOpen,
     selectWithoutVoteFromUser,
     -- * Update
     closeReopen,
@@ -29,7 +31,6 @@ import Import
 -- global
 import Data.Coerce (coerce)
 import Data.Map.Strict qualified as Map
-import Database.Persist qualified as Persist
 import Database.Persist.Sql (Single (Single), rawSql)
 
 -- component
@@ -218,13 +219,22 @@ collectChoices votes =
         | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
-selectList :: [Filter Issue] -> Handler [Entity Issue]
-selectList filters =
+selectWith :: [Filter Issue] -> Handler [Entity Issue]
+selectWith filters =
     runDB do
         Entity _ User{userStellarAddress} <- requireAuth
         Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
         requireAuthz $ ListIssues holderId
-        Persist.selectList filters []
+        selectList filters []
+
+selectByOpen :: Bool -> Handler [Entity Issue]
+selectByOpen isOpen = selectWith [IssueOpen ==. isOpen]
+
+selectAll :: Handler [Entity Issue]
+selectAll = selectWith []
+
+dbSelectAll :: MonadIO m => SqlPersistT m [Entity Issue]
+dbSelectAll = selectList [] []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
