@@ -23,7 +23,7 @@
         <label .col-sm-2 .control-label>Telegram
         <div .col-sm-10>
             $maybe telegram <- mTelegram
-                #{show telegram}
+                ^{telegramWidget telegram}
                 ^{unlinkTelegram}
             $nothing
                 <script async

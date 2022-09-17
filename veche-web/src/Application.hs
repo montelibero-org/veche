@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,7 +8,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-} -- instance YesodDispatch App
+{-# OPTIONS_GHC -Wno-orphans #-} -- instance YesodDispatch App
 
 module Application
     ( getApplicationDev
@@ -29,7 +30,8 @@ import Import
 import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
                              toLogStr)
 import Data.Text qualified as Text
-import Database.Persist.Sql (SqlBackend, runMigration)
+import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),
+                             SqlBackend, parseMigration', runMigration)
 import Database.Persist.Sqlite (Single, createSqlitePool, printMigration,
                                 rawSql, runSqlPool, sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
@@ -111,19 +113,20 @@ makeFoundation appSettings = do
                         \ WHERE type='table' AND name='user'"
                     []
             let databaseIsEmpty = null userTableNameAsList
-            if appDatabaseMigrate || databaseIsEmpty then
+            if databaseIsEmpty then
                 runMigration migrateAll
             else do
-                putStrLn "NOT MIGRATING, but we have something to migrate:"
-                printMigration migrateAll
+                migrations <- parseMigration' migrateAll
+                let databaseIsOutdated = not $ null migrations
+                when databaseIsOutdated $
+                    print $ PersistUnsafeMigrationException migrations
 
     -- Return the foundation
     pure $ mkFoundation pool
 
   where
     AppSettings
-        { appDatabaseMigrate
-        , appDatabaseConf
+        { appDatabaseConf
         , appMutableStatic
         , appStaticDir
         , appStellarHorizonUrl

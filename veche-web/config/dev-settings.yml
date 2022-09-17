@@ -1,5 +1,5 @@
 database:
   database: veche.sqlite3
-database-migrate: true
+database-migrate: false
 development: true
 telegram-bot-name: veche_test_bot
