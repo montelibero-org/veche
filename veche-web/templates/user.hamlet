@@ -18,7 +18,7 @@
     <div .form-group>
         <label .col-sm-2 .control-label>Stellar address
         <div .col-sm-10 .form-control-static .user_stellar_address>
-            #{userStellarAddress}
+            #{stellarAddress}
     <div .form-group>
         <label .col-sm-2 .control-label>Telegram
         <div .col-sm-10>

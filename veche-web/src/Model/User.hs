@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -25,10 +26,11 @@ import Import.NoFoundation
 
 import Database.Persist (delete, get, getBy, insert, repsert, selectList,
                          update, (=.))
+import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
 
 getByStellarAddress ::
-    PersistSql app => Text -> HandlerFor app (Maybe (Entity User))
+    PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))
 getByStellarAddress = runDB . getBy . UniqueUser
 
 getOrInsert :: PersistSql app => User -> HandlerFor app UserId

@@ -28,7 +28,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Data.List.NonEmpty (last, nonEmpty)
 import Servant.API ((:<|>) ((:<|>)))
 import Stellar.Horizon.API (api)
-import Stellar.Horizon.Types (Account (Account, paging_token), Asset,
+import Stellar.Horizon.Types (Account (Account, paging_token), Address, Asset,
                               Records (Records))
 
 publicServerBase :: BaseUrl
@@ -40,7 +40,7 @@ testServerBase =
     unsafePerformIO $ parseBaseUrl "https://horizon-testnet.stellar.org/"
 {-# NOINLINE testServerBase #-}
 
-getAccount :: Text -> ClientM Account
+getAccount :: Address -> ClientM Account
 getAccounts ::
     Maybe Asset -> Maybe Text -> Maybe Natural -> ClientM (Records Account)
 getAccount :<|> getAccounts = client api

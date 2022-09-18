@@ -16,6 +16,7 @@ module Templates.User (
 import Import
 
 import Data.Text qualified as Text
+import Stellar.Horizon.Types qualified as Stellar
 import Yesod (getsYesod)
 
 import Model.User qualified as User
@@ -24,12 +25,12 @@ userNameWidget :: User -> Html
 userNameWidget = toHtml . userNameText
 
 userNameText :: User -> Text
-userNameText User{userName, userStellarAddress} =
+userNameText User{userName, userStellarAddress = Stellar.Address address} =
     case userName of
         Just name -> name <> " (" <> abbreviatedAddress <> ")"
         Nothing -> abbreviatedAddress
   where
-    abbreviatedAddress = "*" <> Text.takeEnd 4 userStellarAddress
+    abbreviatedAddress = "*" <> Text.takeEnd 4 address
 
 unlinkTelegramForm :: Form Void
 unlinkTelegramForm =
@@ -47,7 +48,9 @@ telegramWidget Telegram{telegramUsername} =
 userPage :: Handler Html
 userPage = do
     telegramBotName <- getsYesod $ appTelegramBotName . appSettings
-    Entity uid User{userName, userStellarAddress} <- requireAuth
+    Entity uid user <- requireAuth
+    let User{userName, userStellarAddress = Stellar.Address stellarAddress} =
+            user
     mTelegram <- User.getTelegram uid
     unlinkTelegram <- generateFormPostB unlinkTelegramForm
     defaultLayout do

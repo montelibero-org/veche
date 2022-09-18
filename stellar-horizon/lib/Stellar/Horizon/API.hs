@@ -23,7 +23,7 @@ import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
                      ParamKind (Normal), ToCapture, ToParam)
 import Servant.Docs qualified
 
-import Stellar.Horizon.Types (Account, Asset, Records)
+import Stellar.Horizon.Types (Account, Address, Asset, Records)
 
 data HalJson
 
@@ -39,17 +39,18 @@ instance ToJSON a => MimeRender HalJson a where
     mimeRender _ = mimeRender (Proxy @JSON)
 
 type API
-    =       "accounts" :> Capture "account_id" Text :> Get '[HalJson] Account
-    :<|>    "accounts"
-            :> QueryParam "asset" Asset
-            :> QueryParam "cursor" Text
-            :> QueryParam "limit" Natural
-            :> Get '[HalJson] (Records Account)
+    =   "accounts" :> Capture "account_id" Address :> Get '[HalJson] Account
+    :<|>
+        "accounts"
+        :> QueryParam "asset" Asset
+        :> QueryParam "cursor" Text
+        :> QueryParam "limit" Natural
+        :> Get '[HalJson] (Records Account)
 
 api :: Proxy API
 api = Proxy
 
-instance ToCapture (Capture "account_id" Text) where
+instance ToCapture (Capture "account_id" Address) where
     toCapture _ =
         DocCapture
             "account_id"

@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Handler.API (getApiCompleteUserR) where
@@ -7,6 +6,7 @@ module Handler.API (getApiCompleteUserR) where
 import Import hiding (label)
 
 import Data.Text qualified as Text
+import Stellar.Horizon.Types qualified as Stellar
 
 import Model.User qualified as User
 import Templates.User (userNameText)
@@ -18,8 +18,10 @@ getApiCompleteUserR = do
     pure $
         array
             [ object ["label" .= label, "value" .= userId]
-            | Entity userId user@User{userStellarAddress} <- users
-            , let label = userNameText user
+            | Entity userId user <- users
+            , let
+                User{userStellarAddress = Stellar.Address address} = user
+                label = userNameText user
             , Text.toLower term `isInfixOf` Text.toLower label
-                || Text.toLower term `isInfixOf` Text.toLower userStellarAddress
+                || Text.toLower term `isInfixOf` Text.toLower address
             ]

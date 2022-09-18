@@ -1,11 +1,14 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Handler.UserSpec (spec) where
 
 import TestImport
+
+import Data.Text qualified as Text
+import Stellar.Horizon.Types qualified as Stellar
 
 spec :: Spec
 spec =
@@ -28,6 +31,7 @@ spec =
                 authenticateAs userEntity
 
                 get UserR
-                let (Entity _ User{userStellarAddress}) = userEntity
-                htmlAnyContain ".user_stellar_address" $
-                    unpack userStellarAddress
+                let Entity  _
+                            User{userStellarAddress = Stellar.Address address} =
+                        userEntity
+                htmlAnyContain ".user_stellar_address" $ Text.unpack address

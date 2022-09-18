@@ -66,7 +66,7 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
 -- project
 import Stellar.Horizon.Client (getAccount)
 import Stellar.Horizon.Types (Account (Account), Signer (Signer))
-import Stellar.Horizon.Types qualified
+import Stellar.Horizon.Types qualified as Stellar
 
 pluginName :: Text
 pluginName = "stellar"
@@ -76,8 +76,8 @@ pluginRoute = PluginR pluginName []
 
 data Config app = Config
     { horizon :: BaseUrl
-    , setVerifyKey :: Text -> Text -> WidgetFor app ()
-    , checkAndRemoveVerifyKey :: Text -> Text -> HandlerFor app Bool
+    , setVerifyKey :: Stellar.Address -> Text -> WidgetFor app ()
+    , checkAndRemoveVerifyKey :: Stellar.Address -> Text -> HandlerFor app Bool
     }
 
 -- | Flow:
@@ -112,7 +112,8 @@ responseForm =
         (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
         Nothing
 
-data VerificationData = VerificationData{address, nonce :: Text}
+data VerificationData = VerificationData
+    {address :: Stellar.Address, nonce :: Text}
 
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch config@Config{checkAndRemoveVerifyKey} _method _path = do
@@ -128,8 +129,8 @@ dispatch config@Config{checkAndRemoveVerifyKey} _method _path = do
                 invalidArgs ["Verification key is invalid or expired"]
         _ -> invalidArgs [Text.pack $ show result]
 
-makeCreds :: Text -> Creds app
-makeCreds credsIdent =
+makeCreds :: Stellar.Address -> Creds app
+makeCreds (Stellar.Address credsIdent) =
     Creds{credsPlugin = pluginName, credsIdent, credsExtra = []}
 
 login ::
@@ -142,7 +143,7 @@ login Config{setVerifyKey} routeToMaster = do
         Just address0 -> do
             let address = strip address0
             nonce <- nonce128urlT nonceGenerator
-            setVerifyKey address nonce
+            setVerifyKey (Stellar.Address address) nonce
             challenge <- makeChallenge address nonce
             makeResponseForm routeToMaster challenge
 
@@ -236,11 +237,12 @@ verifyResponse envelopeXdrBase64 = do
                 , transaction'sourceAccount
                 } =
             transactionEnvelope'tx
-        account = viewAccount transaction'sourceAccount
-    verifySignature account envelope
+        stellarAddress = viewAccount transaction'sourceAccount
+        horizonAddress = Stellar.Address $ encodePublicKey stellarAddress
+    verifySignature stellarAddress envelope
     verifyMemo transaction'memo
     nonce <- getNonce transaction'operations
-    pure VerificationData{address = encodePublicKey account, nonce}
+    pure VerificationData{address = horizonAddress, nonce}
   where
 
     e ?| msg = either (const $ invalidArgs [msg]) pure e
@@ -273,11 +275,13 @@ verifyResponse envelopeXdrBase64 = do
             _ -> invalidArgs ["Bad operations"]
 
 -- | Throws an exception on error
-verifyAccount :: MonadHandler m => Config app -> Text -> m ()
+verifyAccount :: MonadHandler m => Config app -> Stellar.Address -> m ()
 verifyAccount Config{horizon} address = do
     account <- getAccount'
     assert "account must be personal" $ isPersonal account
   where
+
+    Stellar.Address rawAddress = address
 
     getAccount' = do
         eResult <-
@@ -299,7 +303,7 @@ verifyAccount Config{horizon} address = do
 
     isPersonal Account{signers} =
         case signers of
-            [Signer{key, weight}]   -> key == address && weight > 0
+            [Signer{key, weight}]   -> key == rawAddress && weight > 0
             _                       -> False
 
 runFormPost ::

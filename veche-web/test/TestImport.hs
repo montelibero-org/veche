@@ -1,6 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -16,6 +15,7 @@ import Data.Text.Encoding qualified
 import Database.Persist as X hiding (get)
 import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
+import Stellar.Horizon.Types qualified as Stellar
 import Test.Hspec as X
 import Yesod.Auth as X
 import Yesod.Core.Unsafe (fakeHandlerGetLogger)
@@ -94,21 +94,22 @@ getTables =
 -- being set in test-settings.yaml, which enables dummy authentication in
 -- Foundation.hs
 authenticateAs :: Entity User -> YesodExample App ()
-authenticateAs (Entity _ u) = do
+authenticateAs (Entity _ User{userStellarAddress = Stellar.Address ident}) = do
     request do
         setMethod "POST"
-        addPostParam "ident" $ userStellarAddress u
+        addPostParam "ident" ident
         setUrl $ AuthR $ PluginR "dummy" []
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
 createUser :: Text -> Maybe (Int64, Text) -> YesodExample App (Entity User)
-createUser userStellarAddress mTelegram =
+createUser ident mTelegram =
     runDB do
-        user@(Entity uid _) <-
-            insertEntity User{userName = Nothing, userStellarAddress}
+        uid <- insert user
         for_ mTelegram $ uncurry $ User.dbSetTelegram uid
-        pure user
+        pure $ Entity uid user
+  where
+    user = User{userName = Nothing, userStellarAddress = Stellar.Address ident}
 
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8

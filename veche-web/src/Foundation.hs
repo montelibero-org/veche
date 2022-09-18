@@ -52,6 +52,7 @@ import Yesod.Persist qualified
 import Yesod.Static (Route (StaticRoute), Static, base64md5)
 
 -- project
+import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
@@ -76,13 +77,13 @@ data App = App
     }
 
 data MenuItem = MenuItem
-    { label          :: Text
+    { itemLabel          :: Text
     , route          :: Route App
     , accessCallback :: Bool
     }
 
 menuItem :: Text -> Route App -> MenuItem
-menuItem label route = MenuItem{label, route, accessCallback = True}
+menuItem itemLabel route = MenuItem{itemLabel, route, accessCallback = True}
 
 data MenuTypes
     = NavbarLeft MenuItem
@@ -288,10 +289,13 @@ instance YesodAuth App where
     authenticate
         :: (MonadHandler m, HandlerSite m ~ App)
         => Creds App -> m (AuthenticationResult App)
-    authenticate Creds{credsIdent = userStellarAddress} =
+    authenticate Creds{credsIdent} =
         fmap Authenticated $
         liftHandler $
-        User.getOrInsert User{userName = Nothing, userStellarAddress}
+        User.getOrInsert
+            User{ userName = Nothing
+                , userStellarAddress = Stellar.Address credsIdent
+                }
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]

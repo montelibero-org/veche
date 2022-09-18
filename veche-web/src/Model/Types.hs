@@ -1,4 +1,8 @@
+{-# OPTIONS -Wno-orphans #-}
+
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,6 +12,7 @@
 module Model.Types (
     Choice (..),
     CommentType (..),
+    StellarMultiSigAddress (..),
 ) where
 
 import ClassyPrelude
@@ -15,6 +20,7 @@ import ClassyPrelude
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
+import Stellar.Horizon.Types qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
 
 import Database.Persist.Extra (JsonString (..))
@@ -56,3 +62,10 @@ instance ToMarkup CommentType where
         CommentRequestInfo  -> "requested additional information"
         CommentStart        -> "started issue"
         CommentText         -> ""
+
+deriving newtype instance PersistField    Stellar.Address
+deriving newtype instance PersistFieldSql Stellar.Address
+
+newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
+    deriving newtype (PersistField, PersistFieldSql)
+    deriving stock Show

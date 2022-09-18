@@ -31,7 +31,7 @@ import Text.XML.Cursor (content, descendant)
 import Stellar.Horizon.API (API, api)
 import Stellar.Horizon.Types (Account (Account), Signer (Signer),
                               SignerType (Ed25519PublicKey))
-import Stellar.Horizon.Types qualified
+import Stellar.Horizon.Types qualified as Stellar
 
 -- package
 import Model.User qualified as User
@@ -109,7 +109,7 @@ testAuthenticationOk keyPair network = do
     assertEq
         "users after auth"
         users
-        [User{userName = Nothing, userStellarAddress = address}]
+        [User{userName = Nothing, userStellarAddress = Stellar.Address address}]
 
   where
     Stellar.KeyPair{kpPublicKey} = keyPair
@@ -139,21 +139,20 @@ horizonTestApp = serve api horizonTestServer
     horizonTestServer :: Server API
     horizonTestServer = getAccount :<|> getAccounts
 
-    getAccount :: Text -> Servant.Handler Account
-    getAccount address
-        | address == testGoodPublicKey =
-            pure
-                Account
-                { account_id    = address
-                , balances      = []
-                , paging_token  = address
-                , signers       = [signer address]
-                }
+    getAccount :: Stellar.Address -> Servant.Handler Account
+    getAccount account_id
+        | account_id == Stellar.Address testGoodPublicKey =
+            pure Account{account_id, balances, paging_token, signers}
         | otherwise = throwError err404
+      where
+        balances = []
+        Stellar.Address paging_token = account_id
+        signers = [signer account_id]
 
     getAccounts _ _ _ = throwError err404
 
-    signer key = Signer{key, type_ = Ed25519PublicKey, weight = 1}
+    signer (Stellar.Address key) =
+        Signer{key, type_ = Ed25519PublicKey, weight = 1}
 
 the :: HasCallStack => [a] -> a
 the = \case

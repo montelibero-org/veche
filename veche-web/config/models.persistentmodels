@@ -66,14 +66,14 @@ Request
 
 StellarHolder
     asset   Asset
-    key     Text -- holder account address
+    key     Stellar.Address -- holder account address
 
     UniqueHolder asset key
 
 
 StellarSigner
-    target  Text -- target account address (managed one)
-    key     Text -- signer account address
+    target  StellarMultiSigAddress  -- target account address (managed one)
+    key     Stellar.Address         -- signer account address
     weight  Int
 
     UniqueMember target key
@@ -83,7 +83,7 @@ StellarSigner
 
 User
     name            Text Maybe
-    stellarAddress  Text
+    stellarAddress  Stellar.Address
 
     UniqueUser stellarAddress
 
@@ -101,7 +101,7 @@ Telegram
 
 
 Verifier
-    userIdent   Text
+    userIdent   Stellar.Address
     key         Text
     expires     UTCTime
 

@@ -29,7 +29,7 @@ import Stellar.Horizon.Client (getAccount, getAllAccounts)
 import Stellar.Horizon.Types (Account (Account), Asset (Asset),
                               Balance (Balance), Signer (Signer),
                               SignerType (Ed25519PublicKey))
-import Stellar.Horizon.Types qualified
+import Stellar.Horizon.Types qualified as Stellar
 
 -- component
 import Genesis (mtlAsset, mtlFund)
@@ -59,14 +59,14 @@ stellarDataUpdater baseUrl connPool manager = do
 updateSignersCache ::
     ClientEnv ->
     ConnectionPool ->
-    Text ->
+    StellarMultiSigAddress ->
     -- | Actual number of signers
     IO Int
 updateSignersCache clientEnv connPool target = do
-    Account{signers} <- runClientM' clientEnv $ getAccount target
+    Account{signers} <- runClientM' clientEnv $ getAccount address
     let actual =
             Map.fromList
-                [ (key, weight)
+                [ (Stellar.Address key, weight)
                 | Signer{key, weight, type_ = Ed25519PublicKey} <- signers
                 , weight > 0
                 ]
@@ -91,6 +91,8 @@ updateSignersCache clientEnv connPool target = do
             updateAllIssueApprovals
     pure $ length actual
   where
+
+    StellarMultiSigAddress address = target
 
     handleDeleted = traverse_ $ StellarSigner.dbDelete target
 
@@ -142,7 +144,10 @@ amount (Asset asset) balances =
     asum
         [ readMaybe @Decimal $ Text.unpack balance
         | Balance
-                {balance, asset_code = Just code, asset_issuer = Just issuer} <-
+                { balance
+                , asset_code = Just code
+                , asset_issuer = Just (Stellar.Address issuer)
+                } <-
             balances
         , asset == code <> ":" <> issuer
         ]

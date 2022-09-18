@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -11,11 +12,12 @@ import Import.NoFoundation
 import Data.Time (NominalDiffTime, addUTCTime)
 import Database.Persist (delete, getBy, insert_)
 import Database.Persist.Sql (SqlBackend)
+import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
 setKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    NominalDiffTime -> Text -> Text -> HandlerFor app ()
+    NominalDiffTime -> Stellar.Address -> Text -> HandlerFor app ()
 setKey nonceTtl verifierUserIdent verifierKey = do
     now <- liftIO getCurrentTime
     let verifierExpires = addUTCTime nonceTtl now
@@ -24,7 +26,7 @@ setKey nonceTtl verifierUserIdent verifierKey = do
 
 checkAndRemoveVerifyKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    Text -> Text -> HandlerFor app Bool
+    Stellar.Address -> Text -> HandlerFor app Bool
 checkAndRemoveVerifyKey verifierUserIdent verifierKey =
     runDB do
         mVerifier <- getBy $ UniqueVerifier verifierUserIdent verifierKey

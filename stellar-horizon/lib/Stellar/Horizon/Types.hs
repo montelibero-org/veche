@@ -8,6 +8,7 @@
 
 module Stellar.Horizon.Types
     ( Account (..)
+    , Address (..)
     , Asset (..)
     , Balance (..)
     , Records (..)
@@ -25,7 +26,7 @@ import Data.Text (Text)
 import Servant.API (FromHttpApiData, ToHttpApiData)
 
 data Account = Account
-    { account_id :: Text
+    { account_id :: Address
         -- ^ This account’s public key encoded in a base32 string
         -- representation.
     , balances :: [Balance] -- ^ The assets this account holds.
@@ -37,12 +38,16 @@ data Account = Account
     }
     deriving (Show)
 
+newtype Address = Address Text
+    deriving newtype
+        (Eq, FromHttpApiData, FromJSON, Ord, Show, ToHttpApiData, ToJSON)
+
 data Balance = Balance
     { balance :: Text
         -- ^ The number of units of an asset held by this account.
     , asset_code :: Maybe Text
         -- ^ The code for this asset.
-    , asset_issuer :: Maybe Text
+    , asset_issuer :: Maybe Address
         -- ^ The Stellar address of this asset’s issuer.
     }
     deriving (Show)
