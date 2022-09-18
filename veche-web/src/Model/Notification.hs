@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,9 +9,9 @@ module Model.Notification (dbDelete, dbSelectAll, dbInsert) where
 
 import Import
 
-import Control.Lens (_2, _3, (%~), _Just)
 import Database.Persist (delete, insert_)
 import Database.Persist.Sql (Single, rawSql, unSingle)
+import Prelude (id)
 
 dbDelete :: MonadIO m => NotificationId -> SqlPersistT m ()
 dbDelete = delete
@@ -26,7 +27,7 @@ dbSelectAll = do
                 \ notification LEFT JOIN telegram\
                 \ ON notification.recipient = telegram.id"
             []
-        <&> map ((_2 . _Just %~ unSingle) . (_3 . _Just %~ unSingle))
+        <&> map (trimap id (unSingle <$>) (unSingle <$>))
     pure
         [ (notification, Telegram <$> chatid <*> username)
         | (notification, chatid, username) <- results
@@ -35,3 +36,6 @@ dbSelectAll = do
 dbInsert :: MonadIO m => UserId -> Text -> SqlPersistT m ()
 dbInsert notificationRecipient notificationText =
     insert_ Notification{notificationRecipient, notificationText}
+
+trimap :: (a -> a') -> (b -> b') -> (c -> c') -> (a, b, c) -> (a', b', c')
+trimap fa fb fc (a, b, c) = (fa a, fb b, fc c)
