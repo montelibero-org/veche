@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-} -- instance YesodDispatch App
@@ -31,9 +32,9 @@ import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
                              toLogStr)
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),
-                             SqlBackend, parseMigration', runMigration)
-import Database.Persist.Sqlite (Single, createSqlitePool, printMigration,
-                                rawSql, runSqlPool, sqlDatabase, sqlPoolSize)
+                             Single, SqlBackend, parseMigration', rawSql,
+                             runMigration, runSqlPool, unSingle)
+import Database.Persist.Sqlite (createSqlitePool, sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Application, Middleware)
@@ -107,11 +108,13 @@ makeFoundation appSettings = do
     -- Perform database migration using our application's logging settings.
     (`runLoggingT` logFunc) $
         (`runSqlPool` pool) do
-            userTableNameAsList :: [Single Text] <-
+            userTableNameAsList :: [Text] <-
                 rawSql
+                    @(Single Text)
                     "SELECT name FROM sqlite_master\
-                        \ WHERE type='table' AND name='user'"
+                    \ WHERE type='table' AND name='user'"
                     []
+                <&> map unSingle
             let databaseIsEmpty = null userTableNameAsList
             if databaseIsEmpty then
                 runMigration migrateAll

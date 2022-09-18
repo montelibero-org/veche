@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module TestImport
     ( module TestImport
@@ -13,7 +14,7 @@ import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy)
 
 import Data.Text.Encoding qualified
 import Database.Persist as X hiding (get)
-import Database.Persist.Sql (SqlPersistM, rawExecute, rawSql,
+import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
 import Test.Hspec as X
 import Yesod.Auth as X
@@ -77,16 +78,17 @@ wipeDB app = do
 
     (`runSqlPersistMPool` pool) $ do
         tables <- getTables
-        let queries =
-                [ "DELETE FROM " ++ escapeWith id (EntityNameDB t)
-                | t <- tables
-                ]
-        for_ queries (`rawExecute` [])
+        traverse_
+            (`rawExecute` [])
+            ["DELETE FROM " ++ escapeWith id (EntityNameDB t) | t <- tables]
 
 getTables :: DB [Text]
-getTables = do
-    tables <- rawSql "SELECT name FROM sqlite_master WHERE type = 'table';" []
-    pure $ unSingle <$> tables
+getTables =
+    rawSql
+        @(Single Text)
+        "SELECT name FROM sqlite_master WHERE type = 'table';"
+        []
+    <&> map unSingle
 
 -- | Authenticate as a user. This relies on the `auth-dummy-login: true` flag
 -- being set in test-settings.yaml, which enables dummy authentication in

@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -29,11 +30,10 @@ module Model.Issue (
 import Import
 
 -- global
-import Data.Coerce (coerce)
 import Data.Map.Strict qualified as Map
 import Database.Persist (Filter, get, getBy, getEntity, insert, insert_,
                          selectList, toPersistValue, update, (=.), (==.))
-import Database.Persist.Sql (Single (Single), rawSql)
+import Database.Persist.Sql (Single, rawSql, unSingle)
 import Yesod.Persist (get404, runDB)
 
 -- component
@@ -68,13 +68,13 @@ data StateAction = Close | Reopen
 
 countOpenAndClosed :: Handler (Int, Int)
 countOpenAndClosed = do
-    counts' <-
+    counts :: [(Bool, Int)] <-
         runDB $
-        rawSql
-            @(Single Bool, Single Int)
-            "SELECT open, COUNT(*) FROM issue GROUP BY open"
-            []
-    let counts = coerce counts' :: [(Bool, Int)]
+            rawSql
+                @(Single Bool, Single Int)
+                "SELECT open, COUNT(*) FROM issue GROUP BY open"
+                []
+            <&> map (bimap unSingle unSingle)
     pure
         ( findWithDefault 0 True  counts
         , findWithDefault 0 False counts

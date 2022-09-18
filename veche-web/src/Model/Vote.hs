@@ -4,6 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Model.Vote (dbUpdateIssueApproval, record, updateIssueApproval) where
 
@@ -12,7 +13,7 @@ import Import
 import Data.Map.Strict qualified as Map
 import Database.Persist (insert_, selectList, toPersistValue, update, (=.),
                          (==.))
-import Database.Persist.Sql (Single (..), rawSql)
+import Database.Persist.Sql (Single, rawSql, unSingle)
 import Yesod.Persist (runDB)
 
 import Genesis (mtlFund)
@@ -56,17 +57,19 @@ dbUpdateIssueApproval ::
     Maybe Issue ->
     SqlPersistT m ()
 dbUpdateIssueApproval issueId mIssue = do
-    weights :: [(Single Int, Maybe UserId)] <-
+    weights :: [(Int, Maybe UserId)] <-
         rawSql
+            @(Single Int, Maybe UserId)
             "SELECT stellar_signer.weight, user.id\
             \ FROM stellar_signer LEFT JOIN user\
                 \ ON stellar_signer.key = user.stellar_address\
             \ WHERE stellar_signer.target = ?"
             [toPersistValue mtlFund]
-    let totalSignersWeight = sum $ map (unSingle . fst) weights
+        <&> map (first unSingle)
+    let totalSignersWeight = sum $ map fst weights
         userWeights =
             Map.fromList
-                [(userId, weight) | (Single weight, Just userId) <- weights]
+                [(userId, weight) | (weight, Just userId) <- weights]
     -- TODO(cblp, 2022-02-20) cache weight selection for mass issue update
 
     approves <- selectList [VoteChoice ==. Approve, VoteIssue ==. issueId] []
