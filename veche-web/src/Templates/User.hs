@@ -35,7 +35,8 @@ userNameText User{userName, userStellarAddress = Stellar.Address address} =
 unlinkTelegramForm :: Form Void
 unlinkTelegramForm =
     BForm
-        { aform = submit "unlink" "Unlink Telegram account" ["btn-danger"]
+        { aform =
+            submit (Just "unlink") "Unlink Telegram account" ["btn-danger"]
         , action = Just AuthTelegramR
         , classes = ["form-inline", "unlink-telegram"]
         , footer = mempty

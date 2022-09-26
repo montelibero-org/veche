@@ -60,7 +60,8 @@ import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
 import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
-                      postIssueR, postIssuesR)
+                      postIssueCloseR, postIssueR, postIssueReopenR,
+                      postIssuesR)
 import Handler.Telegram (getAuthTelegramR, postAuthTelegramR)
 import Handler.User (getUserR, putUserR)
 import Workers.StellarUpdate (stellarDataUpdater)

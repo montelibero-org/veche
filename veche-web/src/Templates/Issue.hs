@@ -29,14 +29,13 @@ import Types.Issue (IssueContent (..))
 
 -- | Generate-only form; for its input, one must use 'getPostAction'
 closeReopenForm :: IssueId -> Bool -> Form Void
-closeReopenForm issueId issueOpen =
-    (bform
-        if issueOpen then
-            submit "close" "Close" ["btn-danger"]
-        else
-            submit "reopen" "Reopen" ["btn-success"]
-    )
-        {action = Just $ IssueR issueId}
+closeReopenForm issueId issueOpen
+    | issueOpen =
+        (bform $ submit Nothing "Close" ["btn-danger"])
+            {action = Just $ IssueCloseR issueId}
+    | otherwise =
+        (bform $ submit Nothing "Reopen" ["btn-success"])
+            {action = Just $ IssueReopenR issueId}
 
 -- | Generate-only form; for its input, one must use 'getPostAction'
 voteForm :: IssueId -> Form Void

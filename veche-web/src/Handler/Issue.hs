@@ -12,7 +12,9 @@ module Handler.Issue
     , getIssueNewR
     , getIssueR
     , getIssuesR
+    , postIssueCloseR
     , postIssueR
+    , postIssueReopenR
     , postIssuesR
     ) where
 
@@ -113,10 +115,8 @@ postIssueR issueId = do
   where
 
     doAction = \case
-        "approve" -> Vote.record       issueId Approve >> refresh
-        "reject"  -> Vote.record       issueId Reject  >> refresh
-        "close"   -> Issue.closeReopen issueId Close   >> refresh
-        "reopen"  -> Issue.closeReopen issueId Reopen  >> refresh
+        "approve" -> Vote.record issueId Approve >> refresh
+        "reject"  -> Vote.record issueId Reject  >> refresh
         "edit"    -> edit issueId
         _         -> invalidArgs [invalidAction]
 
@@ -124,6 +124,16 @@ postIssueR issueId = do
 
     invalidAction =
         "action must be one of: approve, reject, close, reopen, edit"
+
+postIssueCloseR :: IssueId -> Handler Void
+postIssueCloseR issueId = do
+    Issue.closeReopen issueId Close
+    redirect $ IssueR issueId
+
+postIssueReopenR :: IssueId -> Handler Void
+postIssueReopenR issueId = do
+    Issue.closeReopen issueId Reopen
+    redirect $ IssueR issueId
 
 edit :: IssueId -> Handler Html
 edit issueId = do
