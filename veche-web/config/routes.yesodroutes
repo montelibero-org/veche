@@ -11,9 +11,9 @@
 /issue-new              IssueNewR               GET
 /issues                 IssuesR                 GET POST
 /issues/#IssueId        IssueR                  GET POST
-/issues/#IssueId/close  IssueCloseR             POST
+/issues/#IssueId/close  IssueCloseR             PUT
 /issues/#IssueId/edit   IssueEditR              GET
-/issues/#IssueId/reopen IssueReopenR            POST
+/issues/#IssueId/reopen IssueReopenR            PUT
 /robots.txt             RobotsR                 GET
 /static                 StaticR                 Static appStatic
 /user                   UserR                   GET PUT

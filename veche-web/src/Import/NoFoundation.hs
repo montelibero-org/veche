@@ -20,15 +20,15 @@ import Data.Yaml as X (array)
 import Database.Persist as X (Entity (..))
 import Database.Persist.Sql as X (SqlPersistT)
 import Network.HTTP.Types as X (internalServerError500, status400)
-import Yesod as X (Fragment ((:#:)), Html, PathPiece,
+import Yesod as X (Fragment ((:#:)), Html, HtmlUrl, PathPiece,
                    TypedContent (TypedContent), cacheSeconds, defaultLayout,
-                   fromPathPiece, invalidArgs, lookupGetParam, lookupPostParams,
-                   redirect, requireCheckJsonBody, respondSource, returnJson,
-                   sendChunkText, setTitle, toContent, toHtml, toPathPiece,
-                   typePlain, whamlet)
+                   fromPathPiece, hamlet, invalidArgs, lookupGetParam,
+                   lookupPostParams, redirect, requireCheckJsonBody,
+                   respondSource, returnJson, sendChunkText, setTitle,
+                   toContent, toHtml, toPathPiece, typePlain, whamlet)
 import Yesod.Auth as X
-import Yesod.Core as X (HandlerFor, MonadHandler, permissionDenied,
-                        sendResponseStatus)
+import Yesod.Core as X (HandlerFor, MonadHandler, addHeader, permissionDenied,
+                        sendResponseStatus, withUrlRenderer)
 import Yesod.Core.Types as X (loggerSet)
 import Yesod.Default.Config2 as X
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),

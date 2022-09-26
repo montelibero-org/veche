@@ -36,13 +36,13 @@ submitField label =
         , fieldEnctype = UrlEncoded
         }
 
-data Submit = Submit{action :: Maybe Text, label :: Text, classes :: [Text]}
+data Submit = Submit{action, label :: Text, classes :: [Text]}
 
 submitReq ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     Submit -> AForm m Text
 submitReq Submit{classes, action, label} =
-    areq (submitField label) fieldSettings action
+    areq (submitField label) fieldSettings (Just action)
   where
     fieldSettings0@FieldSettings{fsAttrs} = bfs ("" :: Text)
     fieldSettings =
@@ -53,7 +53,7 @@ submitReq Submit{classes, action, label} =
 
 submit ::
     (MonadHandler handler, RenderMessage (HandlerSite handler) FormMessage) =>
-    Maybe Text -> Text -> [Text] -> AForm handler Void
+    Text -> Text -> [Text] -> AForm handler Void
 submit action label classes =
     error "Void" <$ submitReq Submit{action, label, classes}
 

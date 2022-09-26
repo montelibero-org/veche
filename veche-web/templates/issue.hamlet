@@ -10,7 +10,7 @@ $if isEditAllowed
         <a .btn .btn-default href=@{IssueEditR issueId}>Edit
 $if isCloseReopenAllowed
     <div .pull-right>
-        ^{closeReopenWidget}
+        ^{closeReopenButton issueId issueOpen}
 
 <div .clearfix style="margin-bottom: 1em;">
 

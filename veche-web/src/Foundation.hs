@@ -40,7 +40,7 @@ import Yesod.Core (Approot (ApprootRequest),
                    defaultYesodMiddleware, getApprootText, getCurrentRoute,
                    getMessage, getYesod, guessApproot, liftHandler, mkYesodData,
                    pageBody, pageHead, pageTitle, parseRoutesFile,
-                   widgetToPageContent, withUrlRenderer)
+                   widgetToPageContent)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe

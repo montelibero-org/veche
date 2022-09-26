@@ -65,6 +65,7 @@ data IssueMaterialized = IssueMaterialized
     }
 
 data StateAction = Close | Reopen
+    deriving (Eq)
 
 countOpenAndClosed :: Handler (Int, Int)
 countOpenAndClosed = do

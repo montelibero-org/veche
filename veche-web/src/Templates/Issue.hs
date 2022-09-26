@@ -9,7 +9,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Templates.Issue
-    ( closeReopenForm
+    ( closeReopenButton
     , editIssueForm
     , issueRequestTable
     , issueTable
@@ -27,15 +27,20 @@ import Model.Request (RequestMaterialized (..))
 import Templates.Comment (commentAnchor)
 import Types.Issue (IssueContent (..))
 
--- | Generate-only form; for its input, one must use 'getPostAction'
-closeReopenForm :: IssueId -> Bool -> Form Void
-closeReopenForm issueId issueOpen
+closeReopenButton :: IssueId -> Bool -> HtmlUrl (Route App)
+closeReopenButton issueId issueOpen
     | issueOpen =
-        (bform $ submit Nothing "Close" ["btn-danger"])
-            {action = Just $ IssueCloseR issueId}
+        [hamlet|
+            <button .btn .btn-danger
+                    hx-put=@{IssueCloseR issueId} hx-swap=outerHTML>
+                Close
+        |]
     | otherwise =
-        (bform $ submit Nothing "Reopen" ["btn-success"])
-            {action = Just $ IssueReopenR issueId}
+        [hamlet|
+            <button .btn .btn-success
+                    hx-put=@{IssueReopenR issueId} hx-swap=outerHTML>
+                Reopen
+        |]
 
 -- | Generate-only form; for its input, one must use 'getPostAction'
 voteForm :: IssueId -> Form Void
