@@ -16,6 +16,7 @@ module Handler.Issue
     , postIssuesR
     , putIssueCloseR
     , putIssueReopenR
+    , putIssueVoteR
     ) where
 
 import Import
@@ -31,7 +32,7 @@ import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, issueTable,
-                        newIssueForm, voteForm)
+                        newIssueForm, voteButtons)
 import Templates.User (userNameWidget)
 
 import Genesis (mtlFund)
@@ -74,10 +75,8 @@ getIssueR issueId = do
                 share = show choiceWeight <> "/" <> show (sum weights)
             ]
 
-    voteWidget <- generateFormPostB $ voteForm issueId
     (commentFormFields, commentFormEnctype) <-
         generateFormPost $ commentForm (Just issueId) requests
-
     defaultLayout $(widgetFile "issue")
 
 getIssueNewR :: Handler Html
@@ -106,38 +105,27 @@ postIssuesR = do
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
 
-postIssueR :: IssueId -> Handler Html
-postIssueR issueId = do
-    result <- getPostAction
-    case result of
-        FormSuccess action -> doAction action
-        _ -> invalidArgs [tshow result]
-  where
+putIssueVoteR :: IssueId -> Choice -> Handler ()
+putIssueVoteR issueId choice = do
+    Vote.record issueId choice
+    hxRefresh
 
-    doAction = \case
-        "approve" -> Vote.record issueId Approve >> refresh
-        "reject"  -> Vote.record issueId Reject  >> refresh
-        "edit"    -> edit issueId
-        _         -> invalidArgs [invalidAction]
-
-    refresh = redirect $ IssueR issueId
-
-    invalidAction = "action must be one of: approve, reject, edit"
-
-putIssueCloseR :: IssueId -> Handler Html
+putIssueCloseR :: IssueId -> Handler ()
 putIssueCloseR = closeReopen Close
 
-putIssueReopenR :: IssueId -> Handler Html
+putIssueReopenR :: IssueId -> Handler ()
 putIssueReopenR = closeReopen Reopen
 
-closeReopen :: StateAction -> IssueId -> Handler Html
+closeReopen :: StateAction -> IssueId -> Handler ()
 closeReopen action issueId = do
     Issue.closeReopen issueId action
-    addHeader "HX-Refresh" "true"
-    withUrlRenderer $ closeReopenButton issueId (action == Reopen)
+    hxRefresh
 
-edit :: IssueId -> Handler Html
-edit issueId = do
+hxRefresh :: Handler ()
+hxRefresh = addHeader "HX-Refresh" "true"
+
+postIssueR :: IssueId -> Handler Html
+postIssueR issueId = do
     (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
     case result of
         FormSuccess content -> do

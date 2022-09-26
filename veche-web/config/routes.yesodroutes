@@ -1,19 +1,20 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/                       DashboardR              GET
-/admin/update-database  AdminUpdateDatabaseR    GET
-/api/complete-user      ApiCompleteUserR        GET
-/auth                   AuthR                   Auth getAuth
-/auth-telegram          AuthTelegramR           GET POST
-/comments               CommentsR               POST
-/favicon.ico            FaviconR                GET
-/issue-new              IssueNewR               GET
-/issues                 IssuesR                 GET POST
-/issues/#IssueId        IssueR                  GET POST
-/issues/#IssueId/close  IssueCloseR             PUT
-/issues/#IssueId/edit   IssueEditR              GET
-/issues/#IssueId/reopen IssueReopenR            PUT
-/robots.txt             RobotsR                 GET
-/static                 StaticR                 Static appStatic
-/user                   UserR                   GET PUT
+/                               DashboardR              GET
+/admin/update-database          AdminUpdateDatabaseR    GET
+/api/complete-user              ApiCompleteUserR        GET
+/auth                           AuthR                   Auth getAuth
+/auth-telegram                  AuthTelegramR           GET POST
+/comments                       CommentsR               POST
+/favicon.ico                    FaviconR                GET
+/issue-new                      IssueNewR               GET
+/issues                         IssuesR                 GET POST
+/issues/#IssueId                IssueR                  GET POST
+/issues/#IssueId/close          IssueCloseR             PUT
+/issues/#IssueId/edit           IssueEditR              GET
+/issues/#IssueId/reopen         IssueReopenR            PUT
+/issues/#IssueId/vote/#Choice   IssueVoteR              PUT
+/robots.txt                     RobotsR                 GET
+/static                         StaticR                 Static appStatic
+/user                           UserR                   GET PUT

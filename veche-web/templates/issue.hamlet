@@ -32,7 +32,7 @@ $if isCloseReopenAllowed
 $if isVoteAllowed
     <div .row>
         <div .col-sm-offset-2 .col-sm-10>
-            ^{voteWidget}
+            ^{voteButtons issueId}
     <hr>
 
 <div #comments>

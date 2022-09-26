@@ -22,16 +22,22 @@ import Data.Aeson.TH (deriveJSON)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Stellar.Horizon.Types qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
+import Web.PathPieces (PathPiece, readFromPathPiece, showToPathPiece)
+import Web.PathPieces qualified
 
 import Database.Persist.Extra (JsonString (..))
 
 data Choice = Approve | Reject
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Read, Show)
 deriveJSON
     defaultOptions{constructorTagModifier = camelTo2 '_'}
     ''Choice
 deriving via JsonString Choice instance PersistField    Choice
 deriving via JsonString Choice instance PersistFieldSql Choice
+
+instance PathPiece Choice where
+    fromPathPiece = readFromPathPiece
+    toPathPiece = showToPathPiece
 
 instance ToMarkup Choice where
     toMarkup = toMarkup . show

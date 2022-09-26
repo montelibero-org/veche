@@ -14,7 +14,7 @@ module Templates.Issue
     , issueRequestTable
     , issueTable
     , newIssueForm
-    , voteForm
+    , voteButtons
     ) where
 
 import Import
@@ -30,33 +30,18 @@ import Types.Issue (IssueContent (..))
 closeReopenButton :: IssueId -> Bool -> HtmlUrl (Route App)
 closeReopenButton issueId issueOpen
     | issueOpen =
-        [hamlet|
-            <button .btn .btn-danger
-                    hx-put=@{IssueCloseR issueId} hx-swap=outerHTML>
-                Close
-        |]
+        [hamlet|<button .btn .btn-danger hx-put=@{IssueCloseR issueId}>Close|]
     | otherwise =
         [hamlet|
-            <button .btn .btn-success
-                    hx-put=@{IssueReopenR issueId} hx-swap=outerHTML>
-                Reopen
+            <button .btn .btn-success hx-put=@{IssueReopenR issueId}>Reopen
         |]
 
--- | Generate-only form; for its input, one must use 'getPostAction'
-voteForm :: IssueId -> Form Void
-voteForm issueId =
-    BForm
-        { aform = pure $ error "Void"
-        , action = Just $ IssueR issueId
-        , classes = ["form-inline"]
-        , footer =
-            [whamlet|
-                <button .btn .btn-success name=action type=submit value=approve>
-                    Approve
-                <button .btn .btn-danger name=action type=submit value=reject>
-                    Reject
-            |]
-        }
+voteButtons :: IssueId -> HtmlUrl (Route App)
+voteButtons issueId =
+    [hamlet|
+        <button .btn .btn-success hx-put=@{IssueVoteR issueId Approve}>Approve
+        <button .btn .btn-danger hx-put=@{IssueVoteR issueId Reject}>Reject
+    |]
 
 issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
@@ -83,9 +68,7 @@ editIssueForm issueId previousContent =
                 <div .pull-left>
                     <a .btn .btn-default href=@{IssueR issueId}>Cancel
                 <div .pull-right>
-                    <button .btn .btn-success
-                            type=submit name=action value=edit>
-                        Save
+                    <button .btn .btn-success type=submit>Save
             |]
         }
 
