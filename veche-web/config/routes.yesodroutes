@@ -11,10 +11,10 @@
 /issue-new                      IssueNewR               GET
 /issues                         IssuesR                 GET POST
 /issues/#IssueId                IssueR                  GET POST
-/issues/#IssueId/close          IssueCloseR             PUT
+/issues/#IssueId/close          IssueCloseR             POST
 /issues/#IssueId/edit           IssueEditR              GET
-/issues/#IssueId/reopen         IssueReopenR            PUT
-/issues/#IssueId/vote/#Choice   IssueVoteR              PUT
+/issues/#IssueId/reopen         IssueReopenR            POST
+/issues/#IssueId/vote/#Choice   IssueVoteR              POST
 /robots.txt                     RobotsR                 GET
 /static                         StaticR                 Static appStatic
 /user                           UserR                   GET PUT

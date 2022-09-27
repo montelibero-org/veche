@@ -10,13 +10,13 @@ module Form where
 import Data.Text (Text)
 import Data.Void (Void)
 import GHC.Stack (HasCallStack)
-import Yesod.Core (HandlerSite, MonadHandler, RenderMessage, Route, WidgetFor,
-                   getUrlRender, whamlet)
+import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
+                   WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype (UrlEncoded),
                    Field (Field, fieldEnctype, fieldParse, fieldView),
                    FieldSettings (FieldSettings, fsAttrs, fsName), FormMessage,
                    FormResult, addClass, areq, generateFormPost, parseHelper,
-                   runFormPost, textField)
+                   renderDivsNoLabels, runFormPost, textField)
 import Yesod.Form qualified
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap3)
@@ -125,3 +125,7 @@ getPostAction ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     m (FormResult Text)
 getPostAction = fst <$> runFormPostB actionForm
+
+generateCsrfField ::
+    RenderMessage site FormMessage => HandlerFor site (WidgetFor site ())
+generateCsrfField = fmap fst $ generateFormPost $ renderDivsNoLabels $ pure ()

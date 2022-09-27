@@ -27,8 +27,8 @@ import Yesod as X (Fragment ((:#:)), Html, HtmlUrl, PathPiece,
                    respondSource, returnJson, sendChunkText, setTitle,
                    toContent, toHtml, toPathPiece, typePlain, whamlet)
 import Yesod.Auth as X
-import Yesod.Core as X (HandlerFor, MonadHandler, addHeader, permissionDenied,
-                        sendResponseStatus, withUrlRenderer)
+import Yesod.Core as X (HandlerFor, MonadHandler, addHeader, getCurrentRoute,
+                        permissionDenied, sendResponseStatus, withUrlRenderer)
 import Yesod.Core.Types as X (loggerSet)
 import Yesod.Default.Config2 as X
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),

@@ -14,9 +14,9 @@ module Handler.Issue
     , getIssuesR
     , postIssueR
     , postIssuesR
-    , putIssueCloseR
-    , putIssueReopenR
-    , putIssueVoteR
+    , postIssueCloseR
+    , postIssueReopenR
+    , postIssueVoteR
     ) where
 
 import Import
@@ -105,24 +105,26 @@ postIssuesR = do
             redirect $ IssueR issueId
         _ -> defaultLayout formWidget
 
-putIssueVoteR :: IssueId -> Choice -> Handler ()
-putIssueVoteR issueId choice = do
+postIssueVoteR :: IssueId -> Choice -> Handler ()
+postIssueVoteR issueId choice = do
     Vote.record issueId choice
-    hxRefresh
+    redirect $ IssueR issueId
 
-putIssueCloseR :: IssueId -> Handler ()
-putIssueCloseR = closeReopen Close
+postIssueCloseR :: IssueId -> Handler ()
+postIssueCloseR = closeReopen Close
 
-putIssueReopenR :: IssueId -> Handler ()
-putIssueReopenR = closeReopen Reopen
+postIssueReopenR :: IssueId -> Handler ()
+postIssueReopenR = closeReopen Reopen
 
 closeReopen :: StateAction -> IssueId -> Handler ()
 closeReopen action issueId = do
     Issue.closeReopen issueId action
-    hxRefresh
+    redirect $ IssueR issueId
 
-hxRefresh :: Handler ()
-hxRefresh = addHeader "HX-Refresh" "true"
+refresh :: Handler a
+refresh = do
+    r <- getCurrentRoute
+    redirect $ fromMaybe defaultRoute r
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do

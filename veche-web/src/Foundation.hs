@@ -18,6 +18,7 @@
 module Foundation where
 
 import Import.NoFoundation
+import Prelude qualified
 
 -- global
 import Control.Monad.Logger (LogLevel (LevelError, LevelWarn), LogSource)
@@ -35,12 +36,12 @@ import Yesod.Auth.Dummy (authDummy)
 import Yesod.Core (Approot (ApprootRequest),
                    AuthResult (Authorized, Unauthorized), HandlerSite, Lang,
                    RenderMessage, SessionBackend, Yesod, YesodBreadcrumbs,
-                   addStylesheet, defaultClientSessionBackend,
+                   addScript, addStylesheet, defaultClientSessionBackend,
                    defaultCsrfCookieName, defaultCsrfHeaderName,
-                   defaultYesodMiddleware, getApprootText, getCurrentRoute,
-                   getMessage, getYesod, guessApproot, liftHandler, mkYesodData,
-                   pageBody, pageHead, pageTitle, parseRoutesFile,
-                   widgetToPageContent)
+                   defaultCsrfMiddleware, defaultYesodMiddleware,
+                   getApprootText, getMessage, getYesod, guessApproot,
+                   liftHandler, mkYesodData, pageBody, pageHead, pageTitle,
+                   parseRoutesFile, widgetToPageContent)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -134,7 +135,7 @@ instance Yesod App where
     -- To add it, chain it together with the defaultMiddleware: yesodMiddleware = defaultYesodMiddleware . defaultCsrfMiddleware
     -- For details, see the CSRF documentation in the Yesod.Core.Handler module of the yesod-core package.
     -- yesodMiddleware :: ToTypedContent res => Handler res -> Handler res
-    yesodMiddleware = defaultYesodMiddleware
+    yesodMiddleware = defaultYesodMiddleware . csrfMiddleware
 
     defaultLayout :: Widget -> Handler Html
     defaultLayout widget = do
@@ -177,6 +178,7 @@ instance Yesod App where
 
         pc <-
             widgetToPageContent $ do
+                addScript     $ StaticR js_common_js
                 addStylesheet $ StaticR css_bootstrap_css
                 addStylesheet $ StaticR css_bootstrap_theme_css
                 addStylesheet $ StaticR css_common_css
@@ -243,6 +245,13 @@ instance Yesod App where
 
     makeLogger :: App -> IO Logger
     makeLogger = pure . appLogger
+
+csrfMiddleware :: Handler a -> Handler a
+csrfMiddleware h = do
+    route <- getCurrentRoute
+    let mw  | isAuthRMay route  = Prelude.id
+            | otherwise         = defaultCsrfMiddleware
+    mw h
 
 -- Define breadcrumbs.
 instance YesodBreadcrumbs App where
@@ -360,3 +369,6 @@ isAuthRMay = \case
     _               -> False
 
 type Form = BForm Handler
+
+defaultRoute :: Route App
+defaultRoute = DashboardR

@@ -30,17 +30,15 @@ import Types.Issue (IssueContent (..))
 closeReopenButton :: IssueId -> Bool -> HtmlUrl (Route App)
 closeReopenButton issueId issueOpen
     | issueOpen =
-        [hamlet|<button .btn .btn-danger hx-put=@{IssueCloseR issueId}>Close|]
+        [hamlet|<button .btn .btn-danger post=@{IssueCloseR issueId}>Close|]
     | otherwise =
-        [hamlet|
-            <button .btn .btn-success hx-put=@{IssueReopenR issueId}>Reopen
-        |]
+        [hamlet|<button .btn .btn-success post=@{IssueReopenR issueId}>Reopen|]
 
 voteButtons :: IssueId -> HtmlUrl (Route App)
 voteButtons issueId =
     [hamlet|
-        <button .btn .btn-success hx-put=@{IssueVoteR issueId Approve}>Approve
-        <button .btn .btn-danger hx-put=@{IssueVoteR issueId Reject}>Reject
+        <button .btn .btn-success post=@{IssueVoteR issueId Approve}>Approve
+        <button .btn .btn-danger post=@{IssueVoteR issueId Reject}>Reject
     |]
 
 issueForm :: Maybe IssueContent -> Form IssueContent
