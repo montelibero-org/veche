@@ -8,54 +8,15 @@
 module Form where
 
 import Data.Text (Text)
-import Data.Void (Void)
 import GHC.Stack (HasCallStack)
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
-import Yesod.Form (AForm, Enctype (UrlEncoded),
-                   Field (Field, fieldEnctype, fieldParse, fieldView),
-                   FieldSettings (FieldSettings, fsAttrs, fsName), FormMessage,
-                   FormResult, addClass, areq, generateFormPost, parseHelper,
-                   renderDivsNoLabels, runFormPost, textField)
+import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
+                   FormResult, addClass, areq, fsAttrs, fsName,
+                   generateFormPost, renderDivsNoLabels, runFormPost, textField)
 import Yesod.Form qualified
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm),
                               renderBootstrap3)
-
-submitField ::
-    (Monad m, RenderMessage (HandlerSite m) FormMessage) => Text -> Field m Text
-submitField label =
-    Field
-        { fieldParse = parseHelper Right
-        , fieldView = \theId name attrs val isReq ->
-            [whamlet|
-                $newline never
-                <button id=#{theId} name=#{name} type=submit *{attrs}
-                        :isReq:required value=#{either id id val}>
-                    #{label}
-            |]
-        , fieldEnctype = UrlEncoded
-        }
-
-data Submit = Submit{action, label :: Text, classes :: [Text]}
-
-submitReq ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    Submit -> AForm m Text
-submitReq Submit{classes, action, label} =
-    areq (submitField label) fieldSettings (Just action)
-  where
-    fieldSettings0@FieldSettings{fsAttrs} = bfs ("" :: Text)
-    fieldSettings =
-        fieldSettings0
-            { fsName  = Just "action"
-            , fsAttrs = foldr addClass fsAttrs $ "btn" : classes
-            }
-
-submit ::
-    (MonadHandler handler, RenderMessage (HandlerSite handler) FormMessage) =>
-    Text -> Text -> [Text] -> AForm handler Void
-submit action label classes =
-    error "Void" <$ submitReq Submit{action, label, classes}
 
 data BForm m a = BForm
     { action  :: Maybe (Route (HandlerSite m))

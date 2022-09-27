@@ -3,7 +3,7 @@
 
 module Handler.API (getApiCompleteUserR) where
 
-import Import hiding (label)
+import Import
 
 import Data.Text qualified as Text
 import Stellar.Horizon.Types qualified as Stellar
