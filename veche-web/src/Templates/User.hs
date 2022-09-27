@@ -32,15 +32,6 @@ userNameText User{userName, userStellarAddress = Stellar.Address address} =
   where
     abbreviatedAddress = "*" <> Text.takeEnd 4 address
 
-unlinkTelegramForm :: Form Void
-unlinkTelegramForm =
-    BForm
-        { aform = submit "unlink" "Unlink Telegram account" ["btn-danger"]
-        , action = Just AuthTelegramR
-        , classes = ["form-inline", "unlink-telegram"]
-        , footer = mempty
-        }
-
 telegramWidget :: Telegram -> Widget
 telegramWidget Telegram{telegramUsername} =
     [whamlet|<samp>@#{telegramUsername}|]
@@ -52,7 +43,6 @@ userPage = do
     let User{userName, userStellarAddress = Stellar.Address stellarAddress} =
             user
     mTelegram <- User.getTelegram uid
-    unlinkTelegram <- generateFormPostB unlinkTelegramForm
     defaultLayout do
         setTitle "Profile"
         $(widgetFile "user")

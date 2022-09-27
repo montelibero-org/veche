@@ -5,7 +5,8 @@
 /admin/update-database          AdminUpdateDatabaseR    GET
 /api/complete-user              ApiCompleteUserR        GET
 /auth                           AuthR                   Auth getAuth
-/auth-telegram                  AuthTelegramR           GET POST
+/auth-telegram                  AuthTelegramR           GET
+/auth-telegram/unlink           AuthTelegramUnlinkR     POST
 /comments                       CommentsR               POST
 /favicon.ico                    FaviconR                GET
 /issue-new                      IssueNewR               GET

@@ -62,7 +62,7 @@ import Handler.Dashboard (getDashboardR)
 import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
                       postIssueCloseR, postIssueR, postIssueReopenR,
                       postIssueVoteR, postIssuesR)
-import Handler.Telegram (getAuthTelegramR, postAuthTelegramR)
+import Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR)
 import Handler.User (getUserR, putUserR)
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)

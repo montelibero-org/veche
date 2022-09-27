@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Handler.Telegram (getAuthTelegramR, postAuthTelegramR) where
+module Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR) where
 
 import Import
 
@@ -18,12 +18,8 @@ getAuthTelegramR = do
     User.setTelegram uid id username
     redirect UserR
 
-postAuthTelegramR :: Handler Void
-postAuthTelegramR = do
+postAuthTelegramUnlinkR :: Handler Void
+postAuthTelegramUnlinkR = do
     uid <- requireAuthId
-    result <- getPostAction
-    case result of
-        FormSuccess "unlink" -> do
-            User.deleteTelegram uid
-            redirect UserR
-        _ -> invalidArgs [tshow result]
+    User.deleteTelegram uid
+    redirect UserR

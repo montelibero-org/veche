@@ -1,5 +1,0 @@
-.unlink-telegram {
-    display: inline;
-    margin-left: 15px;
-        /* fix for .form-horizontal .form-group collision in nested forms */
-}

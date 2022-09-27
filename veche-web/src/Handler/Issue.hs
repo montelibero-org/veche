@@ -121,11 +121,6 @@ closeReopen action issueId = do
     Issue.closeReopen issueId action
     redirect $ IssueR issueId
 
-refresh :: Handler a
-refresh = do
-    r <- getCurrentRoute
-    redirect $ fromMaybe defaultRoute r
-
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
     (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
