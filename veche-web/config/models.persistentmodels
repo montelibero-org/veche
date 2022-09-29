@@ -35,19 +35,19 @@ Issue
     deriving Show
 
 
-IssueVersion
-    author  UserId
-    body    Text
-    created UTCTime
-    issue   IssueId
-
-
-Notification
+IssueEvent
     recipient   UserId
     text        Text
 
     deriving Eq
     deriving Show
+
+
+IssueVersion
+    author  UserId
+    body    Text
+    created UTCTime
+    issue   IssueId
 
 
 Request

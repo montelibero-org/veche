@@ -67,7 +67,7 @@ library
     , random
     , servant-client
     , shakespeare        >=2.0     && <2.1
-    , telegram-api
+    -- , telegram-api
     , template-haskell
     , text               >=0.11    && <2.0
     , time
@@ -120,7 +120,7 @@ test-suite veche-test
       base               >=4.9.1.0 && <5
     , base64-bytestring
     , classy-prelude     >=1.5     && <1.6
-    , hedgehog
+    -- , hedgehog
     , hspec              >=2.0.0
     , HUnit
     , microlens
