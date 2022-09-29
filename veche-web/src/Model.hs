@@ -5,12 +5,15 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -24,8 +27,8 @@ import ClassyPrelude
 
 import Database.Persist.Quasi (lowerCaseSettings)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
-import Database.Persist.TH (mkMigrate, mkPersist, persistFileWith, share,
-                            sqlSettings)
+import Database.Persist.TH (mkMigrate, mkPersist, mpsFieldLabelModifier,
+                            persistFileWith, share, sqlSettings)
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar
 
@@ -38,6 +41,17 @@ deriving newtype instance PersistFieldSql Asset
 -- You can find more information on persistent and how to declare entities
 -- at:
 -- http://www.yesodweb.com/book/persistent/
-share
-    [mkPersist sqlSettings, mkMigrate "migrateAll"]
-    $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
+$(  let lowerFirst t =
+            case uncons t of
+                Just (a, b) -> cons (charToLower a) b
+                Nothing -> t
+        mpsFieldLabelModifier _entity = \case
+            "Type"  -> "type_"
+            field   -> lowerFirst field
+        settings = sqlSettings{mpsFieldLabelModifier}
+    in share
+        [ mkPersist settings
+        , mkMigrate "migrateAll"
+        ]
+        $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
+    )

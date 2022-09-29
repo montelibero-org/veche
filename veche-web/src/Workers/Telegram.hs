@@ -40,6 +40,5 @@ telegramBot connPool token manager =
         Telegram.runTelegramClient (Token token) manager >=> either throwIO pure
 
 notify :: Telegram -> Notification -> TelegramClient ()
-notify Telegram{telegramChatid} Notification{notificationText} =
-    void $
-    sendMessageM $ sendMessageRequest (ChatId telegramChatid) notificationText
+notify Telegram{chatid} Notification{text} =
+    void $ sendMessageM $ sendMessageRequest (ChatId chatid) text

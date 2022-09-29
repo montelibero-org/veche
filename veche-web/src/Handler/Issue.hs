@@ -45,7 +45,7 @@ getIssueR issueId = do
             , isCloseReopenAllowed
             , isCommentAllowed
             , isEditAllowed
-            , issue = Issue{issueTitle, issueOpen}
+            , issue = Issue{title, open}
             , isVoteAllowed
             , requests
             , votes
@@ -55,11 +55,7 @@ getIssueR issueId = do
     signers <- StellarSigner.selectAll mtlFund
     let weights =
             Map.fromList
-                [ (stellarSignerKey, stellarSignerWeight)
-                | Entity _ signer <- signers
-                , let StellarSigner{stellarSignerKey, stellarSignerWeight} =
-                        signer
-                ]
+                [(key, weight) | Entity _ StellarSigner{key, weight} <- signers]
         voteResults =
             [ (choice, percentage, share, toList users)
             | (choice, users) <- Map.assocs votes
@@ -67,7 +63,7 @@ getIssueR issueId = do
                 choiceWeight =
                     sum
                         [ Map.findWithDefault 0 key weights
-                        | User{userStellarAddress = key} <- toList users
+                        | User{stellarAddress = key} <- toList users
                         ]
                 percentage =
                     fromIntegral choiceWeight / fromIntegral (sum weights) * 100
@@ -81,9 +77,8 @@ getIssueR issueId = do
 
 getIssueNewR :: Handler Html
 getIssueNewR = do
-    Entity _ User{userStellarAddress} <- requireAuth
-    Entity signerId _ <-
-        StellarSigner.getByAddress403 mtlFund userStellarAddress
+    Entity _ User{stellarAddress} <- requireAuth
+    Entity signerId _ <- StellarSigner.getByAddress403 mtlFund stellarAddress
     requireAuthz $ CreateIssue signerId
     formWidget <- generateFormPostB newIssueForm
     defaultLayout formWidget

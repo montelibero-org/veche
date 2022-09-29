@@ -17,30 +17,25 @@ import Templates.Comment (CommentInput (CommentInput))
 import Templates.Comment qualified
 
 addText :: Entity User -> CommentInput -> Handler CommentId
-addText (Entity userId User{userStellarAddress})
+addText (Entity userId User{stellarAddress})
         CommentInput{issue, message, requestUsers, provideInfo, parent} = do
     now <- liftIO getCurrentTime
     let comment =
             Comment
-                { commentAuthor  = userId
-                , commentCreated = now
-                , commentIssue   = issue
-                , commentMessage = message
-                , commentParent  = parent
-                , commentType    = CommentText
+                { author    = userId
+                , created   = now
+                , issue
+                , message
+                , parent
+                , type_     = CommentText
                 }
     runDB do
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ AddIssueComment holderId
         commentId <- insert comment
         insertMany_
-            [ Request
-                { requestComment   = commentId
-                , requestFulfilled = False
-                , requestIssue     = issue
-                , requestUser
-                }
-            | requestUser <- toList requestUsers
+            [ Request{comment = commentId, fulfilled = False, issue, user}
+            | user <- toList requestUsers
             ]
         unsafeUpdateIssueCommentNum issue Nothing
         updateWhere
@@ -67,6 +62,6 @@ unsafeUpdateIssueCommentNum ::
 unsafeUpdateIssueCommentNum issueId mIssue = do
     commentNum <- count [CommentIssue ==. issueId, CommentType ==. CommentText]
     case mIssue of
-        Just Issue{issueCommentNum = oldCommentNum}
+        Just Issue{commentNum = oldCommentNum}
             | commentNum == oldCommentNum -> pure ()
         _ -> update issueId [IssueCommentNum =. commentNum]

@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -18,11 +19,10 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 setKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
     NominalDiffTime -> Stellar.Address -> Text -> HandlerFor app ()
-setKey nonceTtl verifierUserIdent verifierKey = do
+setKey nonceTtl userIdent key = do
     now <- liftIO getCurrentTime
-    let verifierExpires = addUTCTime nonceTtl now
-    runDB $
-        insert_ Verifier{verifierKey, verifierExpires, verifierUserIdent}
+    let expires = addUTCTime nonceTtl now
+    runDB $ insert_ Verifier{key, expires, userIdent}
 
 checkAndRemoveVerifyKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
@@ -31,8 +31,8 @@ checkAndRemoveVerifyKey verifierUserIdent verifierKey =
     runDB do
         mVerifier <- getBy $ UniqueVerifier verifierUserIdent verifierKey
         case mVerifier of
-            Just (Entity verifierId Verifier{verifierExpires}) -> do
+            Just (Entity verifierId Verifier{expires}) -> do
                 delete verifierId
                 now <- liftIO getCurrentTime
-                pure $ now <= verifierExpires
+                pure $ now <= expires
             Nothing -> pure False

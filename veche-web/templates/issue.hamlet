@@ -1,6 +1,6 @@
 <h1>
-    #{issueTitle}
-    $if issueOpen
+    #{title}
+    $if open
         <span .badge .badge-success>Open
     $else
         <span .badge .badge-danger>Closed
@@ -10,7 +10,7 @@ $if isEditAllowed
         <a .btn .btn-default href=@{IssueEditR issueId}>Edit
 $if isCloseReopenAllowed
     <div .pull-right>
-        ^{closeReopenButton issueId issueOpen}
+        ^{closeReopenButton issueId open}
 
 <div .clearfix style="margin-bottom: 1em;">
 

@@ -34,9 +34,9 @@ getByStellarAddress ::
 getByStellarAddress = runDB . getBy . UniqueUser
 
 getOrInsert :: PersistSql app => User -> HandlerFor app UserId
-getOrInsert record@User{userStellarAddress} =
+getOrInsert record@User{stellarAddress} =
     runDB do
-        mExisted <- getBy $ UniqueUser userStellarAddress
+        mExisted <- getBy $ UniqueUser stellarAddress
         case mExisted of
             Just (Entity id _) -> pure id
             Nothing            -> insert record
@@ -54,9 +54,7 @@ getTelegram :: PersistSql app => UserId -> HandlerFor app (Maybe Telegram)
 getTelegram uid = runDB $ get (TelegramKey uid)
 
 dbSetTelegram :: MonadIO m => UserId -> Int64 -> Text -> SqlPersistT m ()
-dbSetTelegram uid telegramChatid telegramUsername =
-    repsert key Telegram{telegramChatid, telegramUsername}
-  where
+dbSetTelegram uid chatid username = repsert key Telegram{chatid, username} where
     key = TelegramKey uid
 
 setTelegram :: PersistSql app => UserId -> Int64 -> Text -> HandlerFor app ()

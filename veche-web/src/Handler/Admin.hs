@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,9 +19,9 @@ getAdminUpdateDatabaseR = do
         sendChunkText $
             "Updating issues "
             <> intercalate ", " (map (toPathPiece . entityKey) issues) <> "\n"
-        for_ issues \(Entity issueId issue) -> do
+        for_ issues \(Entity issueId issueVal) -> do
             sendChunkText $ "Updating issue " <> toPathPiece issueId <> "\n"
             lift do
-                Comment.updateIssueCommentNum issueId $ Just issue
-                Vote.updateIssueApproval      issueId $ Just issue
+                Comment.updateIssueCommentNum issueId $ Just issueVal
+                Vote.updateIssueApproval      issueId $ Just issueVal
         sendChunkText "Updated all issues\n"

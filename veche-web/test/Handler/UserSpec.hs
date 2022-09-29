@@ -32,6 +32,6 @@ spec =
 
                 get UserR
                 let Entity  _
-                            User{userStellarAddress = Stellar.Address address} =
+                            User{stellarAddress = Stellar.Address address} =
                         userEntity
                 htmlAnyContain ".user_stellar_address" $ Text.unpack address

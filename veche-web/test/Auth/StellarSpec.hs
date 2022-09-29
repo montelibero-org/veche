@@ -109,7 +109,7 @@ testAuthenticationOk keyPair network = do
     assertEq
         "users after auth"
         users
-        [User{userName = Nothing, userStellarAddress = Stellar.Address address}]
+        [User{name = Nothing, stellarAddress = Stellar.Address address}]
 
   where
     Stellar.KeyPair{kpPublicKey} = keyPair

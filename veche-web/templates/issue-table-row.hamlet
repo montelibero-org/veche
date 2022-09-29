@@ -1,9 +1,9 @@
 <tr>
     <td>
-        <a href=@{IssueR issueId}>#{issueTitle}
+        <a href=@{IssueR issueId}>#{title}
     <td .text-right>
         <i .fa-solid .fa-check>
         #{approvalPercent}%
     <td .text-right>
         <i .fa-solid .fa-comments>
-        #{issueCommentNum}
+        #{commentNum}

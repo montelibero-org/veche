@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -94,7 +95,7 @@ getTables =
 -- being set in test-settings.yaml, which enables dummy authentication in
 -- Foundation.hs
 authenticateAs :: Entity User -> YesodExample App ()
-authenticateAs (Entity _ User{userStellarAddress = Stellar.Address ident}) = do
+authenticateAs (Entity _ User{stellarAddress = Stellar.Address ident}) = do
     request do
         setMethod "POST"
         addPostParam "ident" ident
@@ -105,11 +106,11 @@ authenticateAs (Entity _ User{userStellarAddress = Stellar.Address ident}) = do
 createUser :: Text -> Maybe (Int64, Text) -> YesodExample App (Entity User)
 createUser ident mTelegram =
     runDB do
-        uid <- insert user
+        uid <- insert usr
         for_ mTelegram $ uncurry $ User.dbSetTelegram uid
-        pure $ Entity uid user
+        pure $ Entity uid usr
   where
-    user = User{userName = Nothing, userStellarAddress = Stellar.Address ident}
+    usr = User{name = Nothing, stellarAddress = Stellar.Address ident}
 
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8

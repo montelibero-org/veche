@@ -1,3 +1,4 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -36,15 +37,8 @@ dbDelete target = deleteBy . UniqueMember target
 dbInsertMany ::
     MonadIO m =>
     StellarMultiSigAddress -> [(Stellar.Address, Int)] -> SqlPersistT m ()
-dbInsertMany stellarSignerTarget signers =
-    insertMany_
-        [ StellarSigner
-            { stellarSignerTarget
-            , stellarSignerKey
-            , stellarSignerWeight
-            }
-        | (stellarSignerKey, stellarSignerWeight) <- signers
-        ]
+dbInsertMany target signers =
+    insertMany_ [StellarSigner{target, key, weight} | (key, weight) <- signers]
 
 dbSetWeight ::
     MonadIO m =>

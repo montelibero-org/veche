@@ -302,9 +302,7 @@ instance YesodAuth App where
         fmap Authenticated $
         liftHandler $
         User.getOrInsert
-            User{ userName = Nothing
-                , userStellarAddress = Stellar.Address credsIdent
-                }
+            User{name = Nothing, stellarAddress = Stellar.Address credsIdent}
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]

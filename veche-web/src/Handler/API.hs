@@ -1,3 +1,4 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -18,10 +19,10 @@ getApiCompleteUserR = do
     pure $
         array
             [ object ["label" .= label, "value" .= userId]
-            | Entity userId user <- users
+            | Entity userId usr <- users
             , let
-                User{userStellarAddress = Stellar.Address address} = user
-                label = userNameText user
+                User{stellarAddress = Stellar.Address address} = usr
+                label = userNameText usr
             , Text.toLower term `isInfixOf` Text.toLower label
                 || Text.toLower term `isInfixOf` Text.toLower address
             ]

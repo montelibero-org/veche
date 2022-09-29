@@ -116,8 +116,8 @@ materializeComments comments requests =
     commentsByParent =
         Map.fromListWith
             (++)
-            [ (commentParent, [commentAndAuthor])
-            | commentAndAuthor@(Entity _ Comment{commentParent}, _) <- comments
+            [ (parent, [commentAndAuthor])
+            | commentAndAuthor@(Entity _ Comment{parent}, _) <- comments
             ]
         <&> sortOn (fst >>> entityKey)
             -- assume keys are monotonically increasing
@@ -127,8 +127,8 @@ materializeComments comments requests =
     requestsByComment =
         Map.fromListWith
             (++)
-            [ (requestComment, [user])
-            | (Entity _ Request{requestComment}, Entity _ user) <- requests
+            [ (comment, [user])
+            | (Entity _ Request{comment}, Entity _ user) <- requests
             ]
 
     materialize (Entity id comment, author) =
@@ -148,31 +148,28 @@ loadVotes issueId = do
             \ WHERE vote.issue = ?"
             [toPersistValue issueId]
     pure
-        [ VoteMaterialized{choice = voteChoice, voter}
-        | (Entity _ Vote{voteChoice}, voter) <- votes
+        [ VoteMaterialized{choice, voter}
+        | (Entity _ Vote{choice}, voter) <- votes
         ]
 
 load :: IssueId -> Handler IssueMaterialized
 load issueId =
     runDB do
-        Entity userId User{userStellarAddress} <- requireAuth
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        Entity userId User{stellarAddress} <- requireAuth
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ ReadIssue holderId
         mSignerId <-
-            fmap entityKey <$> getBy (UniqueMember mtlFund userStellarAddress)
+            fmap entityKey <$> getBy (UniqueMember mtlFund stellarAddress)
 
-        issue@Issue{issueAuthor = authorId, issueCreated, issueCurVersion} <-
-            get404 issueId
+        issue@Issue{author = authorId, created, curVersion} <- get404 issueId
         versionId <-
-            issueCurVersion
-            ?| constraintFail "Issue.current_version must be valid"
+            curVersion ?| constraintFail "Issue.current_version must be valid"
         author <-
             getEntity authorId
             ?|> constraintFail "Issue.author must exist in User table"
         comments' <- loadComments issueId
-        let comments =
-                startingPseudoComment authorId author issueCreated : comments'
-        IssueVersion{issueVersionBody = body} <-
+        let comments = startingPseudoComment authorId author created : comments'
+        IssueVersion{body} <-
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
@@ -197,18 +194,18 @@ load issueId =
             , votes
             }
   where
-    startingPseudoComment commentAuthor author commentCreated =
+    startingPseudoComment authorId author created =
         Node
             CommentMaterialized
                 { id = CommentKey 0
                 , comment =
                     Comment
-                        { commentAuthor
-                        , commentCreated
-                        , commentMessage = ""
-                        , commentParent  = Nothing
-                        , commentIssue   = issueId
-                        , commentType    = CommentStart
+                        { author    = authorId
+                        , created
+                        , message   = ""
+                        , parent    = Nothing
+                        , issue     = issueId
+                        , type_     = CommentStart
                         }
                 , author
                 , requestedUsers = []
@@ -226,8 +223,8 @@ collectChoices votes =
 selectWith :: [Filter Issue] -> Handler [Entity Issue]
 selectWith filters =
     runDB do
-        Entity _ User{userStellarAddress} <- requireAuth
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        Entity _ User{stellarAddress} <- requireAuth
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ ListIssues holderId
         selectList filters []
 
@@ -241,9 +238,9 @@ dbSelectAll :: MonadIO m => SqlPersistT m [Entity Issue]
 dbSelectAll = selectList [] []
 
 selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
-selectWithoutVoteFromUser (Entity userId User{userStellarAddress}) =
+selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
     runDB do
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset userStellarAddress
+        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ ListIssues holderId
         rawSql
             @(Entity Issue)
@@ -260,41 +257,38 @@ getContentForEdit :: IssueId -> Handler IssueContent
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
-        issue@(Entity _ Issue{issueTitle, issueCurVersion}) <-
+        issue@(Entity _ Issue{title, curVersion}) <-
             getEntity404 issueId
         requireAuthz $ EditIssue issue userId
         versionId <-
-            issueCurVersion
-            ?| constraintFail "Issue.current_version must be valid"
-        IssueVersion{issueVersionBody} <-
+            curVersion ?| constraintFail "Issue.current_version must be valid"
+        IssueVersion{body} <-
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
-        pure IssueContent{title = issueTitle, body = issueVersionBody}
+        pure IssueContent{title, body}
 
 create :: IssueContent -> Handler IssueId
 create IssueContent{title, body} = do
     now <- liftIO getCurrentTime
-    Entity userId User{userStellarAddress} <- requireAuth
+    Entity userId User{stellarAddress} <- requireAuth
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund stellarAddress
         requireAuthz $ CreateIssue signerId
-        let issue = Issue
-                { issueApproval     = 0
-                , issueTitle        = title
-                , issueAuthor       = userId
-                , issueOpen         = True
-                , issueCommentNum   = 0
-                , issueCreated      = now
-                , issueCurVersion   = Nothing
-                }
+        let issue =
+                Issue
+                    { approval      = 0
+                    , title
+                    , author        = userId
+                    , open          = True
+                    , commentNum    = 0
+                    , created       = now
+                    , curVersion    = Nothing
+                    }
         issueId <- insert issue
-        let version = IssueVersion
-                { issueVersionIssue     = issueId
-                , issueVersionBody      = body
-                , issueVersionCreated   = now
-                , issueVersionAuthor    = userId
-                }
+        let version =
+                IssueVersion
+                    {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
         update issueId [IssueCurVersion =. Just versionId]
         pure issueId
@@ -306,24 +300,21 @@ edit issueId IssueContent{title, body} = do
     runDB do
         issue <- getEntity404 issueId
         requireAuthz $ EditIssue issue user
-        let version = IssueVersion
-                { issueVersionAuthor    = user
-                , issueVersionBody      = body
-                , issueVersionCreated   = now
-                , issueVersionIssue     = issueId
-                }
+        let version =
+                IssueVersion
+                    {author = user, body, created = now, issue = issueId}
         versionId <- insert version
         update
             issueId
             [IssueTitle =. title, IssueCurVersion =. Just versionId]
         insert_
             Comment
-                { commentAuthor     = user
-                , commentCreated    = now
-                , commentMessage    = ""
-                , commentParent     = Nothing
-                , commentIssue      = issueId
-                , commentType       = CommentEdit
+                { author    = user
+                , created   = now
+                , message   = ""
+                , parent    = Nothing
+                , issue     = issueId
+                , type_     = CommentEdit
                 }
 
 closeReopen :: IssueId -> StateAction -> Handler ()
@@ -336,19 +327,15 @@ closeReopen issueId stateAction = do
         update issueId [IssueOpen =. newState]
         insert_
             Comment
-                { commentAuthor  = user
-                , commentCreated = now
-                , commentMessage = ""
-                , commentParent  = Nothing
-                , commentIssue   = issueId
-                , commentType
+                { author    = user
+                , created   = now
+                , message   = ""
+                , parent    = Nothing
+                , issue     = issueId
+                , type_
                 }
   where
-    newState =
+    (type_, newState) =
         case stateAction of
-            Close  -> False
-            Reopen -> True
-    commentType =
-        case stateAction of
-            Close  -> CommentClose
-            Reopen -> CommentReopen
+            Close  -> (CommentClose,  False)
+            Reopen -> (CommentReopen, True )

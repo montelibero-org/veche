@@ -1,3 +1,4 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -21,8 +22,4 @@ dbDelete :: MonadIO m => Asset -> Stellar.Address -> SqlPersistT m ()
 dbDelete asset = deleteBy . UniqueHolder asset
 
 dbInsertMany :: MonadIO m => Asset -> [Stellar.Address] -> SqlPersistT m ()
-dbInsertMany stellarHolderAsset keys =
-    insertMany_
-        [ StellarHolder{stellarHolderAsset, stellarHolderKey}
-        | stellarHolderKey <- keys
-        ]
+dbInsertMany asset keys = insertMany_ [StellarHolder{asset, key} | key <- keys]

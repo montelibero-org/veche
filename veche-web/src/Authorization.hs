@@ -34,7 +34,7 @@ isAllowed = \case
     EditIssue        issue user -> authzEditIssue issue user
     CloseReopenIssue issue user -> authzEditIssue issue user
   where
-    authzEditIssue (Entity _ Issue{issueAuthor}) user = issueAuthor == user
+    authzEditIssue (Entity _ Issue{author}) user = author == user
 
 requireAuthz :: MonadHandler m => AuthzRequest -> m ()
 requireAuthz req

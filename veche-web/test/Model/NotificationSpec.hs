@@ -30,19 +30,12 @@ spec =
             notifications === expectNotifications alfa delta echo
   where
     expectNotifications alfa delta echo =
-        [   ( Notification
-                {notificationRecipient = alfa, notificationText = "twenty four"}
-            , Nothing
+        [   (Notification{recipient = alfa, text = "twenty four"}, Nothing)
+        ,   ( Notification{recipient = delta, text = "twenty five"}
+            , Just Telegram{chatid = 25, username = "delta_tg"}
             )
-        ,   ( Notification
-                { notificationRecipient = delta
-                , notificationText = "twenty five"
-                }
-            , Just Telegram{telegramChatid = 25, telegramUsername = "delta_tg"}
-            )
-        ,   ( Notification
-                {notificationRecipient = echo, notificationText = "twenty six"}
-            , Just Telegram{telegramChatid = 26, telegramUsername = "echo_tg"}
+        ,   ( Notification{recipient = echo, text = "twenty six"}
+            , Just Telegram{chatid = 26, username = "echo_tg"}
             )
         ]
 

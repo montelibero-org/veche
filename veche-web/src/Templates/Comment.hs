@@ -48,8 +48,8 @@ commentWidget
     $(widgetFile "comment")
   where
     Entity _authorId commentAuthor = author
-    Comment{commentMessage, commentType, commentCreated} = comment
-    created = formatTime defaultTimeLocale rfc822DateFormat commentCreated
+    Comment{message, type_, created} = comment
+    createdTime = formatTime defaultTimeLocale rfc822DateFormat created
 
 commentAnchor :: CommentId -> Text
 commentAnchor id = "comment" <> toPathPiece id
@@ -109,10 +109,10 @@ commentAForm mIssueId activeRequests = do
 
 requestLabel :: IssueRequestMaterialized -> Text
 requestLabel IssueRequestMaterialized{requestor, comment} =
-    userNameText user <> ": " <> commentMessage
+    userNameText user <> ": " <> message
   where
     Entity _ user = requestor
-    Entity _ Comment{commentMessage} = comment
+    Entity _ Comment{message} = comment
 
 checkboxesFieldList' ::
     PathPiece a => [(Text, a)] -> Field (HandlerFor site) [a]

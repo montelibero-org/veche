@@ -2,16 +2,16 @@
     <span .comment_author>#{userNameWidget commentAuthor}
     <span .comment_action .text-muted>
         $if null requestedUsers
-            #{commentType}
+            #{type_}
         $else
             requested information from #
             $forall user <- requestedUsers
                 <span .requested_user>#{userNameWidget user}
-    <span .comment_timestamp .pull-right .text-muted>#{created}
-    $if commentMessage /= ""
-        <div>#{commentMessage}
+    <span .comment_timestamp .pull-right .text-muted>#{createdTime}
+    $if message /= ""
+        <div>#{message}
     <div>
-        $if commentType /= CommentStart
+        $if type_ /= CommentStart
             <a .btn .btn-default .btn-xs .comment-reply>Reply
         <a .btn .btn-default .btn-xs disabled>Request Info
 

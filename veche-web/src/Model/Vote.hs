@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -20,28 +21,26 @@ import Genesis (mtlFund)
 
 -- | Create a vote or abrogate existing
 record :: IssueId -> Choice -> Handler ()
-record issueId choice = do
+record issue choice = do
     now <- liftIO getCurrentTime
-    (user, User{userStellarAddress}) <- requireAuthPair
+    (user, User{stellarAddress}) <- requireAuthPair
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund userStellarAddress
+        Entity signerId _ <- getBy403 $ UniqueMember mtlFund stellarAddress
         requireAuthz $ AddVote signerId
-        upsert_
-            Vote{voteUser = user, voteIssue = issueId, voteChoice = choice}
-            [VoteChoice =. choice]
+        upsert_ Vote{user, issue, choice} [VoteChoice =. choice]
         insert_
             Comment
-                { commentAuthor     = user
-                , commentCreated    = now
-                , commentMessage    = mempty
-                , commentParent     = Nothing
-                , commentIssue      = issueId
-                , commentType       =
+                { author    = user
+                , created   = now
+                , message   = mempty
+                , parent    = Nothing
+                , issue
+                , type_ =
                     case choice of
                         Approve -> CommentApprove
                         Reject  -> CommentReject
                 }
-        dbUpdateIssueApproval issueId Nothing
+        dbUpdateIssueApproval issue Nothing
 
 updateIssueApproval ::
     IssueId ->
@@ -73,13 +72,13 @@ dbUpdateIssueApproval issueId mIssue = do
     -- TODO(cblp, 2022-02-20) cache weight selection for mass issue update
 
     approves <- selectList [VoteChoice ==. Approve, VoteIssue ==. issueId] []
-    let approvers = map (voteUser . entityVal) approves
+    let approvers = map (\(Entity _ Vote{user}) -> user) approves
 
     let totalApproveWeights =
             sum [findWithDefault 0 userId userWeights | userId <- approvers]
     let approval =
             fromIntegral totalApproveWeights / fromIntegral totalSignersWeight
     case mIssue of
-        Just Issue{issueApproval = oldApproval} | approval == oldApproval ->
+        Just Issue{approval = oldApproval} | approval == oldApproval ->
             pure ()
         _ -> update issueId [IssueApproval =. approval]

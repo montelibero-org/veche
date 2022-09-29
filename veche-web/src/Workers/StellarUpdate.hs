@@ -74,10 +74,8 @@ updateSignersCache clientEnv connPool target = do
         cached' <- StellarSigner.dbSelectAll target
         let cached =
                 Map.fromList
-                    [ (stellarSignerKey, stellarSignerWeight)
-                    | Entity{entityVal} <- cached'
-                    , let StellarSigner{stellarSignerKey, stellarSignerWeight} =
-                            entityVal
+                    [ (key, weight)
+                    | Entity _ StellarSigner{key, weight} <- cached'
                     ]
         handleDeleted $ Map.keys $ cached \\ actual
         handleAdded $ actual \\ cached
@@ -121,11 +119,7 @@ updateHoldersCache clientEnv connPool asset = do
                 ]
     (`runSqlPool` connPool) do
         cached' <- StellarHolder.dbSelectAll asset
-        let cached =
-                Set.fromList
-                    [ stellarHolderKey
-                    | Entity _ StellarHolder{stellarHolderKey} <- cached'
-                    ]
+        let cached = Set.fromList [key | Entity _ StellarHolder{key} <- cached']
         handleDeleted $ cached \\ actual
         handleAdded $ actual \\ cached
     pure $ length actual

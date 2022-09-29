@@ -34,8 +34,7 @@ dbSelectAll = do
         ]
 
 dbInsert :: MonadIO m => UserId -> Text -> SqlPersistT m ()
-dbInsert notificationRecipient notificationText =
-    insert_ Notification{notificationRecipient, notificationText}
+dbInsert recipient text = insert_ Notification{recipient, text}
 
 trimap :: (a -> a') -> (b -> b') -> (c -> c') -> (a, b, c) -> (a', b', c')
 trimap fa fb fc (a, b, c) = (fa a, fb b, fc c)

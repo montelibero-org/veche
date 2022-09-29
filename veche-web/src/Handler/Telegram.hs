@@ -1,10 +1,11 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR) where
 
-import Import
+import Import hiding (username)
 
 import Yesod.Form (intField, ireq, runInputGet)
 

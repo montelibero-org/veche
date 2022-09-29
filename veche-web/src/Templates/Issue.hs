@@ -44,13 +44,13 @@ issueForm previousContent =
             areq
                 textField
                 (bfs ("Title" :: Text)){fsName = Just "title"}
-                (title <$> previousContent)
+                (previousContent <&> \IssueContent{title} -> title)
         body <-
             unTextarea <$>
             areq
                 textareaField
                 (bfs ("Message" :: Text)){fsName = Just "body"}
-                (Textarea . body <$> previousContent)
+                (previousContent <&> \IssueContent{body} -> Textarea body)
         pure IssueContent{..}
 
 editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
@@ -78,9 +78,10 @@ issueTable :: [Entity Issue] -> Widget
 issueTable issues = $(widgetFile "issue-table")
 
 issueTableRow :: Entity Issue -> Widget
-issueTableRow (Entity issueId Issue{..}) = $(widgetFile "issue-table-row")
+issueTableRow (Entity issueId Issue{approval, commentNum, title}) =
+    $(widgetFile "issue-table-row")
   where
-    approvalPercent = round $ issueApproval * 100 :: Int
+    approvalPercent = round $ approval * 100 :: Int
 
 issueRequestTable :: [RequestMaterialized] -> Widget
 issueRequestTable requests = $(widgetFile "issue-request-table")
@@ -89,5 +90,5 @@ issueRequestTableRow :: RequestMaterialized -> Widget
 issueRequestTableRow RequestMaterialized{issue, comment} =
     $(widgetFile "issue-request-table-row")
   where
-    Entity issueId Issue{issueTitle} = issue
-    Entity commentId Comment{commentMessage} = comment
+    Entity issueId Issue{title} = issue
+    Entity commentId Comment{message} = comment
