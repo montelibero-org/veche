@@ -22,10 +22,10 @@ import Database.Persist.Sql as X (SqlPersistT)
 import Network.HTTP.Types as X (internalServerError500, status400)
 import Yesod as X (Fragment ((:#:)), Html, HtmlUrl, PathPiece,
                    TypedContent (TypedContent), cacheSeconds, defaultLayout,
-                   fromPathPiece, hamlet, invalidArgs, lookupGetParam,
+                   fromPathPiece, hamlet, invalidArgs, julius, lookupGetParam,
                    lookupPostParams, redirect, requireCheckJsonBody,
                    respondSource, returnJson, sendChunkText, setTitle,
-                   toContent, toHtml, toPathPiece, typePlain, whamlet)
+                   toContent, toHtml, toPathPiece, toWidget, typePlain, whamlet)
 import Yesod.Auth as X
 import Yesod.Core as X (HandlerFor, MonadHandler, addHeader, getCurrentRoute,
                         permissionDenied, sendResponseStatus, withUrlRenderer)

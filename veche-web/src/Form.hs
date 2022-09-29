@@ -8,6 +8,7 @@
 module Form where
 
 import Data.Text (Text)
+import Data.Text qualified as Text
 import GHC.Stack (HasCallStack)
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
@@ -90,3 +91,14 @@ getPostAction = fst <$> runFormPostB actionForm
 generateCsrfField ::
     RenderMessage site FormMessage => HandlerFor site (WidgetFor site ())
 generateCsrfField = fmap fst $ generateFormPost $ renderDivsNoLabels $ pure ()
+
+-- | Make button that creates and sends a POST form
+actionButton ::
+    Route site ->
+    [Text] ->   -- ^ additional classes, e.g. ["btn-ganger"]
+    Text ->     -- ^ button text
+    WidgetFor site ()
+actionButton route classes text =
+    [whamlet|<button *{attrs} onclick="submitPostForm('@{route}')">#{text}|]
+  where
+    attrs = [("class" :: Text, Text.unwords $ "btn" : classes)]

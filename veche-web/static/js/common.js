@@ -6,13 +6,3 @@ function submitPostForm(url) {
     $('body').append(form);
     form.submit();
 }
-
-$(() => {
-    $('button').each((_, button) => {
-        button = $(button);
-        const post = button.attr('post');
-        if (post) {
-            button.click(() => submitPostForm(post));
-        }
-    });
-});

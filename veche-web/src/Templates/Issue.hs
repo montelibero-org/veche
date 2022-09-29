@@ -27,19 +27,15 @@ import Model.Request (RequestMaterialized (..))
 import Templates.Comment (commentAnchor)
 import Types.Issue (IssueContent (..))
 
-closeReopenButton :: IssueId -> Bool -> HtmlUrl (Route App)
-closeReopenButton issueId issueOpen
-    | issueOpen =
-        [hamlet|<button .btn .btn-danger post=@{IssueCloseR issueId}>Close|]
-    | otherwise =
-        [hamlet|<button .btn .btn-success post=@{IssueReopenR issueId}>Reopen|]
+closeReopenButton :: IssueId -> Bool -> Widget
+closeReopenButton issueId issueIsOpen
+    | issueIsOpen = actionButton (IssueCloseR  issueId) ["btn-danger" ] "Close"
+    | otherwise   = actionButton (IssueReopenR issueId) ["btn-success"] "Reopen"
 
-voteButtons :: IssueId -> HtmlUrl (Route App)
-voteButtons issueId =
-    [hamlet|
-        <button .btn .btn-success post=@{IssueVoteR issueId Approve}>Approve
-        <button .btn .btn-danger post=@{IssueVoteR issueId Reject}>Reject
-    |]
+voteButtons :: IssueId -> Widget
+voteButtons issueId = do
+    actionButton (IssueVoteR issueId Approve) ["btn-success"] "Approve"
+    actionButton (IssueVoteR issueId Reject ) ["btn-danger" ] "Reject"
 
 issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
