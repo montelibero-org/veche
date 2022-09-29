@@ -16,7 +16,7 @@ import Stellar.Horizon.Types (Asset)
 import Stellar.Horizon.Types qualified as Stellar
 
 dbSelectAll :: MonadIO m => Asset -> SqlPersistT m [Entity StellarHolder]
-dbSelectAll asset = selectList [StellarHolderAsset ==. asset] []
+dbSelectAll asset = selectList [StellarHolder_asset ==. asset] []
 
 dbDelete :: MonadIO m => Asset -> Stellar.Address -> SqlPersistT m ()
 dbDelete asset = deleteBy . UniqueHolder asset

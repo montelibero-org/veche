@@ -229,7 +229,7 @@ selectWith filters =
         selectList filters []
 
 selectByOpen :: Bool -> Handler [Entity Issue]
-selectByOpen isOpen = selectWith [IssueOpen ==. isOpen]
+selectByOpen isOpen = selectWith [Issue_open ==. isOpen]
 
 selectAll :: Handler [Entity Issue]
 selectAll = selectWith []
@@ -290,7 +290,7 @@ create IssueContent{title, body} = do
                 IssueVersion
                     {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
-        update issueId [IssueCurVersion =. Just versionId]
+        update issueId [Issue_curVersion =. Just versionId]
         pure issueId
 
 edit :: IssueId -> IssueContent -> Handler ()
@@ -306,7 +306,7 @@ edit issueId IssueContent{title, body} = do
         versionId <- insert version
         update
             issueId
-            [IssueTitle =. title, IssueCurVersion =. Just versionId]
+            [Issue_title =. title, Issue_curVersion =. Just versionId]
         insert_
             Comment
                 { author    = user
@@ -324,7 +324,7 @@ closeReopen issueId stateAction = do
     runDB do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
-        update issueId [IssueOpen =. newState]
+        update issueId [Issue_open =. newState]
         insert_
             Comment
                 { author    = user

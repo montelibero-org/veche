@@ -27,8 +27,9 @@ import ClassyPrelude
 
 import Database.Persist.Quasi (lowerCaseSettings)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
-import Database.Persist.TH (mkMigrate, mkPersist, mpsFieldLabelModifier,
-                            persistFileWith, share, sqlSettings)
+import Database.Persist.TH (mkMigrate, mkPersist, mpsConstraintLabelModifier,
+                            mpsFieldLabelModifier, persistFileWith, share,
+                            sqlSettings)
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar
 
@@ -45,10 +46,13 @@ $(  let lowerFirst t =
             case uncons t of
                 Just (a, b) -> cons (charToLower a) b
                 Nothing -> t
+        mpsConstraintLabelModifier entity field =
+            entity ++ "_" ++ lowerFirst field
         mpsFieldLabelModifier _entity = \case
             "Type"  -> "type_"
             field   -> lowerFirst field
-        settings = sqlSettings{mpsFieldLabelModifier}
+        settings =
+            sqlSettings{mpsConstraintLabelModifier, mpsFieldLabelModifier}
     in share
         [ mkPersist settings
         , mkMigrate "migrateAll"

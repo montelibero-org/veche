@@ -41,10 +41,10 @@ addText (Entity userId User{stellarAddress})
         updateWhere
             [ RequestId <-. toList provideInfo
             -- following filters present only for security
-            , RequestUser ==. userId
-            , RequestIssue ==. issue
+            , Request_user  ==. userId
+            , Request_issue ==. issue
             ]
-            [RequestFulfilled =. True]
+            [Request_fulfilled =. True]
         pure commentId
 
 updateIssueCommentNum ::
@@ -60,8 +60,9 @@ unsafeUpdateIssueCommentNum ::
     Maybe Issue ->
     SqlPersistT Handler ()
 unsafeUpdateIssueCommentNum issueId mIssue = do
-    commentNum <- count [CommentIssue ==. issueId, CommentType ==. CommentText]
+    commentNum <-
+        count [Comment_issue ==. issueId, Comment_type ==. CommentText]
     case mIssue of
         Just Issue{commentNum = oldCommentNum}
             | commentNum == oldCommentNum -> pure ()
-        _ -> update issueId [IssueCommentNum =. commentNum]
+        _ -> update issueId [Issue_commentNum =. commentNum]

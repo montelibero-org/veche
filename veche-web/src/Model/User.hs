@@ -48,7 +48,7 @@ dbSelectAll :: MonadIO m => SqlPersistT m [User]
 dbSelectAll = map entityVal <$> selectList [] []
 
 setName :: PersistSql app => UserId -> Maybe Text -> HandlerFor app ()
-setName id mname = runDB $ update id [UserName =. mname]
+setName id mname = runDB $ update id [User_name =. mname]
 
 getTelegram :: PersistSql app => UserId -> HandlerFor app (Maybe Telegram)
 getTelegram uid = runDB $ get (TelegramKey uid)

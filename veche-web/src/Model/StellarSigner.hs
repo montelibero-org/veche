@@ -28,7 +28,7 @@ selectAll = runDB . dbSelectAll
 
 dbSelectAll ::
     MonadIO m => StellarMultiSigAddress -> SqlPersistT m [Entity StellarSigner]
-dbSelectAll target = selectList [StellarSignerTarget ==. target] []
+dbSelectAll target = selectList [StellarSigner_target ==. target] []
 
 dbDelete ::
     MonadIO m => StellarMultiSigAddress -> Stellar.Address -> SqlPersistT m ()
@@ -45,5 +45,5 @@ dbSetWeight ::
     StellarMultiSigAddress -> Stellar.Address -> Int -> SqlPersistT m ()
 dbSetWeight target key weight =
     updateWhere
-        [StellarSignerTarget ==. target, StellarSignerKey ==. key]
-        [StellarSignerWeight =. weight]
+        [StellarSigner_target ==. target, StellarSigner_key ==. key]
+        [StellarSigner_weight =. weight]

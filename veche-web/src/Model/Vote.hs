@@ -27,7 +27,7 @@ record issue choice = do
     runDB do
         Entity signerId _ <- getBy403 $ UniqueMember mtlFund stellarAddress
         requireAuthz $ AddVote signerId
-        upsert_ Vote{user, issue, choice} [VoteChoice =. choice]
+        upsert_ Vote{user, issue, choice} [Vote_choice =. choice]
         insert_
             Comment
                 { author    = user
@@ -71,7 +71,7 @@ dbUpdateIssueApproval issueId mIssue = do
                 [(userId, weight) | (weight, Just userId) <- weights]
     -- TODO(cblp, 2022-02-20) cache weight selection for mass issue update
 
-    approves <- selectList [VoteChoice ==. Approve, VoteIssue ==. issueId] []
+    approves <- selectList [Vote_choice ==. Approve, Vote_issue ==. issueId] []
     let approvers = map (\(Entity _ Vote{user}) -> user) approves
 
     let totalApproveWeights =
@@ -81,4 +81,4 @@ dbUpdateIssueApproval issueId mIssue = do
     case mIssue of
         Just Issue{approval = oldApproval} | approval == oldApproval ->
             pure ()
-        _ -> update issueId [IssueApproval =. approval]
+        _ -> update issueId [Issue_approval =. approval]
