@@ -25,7 +25,7 @@ record issue choice = do
     now <- liftIO getCurrentTime
     (user, User{stellarAddress}) <- requireAuthPair
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund stellarAddress
+        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund stellarAddress
         requireAuthz $ AddVote signerId
         upsert_ Vote{user, issue, choice} [Vote_choice =. choice]
         insert_

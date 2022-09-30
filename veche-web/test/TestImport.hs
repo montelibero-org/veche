@@ -16,6 +16,8 @@ import Data.Text.Encoding qualified
 import Database.Persist as X hiding (get)
 import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
+import GHC.Stack (withFrozenCallStack)
+import Hedgehog qualified
 import Stellar.Horizon.Types qualified as Stellar
 import Test.Hspec as X
 import Yesod.Auth as X
@@ -29,7 +31,7 @@ import Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
                                 mkSqliteConnectionInfo, sqlDatabase)
 import Lens.Micro (set)
 import Settings (appDatabaseConf)
-import Yesod.Core (messageLoggerSource)
+import Yesod.Core (RedirectUrl, Yesod, messageLoggerSource)
 
 import Application (makeFoundation, makeLogWare)
 import Foundation as X
@@ -94,12 +96,13 @@ getTables =
 -- | Authenticate as a user. This relies on the `auth-dummy-login: true` flag
 -- being set in test-settings.yaml, which enables dummy authentication in
 -- Foundation.hs
-authenticateAs :: Entity User -> YesodExample App ()
+authenticateAs :: HasCallStack => Entity User -> YesodExample App ()
 authenticateAs (Entity _ User{stellarAddress = Stellar.Address ident}) = do
     request do
         setMethod "POST"
         addPostParam "ident" ident
         setUrl $ AuthR $ PluginR "dummy" []
+    statusIs 303
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
@@ -114,3 +117,21 @@ createUser ident mTelegram =
 
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8
+
+postWithCsrf ::
+    (HasCallStack, Yesod site, RedirectUrl site url) =>
+    url -> YesodExample site ()
+postWithCsrf url =
+    request do
+        setMethod "POST"
+        setUrl url
+        addTokenFromCookie
+
+-- | Assert equality with diff
+(===) :: (HasCallStack, Eq a, Show a, MonadIO m) => a -> a -> m ()
+a === b =
+    withFrozenCallStack do
+        ok <-
+            Hedgehog.check $
+            Hedgehog.withTests 1 $ Hedgehog.property $ a Hedgehog.=== b
+        unless ok $ liftIO $ expectationFailure ""

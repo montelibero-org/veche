@@ -16,6 +16,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -33,7 +34,8 @@ import Database.Persist.TH (mkMigrate, mkPersist, mpsConstraintLabelModifier,
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar
 
-import Model.Types (Choice, CommentType, StellarMultiSigAddress)
+import Model.Types (Choice, CommentType, EventType (IssueCreated),
+                    StellarMultiSigAddress)
 
 deriving newtype instance PersistField    Asset
 deriving newtype instance PersistFieldSql Asset
@@ -49,13 +51,19 @@ $(  let lowerFirst t =
         mpsConstraintLabelModifier entity field =
             entity ++ "_" ++ lowerFirst field
         mpsFieldLabelModifier _entity = \case
+            "Data"  -> "data_"
             "Type"  -> "type_"
             field   -> lowerFirst field
         settings =
             sqlSettings{mpsConstraintLabelModifier, mpsFieldLabelModifier}
-    in share
+    in
+    share
         [ mkPersist settings
         , mkMigrate "migrateAll"
         ]
         $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
     )
+
+pattern EventIssueCreated :: UTCTime -> IssueId -> Event
+pattern EventIssueCreated time issue =
+    Event{type_ = IssueCreated, time, issue = Just issue, comment = Nothing}

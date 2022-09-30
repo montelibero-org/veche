@@ -14,7 +14,8 @@ import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
                    FormResult, addClass, areq, fsAttrs, fsName,
-                   generateFormPost, renderDivsNoLabels, runFormPost, textField)
+                   generateFormPost, renderDivsNoLabels, runFormPostNoToken,
+                   textField)
 import Yesod.Form qualified
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm),
                               renderBootstrap3)
@@ -56,11 +57,11 @@ generateFormPostB b@BForm{aform} = do
     pure $ makeFormWidget "post" b fields enctype
 
 runFormPostB ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
+    (MonadHandler m) =>
     BForm m a -> m (FormResult a, WidgetFor (HandlerSite m) ())
 runFormPostB b@BForm{aform} = do
     ((result, fields), enctype) <-
-        runFormPost $ renderBootstrap3 BootstrapBasicForm aform
+        runFormPostNoToken $ renderBootstrap3 BootstrapBasicForm aform
     pure (result, makeFormWidget "post" b fields enctype)
 
 actionForm ::

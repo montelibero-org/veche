@@ -12,7 +12,7 @@
 module Model.Types (
     Choice (..),
     CommentType (..),
-    IssueEventType (..),
+    EventType (..),
     StellarMultiSigAddress (..),
 ) where
 
@@ -78,6 +78,6 @@ newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
     deriving newtype (PersistField, PersistFieldSql)
     deriving stock Show
 
-data IssueEventType = Created | Closed | Reopened
+data EventType = IssueCreated | IssueClosed | IssueReopened
     deriving (Eq, Read, Show)
-derivePersistField "IssueEventType"
+derivePersistField "EventType"

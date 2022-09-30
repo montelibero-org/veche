@@ -21,7 +21,7 @@ import Yesod.Persist (runDB)
 
 getByAddress403 ::
     StellarMultiSigAddress -> Stellar.Address -> Handler (Entity StellarSigner)
-getByAddress403 target address = runDB $ getBy403 $ UniqueMember target address
+getByAddress403 target address = runDB $ getBy403 $ UniqueSigner target address
 
 selectAll :: StellarMultiSigAddress -> Handler [Entity StellarSigner]
 selectAll = runDB . dbSelectAll
@@ -32,7 +32,7 @@ dbSelectAll target = selectList [StellarSigner_target ==. target] []
 
 dbDelete ::
     MonadIO m => StellarMultiSigAddress -> Stellar.Address -> SqlPersistT m ()
-dbDelete target = deleteBy . UniqueMember target
+dbDelete target = deleteBy . UniqueSigner target
 
 dbInsertMany ::
     MonadIO m =>

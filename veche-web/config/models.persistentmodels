@@ -14,6 +14,16 @@ Comment
     deriving Show
 
 
+Event
+    type    EventType
+    time    UTCTime
+    issue   IssueId Maybe
+    comment CommentId Maybe
+
+    deriving Eq
+    deriving Show
+
+
 Issue
     author      UserId
     open        Bool
@@ -30,14 +40,6 @@ Issue
     commentNum  Int     default=0   -- Number of text comments.
                                     -- Must be recalculated on every
                                     -- addition/removal of text comments.
-
-    deriving Eq
-    deriving Show
-
-
-IssueEvent
-    recipient   UserId
-    text        Text
 
     deriving Eq
     deriving Show
@@ -76,7 +78,7 @@ StellarSigner
     key     Stellar.Address         -- signer account address
     weight  Int
 
-    UniqueMember target key
+    UniqueSigner target key sql=UniqueMember
 
     deriving Show
 
