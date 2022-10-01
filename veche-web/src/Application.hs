@@ -173,16 +173,15 @@ warpSettings foundation =
     defaultSettings
     & setHost appHost
     & setPort appPort
-    & setOnException
-        (\_req e ->
-            when (defaultShouldDisplayException e) $
-                messageLoggerSource
-                    foundation
-                    appLogger
-                    $(qLocation >>= liftLoc)
-                    "yesod"
-                    LevelError
-                    (toLogStr $ "Exception from Warp: " ++ show e))
+    & setOnException \_req e ->
+        when (defaultShouldDisplayException e) $
+            messageLoggerSource
+                foundation
+                appLogger
+                $(qLocation >>= liftLoc)
+                "yesod"
+                LevelError
+                (toLogStr $ "Exception from Warp: " ++ show e)
   where
     App{appLogger, appSettings = AppSettings{appPort, appHost}} = foundation
 
