@@ -67,3 +67,7 @@ $(  let lowerFirst t =
 pattern EventIssueCreated :: UTCTime -> IssueId -> Event
 pattern EventIssueCreated time issue =
     Event{type_ = IssueCreated, time, issue = Just issue, comment = Nothing}
+
+pattern IssueEvent :: EventType -> UTCTime -> IssueId -> Event
+pattern IssueEvent type_ time issue =
+    Event{type_, time, issue = Just issue, comment = Nothing}

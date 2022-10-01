@@ -326,6 +326,7 @@ closeReopen issueId stateAction = do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
         update issueId [Issue_open =. newState]
+        insert_ $ IssueEvent eventType now issueId
         insert_
             Comment
                 { author    = user
@@ -333,10 +334,10 @@ closeReopen issueId stateAction = do
                 , message   = ""
                 , parent    = Nothing
                 , issue     = issueId
-                , type_
+                , type_     = commentType
                 }
   where
-    (type_, newState) =
+    (newState, eventType, commentType) =
         case stateAction of
-            Close  -> (CommentClose,  False)
-            Reopen -> (CommentReopen, True )
+            Close  -> (False, IssueClosed  , CommentClose )
+            Reopen -> (True , IssueReopened, CommentReopen)
