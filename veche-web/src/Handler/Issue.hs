@@ -30,6 +30,7 @@ import Model.Issue (IssueMaterialized (IssueMaterialized),
 import Model.Issue qualified as Issue
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
+import Network.HTTP.Types (badRequest400)
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, issueTable,
                         newIssueForm, voteButtons)
@@ -91,14 +92,16 @@ getIssuesR = do
     (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed
     defaultLayout $(widgetFile "issues")
 
-postIssuesR :: Handler Html
+postIssuesR :: Handler Void
 postIssuesR = do
     (result, formWidget) <- runFormPostB newIssueForm
     case result of
         FormSuccess content -> do
             issueId <- Issue.create content
             redirect $ IssueR issueId
-        _ -> defaultLayout formWidget
+        _ -> do
+            page <- defaultLayout formWidget
+            sendResponseStatus badRequest400 page
 
 postIssueVoteR :: IssueId -> Choice -> Handler ()
 postIssueVoteR issueId choice = do

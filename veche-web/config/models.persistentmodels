@@ -14,6 +14,16 @@ Comment
     deriving Show
 
 
+Event
+    type    EventType
+    time    UTCTime
+    issue   IssueId Maybe
+    comment CommentId Maybe
+
+    deriving Eq
+    deriving Show
+
+
 Issue
     author      UserId
     open        Bool
@@ -42,14 +52,6 @@ IssueVersion
     issue   IssueId
 
 
-Notification
-    recipient   UserId
-    text        Text
-
-    deriving Eq
-    deriving Show
-
-
 Request
     user        UserId
     comment     CommentId
@@ -76,7 +78,7 @@ StellarSigner
     key     Stellar.Address         -- signer account address
     weight  Int
 
-    UniqueMember target key
+    UniqueSigner target key sql=UniqueMember
 
     deriving Show
 

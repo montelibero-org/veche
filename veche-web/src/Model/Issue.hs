@@ -159,7 +159,7 @@ load issueId =
         Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ ReadIssue holderId
         mSignerId <-
-            fmap entityKey <$> getBy (UniqueMember mtlFund stellarAddress)
+            fmap entityKey <$> getBy (UniqueSigner mtlFund stellarAddress)
 
         issue@Issue{author = authorId, created, curVersion} <- get404 issueId
         versionId <-
@@ -273,7 +273,7 @@ create IssueContent{title, body} = do
     now <- liftIO getCurrentTime
     Entity userId User{stellarAddress} <- requireAuth
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueMember mtlFund stellarAddress
+        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund stellarAddress
         requireAuthz $ CreateIssue signerId
         let issue =
                 Issue
@@ -291,6 +291,7 @@ create IssueContent{title, body} = do
                     {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
         update issueId [Issue_curVersion =. Just versionId]
+        insert_ $ EventIssueCreated now issueId
         pure issueId
 
 edit :: IssueId -> IssueContent -> Handler ()
@@ -325,6 +326,7 @@ closeReopen issueId stateAction = do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
         update issueId [Issue_open =. newState]
+        insert_ $ IssueEvent eventType now issueId
         insert_
             Comment
                 { author    = user
@@ -332,10 +334,10 @@ closeReopen issueId stateAction = do
                 , message   = ""
                 , parent    = Nothing
                 , issue     = issueId
-                , type_
+                , type_     = commentType
                 }
   where
-    (type_, newState) =
+    (newState, eventType, commentType) =
         case stateAction of
-            Close  -> (CommentClose,  False)
-            Reopen -> (CommentReopen, True )
+            Close  -> (False, IssueClosed  , CommentClose )
+            Reopen -> (True , IssueReopened, CommentReopen)
