@@ -1,4 +1,4 @@
-approot: https://localhost:3443
+approot: http://localhost.localdomain:3000
 database:
   database: veche.sqlite3
 database-migrate: false

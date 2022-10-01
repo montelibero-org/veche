@@ -31,7 +31,6 @@ import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         toContent, toHtml, toPathPiece, toWidget, typePlain,
                         whamlet, withUrlRenderer)
 import Yesod.Core.Types as X (loggerSet)
-import Yesod.Default.Config2 as X
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
                         FieldSettings (..), FormResult (FormSuccess), MForm,
                         Textarea (..), aopt, areq, generateFormPost,

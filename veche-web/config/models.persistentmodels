@@ -15,10 +15,11 @@ Comment
 
 
 Event
-    type    EventType
-    time    UTCTime
-    issue   IssueId Maybe
-    comment CommentId Maybe
+    type        EventType
+    time        UTCTime
+    delivered   Bool
+    issue       IssueId Maybe
+    comment     CommentId Maybe
 
     deriving Eq
     deriving Show

@@ -67,6 +67,7 @@ library
     , random
     , servant-client
     , shakespeare        >=2.0     && <2.1
+    , telegram-api
     , template-haskell
     , text               >=0.11    && <2.0
     , time
@@ -81,7 +82,6 @@ library
     , yesod-persistent
     , yesod-static       >=1.6     && <1.7
 
-  -- , telegram-api
   -- project
   build-depends:
       stellar-horizon

@@ -1,12 +1,12 @@
-CREATE TABLE "notification" (
-    "id" INTEGER PRIMARY KEY,
-    "recipient" INTEGER NOT NULL
-        REFERENCES "user" ON DELETE RESTRICT ON UPDATE RESTRICT,
-    "text" VARCHAR NOT NULL
-);
+DROP TABLE "notification";
 
-CREATE TABLE "telegram" (
+CREATE TABLE "event"(
     "id" INTEGER PRIMARY KEY,
-    "chatid" INTEGER NOT NULL,
-    "username" VARCHAR NOT NULL
+    "type" VARCHAR NOT NULL,
+    "time" TIMESTAMP NOT NULL,
+    "delivered" BOOLEAN NOT NULL,
+    "issue" INTEGER NULL
+        REFERENCES "issue" ON DELETE RESTRICT ON UPDATE RESTRICT,
+    "comment" INTEGER NULL
+        REFERENCES "comment" ON DELETE RESTRICT ON UPDATE RESTRICT
 );

@@ -38,6 +38,8 @@ import Yesod.Persist (get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
+import Model.Event (makeEventIssueClosed, makeEventIssueCreated,
+                    makeEventIssueReopened)
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 import Types.Comment (CommentMaterialized (CommentMaterialized))
@@ -291,7 +293,7 @@ create IssueContent{title, body} = do
                     {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
         update issueId [Issue_curVersion =. Just versionId]
-        insert_ $ EventIssueCreated now issueId
+        insert_ $ makeEventIssueCreated now issueId
         pure issueId
 
 edit :: IssueId -> IssueContent -> Handler ()
@@ -326,7 +328,7 @@ closeReopen issueId stateAction = do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
         update issueId [Issue_open =. newState]
-        insert_ $ IssueEvent eventType now issueId
+        insert_ $ makeEvent now issueId
         insert_
             Comment
                 { author    = user
@@ -337,7 +339,7 @@ closeReopen issueId stateAction = do
                 , type_     = commentType
                 }
   where
-    (newState, eventType, commentType) =
+    (newState, makeEvent, commentType) =
         case stateAction of
-            Close  -> (False, IssueClosed  , CommentClose )
-            Reopen -> (True , IssueReopened, CommentReopen)
+            Close  -> (False, makeEventIssueClosed  , CommentClose )
+            Reopen -> (True , makeEventIssueReopened, CommentReopen)
