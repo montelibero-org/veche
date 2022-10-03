@@ -78,9 +78,9 @@ data App = App
     }
 
 data MenuItem = MenuItem
-    { itemLabel          :: Text
-    , route          :: Route App
-    , accessCallback :: Bool
+    { itemLabel         :: Text
+    , route             :: Route App
+    , accessCallback    :: Bool
     }
 
 menuItem :: Text -> Route App -> MenuItem
@@ -113,10 +113,7 @@ instance Yesod App where
     -- Controls the base of generated URLs. For more information on modifying,
     -- see: https://github.com/yesodweb/yesod/wiki/Overriding-approot
     approot :: Approot App
-    approot = ApprootRequest $ \app req ->
-        case appRoot $ appSettings app of
-            Nothing   -> getApprootText guessApproot app req
-            Just root -> root
+    approot = ApprootRequest $ getApprootText guessApproot
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes

@@ -19,6 +19,7 @@ module Model.User (
     dbSetTelegram,
     setTelegram,
     -- * Delete
+    dbDeleteTelegram,
     deleteTelegram,
 ) where
 
@@ -61,4 +62,7 @@ setTelegram :: PersistSql app => UserId -> Int64 -> Text -> HandlerFor app ()
 setTelegram uid chatid username = runDB $ dbSetTelegram uid chatid username
 
 deleteTelegram :: PersistSql app => UserId -> HandlerFor app ()
-deleteTelegram uid = runDB $ delete $ TelegramKey uid
+deleteTelegram = runDB . dbDeleteTelegram
+
+dbDeleteTelegram :: MonadIO m => UserId -> SqlPersistT m ()
+dbDeleteTelegram = delete . TelegramKey

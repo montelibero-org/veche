@@ -50,6 +50,9 @@ import Servant.Client (parseBaseUrl)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet)
 import Yesod.Core (defaultMiddlewaresNoLogging, messageLoggerSource,
                    mkYesodDispatch, toWaiAppPlain)
+import Yesod.Default.Config2 (configSettingsYml, develMainHelper,
+                              getDevSettings, loadYamlSettings,
+                              loadYamlSettingsArgs, makeYesodLogger, useEnv)
 import Yesod.Persist qualified as Unsafe (runDB)
 import Yesod.Static (static, staticDevel)
 
@@ -170,16 +173,15 @@ warpSettings foundation =
     defaultSettings
     & setHost appHost
     & setPort appPort
-    & setOnException
-        (\_req e ->
-            when (defaultShouldDisplayException e) $
-                messageLoggerSource
-                    foundation
-                    appLogger
-                    $(qLocation >>= liftLoc)
-                    "yesod"
-                    LevelError
-                    (toLogStr $ "Exception from Warp: " ++ show e))
+    & setOnException \_req e ->
+        when (defaultShouldDisplayException e) $
+            messageLoggerSource
+                foundation
+                appLogger
+                $(qLocation >>= liftLoc)
+                "yesod"
+                LevelError
+                (toLogStr $ "Exception from Warp: " ++ show e)
   where
     App{appLogger, appSettings = AppSettings{appPort, appHost}} = foundation
 
@@ -219,8 +221,6 @@ appMain = do
             -- allow environment variables to override
             useEnv
 
-    let AppSettings{appTelegramBotToken} = settings
-
     -- Generate the foundation from the settings
     foundation@App{appConnPool, appHttpManager, appStellarHorizon} <-
         makeFoundation settings
@@ -231,7 +231,7 @@ appMain = do
     -- Backend workers
     asyncLinked $
         stellarDataUpdater appStellarHorizon appConnPool appHttpManager
-    asyncLinked $ telegramBot appConnPool appTelegramBotToken appHttpManager
+    asyncLinked $ telegramBot foundation
 
     -- Run the application with Warp
     runSettings (warpSettings foundation) app

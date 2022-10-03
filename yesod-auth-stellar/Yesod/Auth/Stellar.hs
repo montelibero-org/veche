@@ -31,8 +31,7 @@ import Data.Text (Text, strip)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (Status (Status))
-import Network.HTTP.Types qualified
+import Network.HTTP.Types (notFound404)
 import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
                            xdrDeserialize, xdrSerialize)
 import Network.Stellar.Builder (buildWithFee, tbMemo, tbOperations,
@@ -290,7 +289,7 @@ verifyAccount Config{horizon} address = do
                 runClientM (getAccount address) $ mkClientEnv manager horizon
         case eResult of
             Left (FailureResponse _ Response{responseStatusCode})
-                | Status{statusCode = 404} <- responseStatusCode ->
+                | responseStatusCode == notFound404 ->
                     invalidArgs ["Account doesn't exist"]
             Left err -> liftIO $ throwIO err
             Right result -> pure result

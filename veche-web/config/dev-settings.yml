@@ -1,3 +1,4 @@
+approot: http://localhost.localdomain:3000
 database:
   database: veche.sqlite3
 database-migrate: false

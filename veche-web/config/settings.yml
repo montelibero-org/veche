@@ -6,9 +6,7 @@ host:           "_env:YESOD_HOST:*4" # any IPv4 host
 port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:YESOD_IP_FROM_HEADER:false"
 
-# Default behavior: determine the application root from the request headers.
-# Uncomment to set an explicit approot
-#approot:        "_env:YESOD_APPROOT:http://localhost:3000"
+approot: https://veche.montelibero.org
 
 # By default, `yesod devel` runs in development, and built executables use
 # production settings (see below). To override this, use the following:

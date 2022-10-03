@@ -20,8 +20,8 @@ spec =
         it "records an event when an issue created" do
             create
 
-            events <- runDB Event.dbSelectAll
-            [(type_, issue) | Event{type_, issue} <- events]
+            events <- runDB Event.dbGetUndelivered
+            [(type_, issue) | Entity _ Event{type_, issue} <- events]
                 === [(IssueCreated, Just issueId)]
 
         it "records events about closing and reopening" do
@@ -29,8 +29,8 @@ spec =
             close
             reopen
 
-            events <- runDB Event.dbSelectAll
-            [(type_, issue) | Event{type_, issue} <- events]
+            events <- runDB Event.dbGetUndelivered
+            [(type_, issue) | Entity _ Event{type_, issue} <- events]
                 === [ (IssueCreated , Just issueId)
                     , (IssueClosed  , Just issueId)
                     , (IssueReopened, Just issueId)

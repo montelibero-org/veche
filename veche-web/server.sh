@@ -1,4 +1,6 @@
 #!/bin/bash
 set -eux -o pipefail
 
-stack run veche
+. ~/.config/veche.env
+export VECHE_TELEGRAM_TOKEN
+stack run veche -- "$@"

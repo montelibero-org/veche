@@ -46,10 +46,11 @@ stellarDataUpdater baseUrl connPool manager = do
             n <- updateSignersCache clientEnv connPool mtlFund
             putStrLn $
                 "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
+        randomDelay
         do  putStrLn "stellarDataUpdater: Updating MTL holders"
             n <- updateHoldersCache clientEnv connPool mtlAsset
             putStrLn $
-                "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
+                "stellarDataUpdater: Updated " <> tshow n <> " MTL holders"
         randomDelay
   where
     randomDelay = do
