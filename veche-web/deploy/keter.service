@@ -5,6 +5,7 @@ After=network.service
 
 [Service]
 Type=simple
+EnvironmentFile=/opt/keter/etc/secrets.env
 ExecStart=/opt/keter/bin/keter /opt/keter/etc/keter-config.yaml
 
 [Install]
