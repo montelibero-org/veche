@@ -75,7 +75,7 @@ makeMessage app event@Event{type_, issue} =
     case type_ of
         IssueCreated
             | Just issueId <- issue ->
-                [st|A new discussion started #{link $ IssueR issueId}|]
+                [st|A new discussion is started #{link $ IssueR issueId}|]
             | otherwise -> defMsg
         IssueClosed
             | Just issueId <- issue ->
