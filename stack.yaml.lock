@@ -5,6 +5,17 @@
 
 packages:
 - completed:
+    sha256: a0c14b987ded19b6f486e795c5e2127f26cc47d21972382a0150053eeec702c2
+    name: servant-cli
+    size: 18608
+    url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
+    pantry-tree:
+      sha256: aa8102fb0f3ed5c91990e21b5796301dc6242e37c0ebd4fde145e38729165323
+      size: 910
+    version: 0.1.0.2
+  original:
+    url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
+- completed:
     pantry-tree:
       sha256: 586ee2257b255cb7f2a3663711199f9de9e70445ce7cb192f5af07dd66eadac2
       size: 896
@@ -22,6 +33,17 @@ packages:
     version: 0.7.1.0
   original:
     url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
+- completed:
+    sha256: f06bd56e187510f0c0102df91f5e2f731a75c7bad03829f51aae8b6ea6638fd3
+    name: stellar-sdk
+    size: 41162
+    url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
+    pantry-tree:
+      sha256: e7ccb7cf30de3adee806c361f9ba97274adf8740d0506dbc4b8d3c7e3b6bf758
+      size: 1983
+    version: 0.1.0
+  original:
+    url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
 snapshots:
 - completed:
     sha256: be747117bed6d462806c883352c3206325b23480825103f5c87884e97e52819a

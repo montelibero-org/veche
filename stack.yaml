@@ -8,7 +8,7 @@ packages:
 extra-deps:
   # stellar-horizon:exe
     - github: cblp/servant-cli
-      commit: ae3f88791806b3bb9a43173c0758af7c73b36e43
+      commit: 929da900e2a6526450e846e7182b3df6bc989209
       # https://github.com/mstksg/servant-cli/pull/3
   # stellar-sdk
     - DRBG-0.5.5
@@ -17,4 +17,4 @@ extra-deps:
       commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
-      commit: 031faeef3949af463e1a860afb1f7f907d51bc0c
+      commit: 370f67c59b3102fadd3772217c7e9681d4c4404c
