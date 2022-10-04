@@ -1,7 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -11,8 +10,8 @@ import Stellar.Horizon.Types qualified as Stellar
 import TestImport
 
 import Genesis (mtlFund)
+import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
-import Model.Types (EventType (IssueClosed, IssueCreated, IssueReopened))
 
 spec :: Spec
 spec =
@@ -20,27 +19,26 @@ spec =
         it "records an event when an issue created" do
             create
 
-            events <- runDB Event.dbGetUndelivered
-            [(type_, issue) | Entity _ Event{type_, issue} <- events]
-                === [(IssueCreated, Just issueId)]
+            msgs <- getMessages
+            msgs === ["A new discussion is started /issues/1"]
 
         it "records events about closing and reopening" do
             create
             close
             reopen
 
-            events <- runDB Event.dbGetUndelivered
-            [(type_, issue) | Entity _ Event{type_, issue} <- events]
-                === [ (IssueCreated , Just issueId)
-                    , (IssueClosed  , Just issueId)
-                    , (IssueReopened, Just issueId)
+            msgs <- getMessages
+            msgs
+                === [ "A new discussion is started /issues/1"
+                    , "Discussion is closed /issues/1"
+                    , "Discussion is reopened /issues/1"
                     ]
   where
-    userIdent = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
+    userName = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
     issueId = IssueKey 1
 
     create = do
-        userEntity <- createUser userIdent Nothing
+        userEntity <- createUser userName Nothing
         authenticateAs userEntity
 
         -- allow the user to create a new issue
@@ -48,7 +46,7 @@ spec =
             insert_
                 StellarSigner
                     { target    = mtlFund
-                    , key       = Stellar.Address userIdent
+                    , key       = Stellar.Address userName
                     , weight    = 1
                     }
 
@@ -70,3 +68,10 @@ spec =
     reopen = do
         postWithCsrf $ IssueReopenR issueId
         statusIs 303
+
+    getMessages = do
+        events <- runDB Event.dbGetUndelivered
+        app <- getTestYesod
+        let make :: SomeEvent -> Text
+            make (SomeEvent e) = Event.makeMessage app e
+        pure $ map make events

@@ -12,7 +12,6 @@
 module Model.Types (
     Choice (..),
     CommentType (..),
-    EventType (..),
     StellarMultiSigAddress (..),
 ) where
 
@@ -21,7 +20,6 @@ import ClassyPrelude
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
-import Database.Persist.TH (derivePersistField)
 import Stellar.Horizon.Types qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
 import Web.PathPieces (PathPiece, readFromPathPiece, showToPathPiece)
@@ -50,7 +48,6 @@ data CommentType
     | CommentEdit
     | CommentReject
     | CommentReopen
-    | CommentRequestInfo
     | CommentStart
     | CommentText
     deriving stock (Eq, Show)
@@ -62,14 +59,13 @@ deriving via JsonString CommentType instance PersistFieldSql CommentType
 
 instance ToMarkup CommentType where
     toMarkup = \case
-        CommentApprove      -> "approved"
-        CommentClose        -> "closed issue"
-        CommentEdit         -> "edited issue"
-        CommentReject       -> "rejected"
-        CommentReopen       -> "reopened issue"
-        CommentRequestInfo  -> "requested additional information"
-        CommentStart        -> "started issue"
-        CommentText         -> ""
+        CommentApprove  -> "approved"
+        CommentClose    -> "closed issue"
+        CommentEdit     -> "edited issue"
+        CommentReject   -> "rejected"
+        CommentReopen   -> "reopened issue"
+        CommentStart    -> "started issue"
+        CommentText     -> ""
 
 deriving newtype instance PersistField    Stellar.Address
 deriving newtype instance PersistFieldSql Stellar.Address
@@ -77,7 +73,3 @@ deriving newtype instance PersistFieldSql Stellar.Address
 newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
     deriving newtype (PersistField, PersistFieldSql)
     deriving stock Show
-
-data EventType = IssueCreated | IssueClosed | IssueReopened
-    deriving (Eq, Read, Show)
-derivePersistField "EventType"

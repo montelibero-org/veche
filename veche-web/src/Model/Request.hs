@@ -2,22 +2,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Model.Request (
     IssueRequestMaterialized (..),
     RequestMaterialized (..),
-    dbGetUndelivered,
-    dbGetUserToDeliver,
-    dbSetDelivered,
     selectActiveByIssueAndUser,
     selectActiveByUser,
 ) where
 
 import Import
 
-import Database.Persist (get, selectList, toPersistValue, update, (=.), (==.))
+import Database.Persist (toPersistValue)
 import Database.Persist.Sql (Single (..), rawSql)
 import Yesod.Persist (runDB)
 
@@ -74,15 +70,3 @@ selectActiveByIssueAndUser issueId userId = do
         [ IssueRequestMaterialized{id, comment, requestor}
         | (Single id, comment, requestor) <- requests
         ]
-
-dbGetUndelivered :: MonadIO m => SqlPersistT m [Entity Request]
-dbGetUndelivered = selectList [Request_delivered ==. False] []
-
-dbSetDelivered :: MonadIO m => RequestId -> SqlPersistT m ()
-dbSetDelivered id = update id [Request_delivered =. True]
-
-dbGetUserToDeliver ::
-    MonadIO m => Request -> SqlPersistT m (Maybe (UserId, Telegram))
-dbGetUserToDeliver Request{user} = do
-    mTelegram <- get $ TelegramKey user
-    pure $ (user,) <$> mTelegram

@@ -30,10 +30,11 @@ record issue choice = do
         upsert_ Vote{user, issue, choice} [Vote_choice =. choice]
         insert_
             Comment
-                { author    = user
-                , created   = now
-                , message   = mempty
-                , parent    = Nothing
+                { author            = user
+                , created           = now
+                , eventDelivered    = False
+                , message           = mempty
+                , parent            = Nothing
                 , issue
                 , type_ =
                     case choice of
