@@ -17,8 +17,8 @@ module Model.Event (
 
 import Import hiding (link)
 
-import Database.Persist (PersistEntity, PersistEntityBackend, get, selectList,
-                         update, (=.), (==.))
+import Database.Persist (PersistEntity, PersistEntityBackend, SelectOpt (Asc),
+                         get, selectList, update, (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
@@ -108,12 +108,14 @@ data SomeEvent = forall e. Event e => SomeEvent (Entity e)
 -- | Get all undelivered events
 dbGetUndelivered :: MonadIO m => SqlPersistT m [SomeEvent]
 dbGetUndelivered = do
-    comments <- selectList [Comment_eventDelivered ==. False] []
-    issues   <- selectList [Issue_eventDelivered   ==. False] []
-    requests <- selectList [Request_eventDelivered ==. False] []
+    comments <-
+        selectList [Comment_eventDelivered ==. False] [Asc Comment_created]
+    issues   <-
+        selectList [Issue_eventDelivered   ==. False] [Asc Issue_created  ]
+    requests <-
+        selectList [Request_eventDelivered ==. False] [Asc Request_created]
     pure $
-        map snd $
-        sortOn fst $
+        map snd . sortOn fst $
         map wrapC comments ++ map wrapI issues ++ map wrapR requests
   where
     wrapC e@(Entity _ Comment{created}) = (created, SomeEvent e)
