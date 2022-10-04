@@ -2,6 +2,7 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Model.Event (
@@ -15,7 +16,7 @@ module Model.Event (
 
 import Import
 
-import Database.Persist (getEntity, selectList, update, (=.), (==.))
+import Database.Persist (get, selectList, update, (=.), (==.))
 import Yesod.Persist (get404)
 
 makeIssueEvent :: EventType -> UTCTime -> IssueId -> Event
@@ -51,8 +52,9 @@ dbGetUsersToDeliver Event{type_, issue} =
         mmTelegram <-
             for issue \issueId -> do
                 Issue{author} <- get404 issueId
-                getEntity $ TelegramKey author
-        pure $ maybeToList $ unwrapEntity <$> join mmTelegram
+                mTelegram <- get $ TelegramKey author
+                pure $ (author,) <$> mTelegram
+        pure $ maybeToList $ join mmTelegram
 
     unwrapEntity (Entity (TelegramKey userId) telegram) = (userId, telegram)
 

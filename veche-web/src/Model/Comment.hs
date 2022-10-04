@@ -17,8 +17,7 @@ import Templates.Comment (CommentInput (CommentInput))
 import Templates.Comment qualified
 
 addText :: Entity User -> CommentInput -> Handler CommentId
-addText (Entity userId User{stellarAddress})
-        CommentInput{issue, message, requestUsers, provideInfo, parent} = do
+addText (Entity userId User{stellarAddress}) commentInput = do
     now <- liftIO getCurrentTime
     let comment =
             Comment
@@ -34,7 +33,7 @@ addText (Entity userId User{stellarAddress})
         requireAuthz $ AddIssueComment holderId
         commentId <- insert comment
         insertMany_
-            [ Request{comment = commentId, fulfilled = False, issue, user}
+            [ makeRequest commentId user
             | user <- toList requestUsers
             ]
         unsafeUpdateIssueCommentNum issue Nothing
@@ -46,6 +45,11 @@ addText (Entity userId User{stellarAddress})
             ]
             [Request_fulfilled =. True]
         pure commentId
+  where
+    CommentInput{issue, message, requestUsers, provideInfo, parent} =
+        commentInput
+    makeRequest comment user =
+        Request{comment, delivered = False, fulfilled = False, issue, user}
 
 updateIssueCommentNum ::
     IssueId ->

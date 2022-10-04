@@ -50,5 +50,9 @@
                             <td>A discussion is closed or reopened
                             <td>
                                 <input checked disabled type=checkbox>
+                        <tr>
+                            <td>Somebody requested you to comment
+                            <td>
+                                <input checked disabled type=checkbox>
             $else
                 Connect Telegram to enable notifications
