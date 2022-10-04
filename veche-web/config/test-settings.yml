@@ -1,3 +1,5 @@
+approot: ""
+
 database:
   # NOTE: By design, this setting prevents the SQLITE_DATABASE environment variable
   # from affecting test runs, so that we don't accidentally affect the

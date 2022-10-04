@@ -21,19 +21,20 @@ addText (Entity userId User{stellarAddress}) commentInput = do
     now <- liftIO getCurrentTime
     let comment =
             Comment
-                { author    = userId
-                , created   = now
+                { author            = userId
+                , created           = now
+                , eventDelivered    = False
                 , issue
                 , message
                 , parent
-                , type_     = CommentText
+                , type_             = CommentText
                 }
     runDB do
         Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
         requireAuthz $ AddIssueComment holderId
         commentId <- insert comment
         insertMany_
-            [ makeRequest commentId user
+            [ makeRequest commentId now user
             | user <- toList requestUsers
             ]
         unsafeUpdateIssueCommentNum issue Nothing
@@ -48,8 +49,15 @@ addText (Entity userId User{stellarAddress}) commentInput = do
   where
     CommentInput{issue, message, requestUsers, provideInfo, parent} =
         commentInput
-    makeRequest comment user =
-        Request{comment, delivered = False, fulfilled = False, issue, user}
+    makeRequest comment created user =
+        Request
+            { comment
+            , created
+            , eventDelivered    = False
+            , fulfilled         = False
+            , issue
+            , user
+            }
 
 updateIssueCommentNum ::
     IssueId ->

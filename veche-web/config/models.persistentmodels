@@ -3,23 +3,13 @@
 
 
 Comment
-    author  UserId
-    created UTCTime
-    message Text
-    parent  CommentId Maybe
-    issue   IssueId
-    type    CommentType
-
-    deriving Eq
-    deriving Show
-
-
-Event
-    type        EventType
-    time        UTCTime
-    delivered   Bool
-    issue       IssueId Maybe
-    comment     CommentId Maybe
+    author          UserId
+    created         UTCTime
+    message         Text
+    parent          CommentId Maybe
+    issue           IssueId
+    type            CommentType
+    eventDelivered  Bool
 
     deriving Eq
     deriving Show
@@ -42,6 +32,8 @@ Issue
                                     -- Must be recalculated on every
                                     -- addition/removal of text comments.
 
+    eventDelivered  Bool
+
     deriving Eq
     deriving Show
 
@@ -54,11 +46,14 @@ IssueVersion
 
 
 Request
-    user        UserId
-    comment     CommentId
-    fulfilled   Bool
-    issue       IssueId -- denormalized; request.issue == request.comment->issue
-    delivered   Bool    -- Request is also a kind of Event
+    user            UserId
+    comment         CommentId
+    fulfilled       Bool
+    issue           IssueId -- denormalized, must be:
+                            -- request.issue == request.comment->issue
+    created         UTCTime -- should be:
+                            -- request.created == request.comment->created
+    eventDelivered  Bool
 
     UniqueRequest user comment
 

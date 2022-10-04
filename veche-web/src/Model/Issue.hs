@@ -38,8 +38,6 @@ import Yesod.Persist (get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
-import Model.Event (makeEventIssueClosed, makeEventIssueCreated,
-                    makeEventIssueReopened)
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 import Types.Comment (CommentMaterialized (CommentMaterialized))
@@ -202,12 +200,13 @@ load issueId =
                 { id = CommentKey 0
                 , comment =
                     Comment
-                        { author    = authorId
+                        { author            = authorId
                         , created
-                        , message   = ""
-                        , parent    = Nothing
-                        , issue     = issueId
-                        , type_     = CommentStart
+                        , eventDelivered    = False
+                        , message           = ""
+                        , parent            = Nothing
+                        , issue             = issueId
+                        , type_             = CommentStart
                         }
                 , author
                 , requestedUsers = []
@@ -279,13 +278,14 @@ create IssueContent{title, body} = do
         requireAuthz $ CreateIssue signerId
         let issue =
                 Issue
-                    { approval      = 0
+                    { approval          = 0
+                    , author            = userId
+                    , commentNum        = 0
+                    , created           = now
+                    , curVersion        = Nothing
+                    , eventDelivered    = False
+                    , open              = True
                     , title
-                    , author        = userId
-                    , open          = True
-                    , commentNum    = 0
-                    , created       = now
-                    , curVersion    = Nothing
                     }
         issueId <- insert issue
         let version =
@@ -293,7 +293,6 @@ create IssueContent{title, body} = do
                     {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
         update issueId [Issue_curVersion =. Just versionId]
-        insert_ $ makeEventIssueCreated now issueId
         pure issueId
 
 edit :: IssueId -> IssueContent -> Handler ()
@@ -312,12 +311,13 @@ edit issueId IssueContent{title, body} = do
             [Issue_title =. title, Issue_curVersion =. Just versionId]
         insert_
             Comment
-                { author    = user
-                , created   = now
-                , message   = ""
-                , parent    = Nothing
-                , issue     = issueId
-                , type_     = CommentEdit
+                { author            = user
+                , created           = now
+                , eventDelivered    = False
+                , issue             = issueId
+                , message           = ""
+                , parent            = Nothing
+                , type_             = CommentEdit
                 }
 
 closeReopen :: IssueId -> StateAction -> Handler ()
@@ -328,18 +328,18 @@ closeReopen issueId stateAction = do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
         update issueId [Issue_open =. newState]
-        insert_ $ makeEvent now issueId
         insert_
             Comment
-                { author    = user
-                , created   = now
-                , message   = ""
-                , parent    = Nothing
-                , issue     = issueId
-                , type_     = commentType
+                { author            = user
+                , created           = now
+                , eventDelivered    = False
+                , issue             = issueId
+                , message           = ""
+                , parent            = Nothing
+                , type_             = commentType
                 }
   where
-    (newState, makeEvent, commentType) =
+    (newState, commentType) =
         case stateAction of
-            Close  -> (False, makeEventIssueClosed  , CommentClose )
-            Reopen -> (True , makeEventIssueReopened, CommentReopen)
+            Close  -> (False, CommentClose )
+            Reopen -> (True , CommentReopen)
