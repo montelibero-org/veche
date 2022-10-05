@@ -15,10 +15,10 @@ import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
                    FormResult, addClass, areq, fsAttrs, fsName,
                    generateFormPost, renderDivsNoLabels, runFormPostNoToken,
-                   textField)
+                   textField, FormRender)
 import Yesod.Form qualified
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm),
-                              renderBootstrap3)
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
+                              BootstrapGridOptions (ColSm), renderBootstrap3)
 
 data BForm m a = BForm
     { action  :: Maybe (Route (HandlerSite m))
@@ -39,7 +39,7 @@ makeFormWidget ::
 makeFormWidget method BForm{action, footer, classes} fields enctype = do
     urlRender <- getUrlRender
     let attrs =
-            [("method", method), ("role", "form")]
+            [("method", method), ("role", "form"), ("class", "form-horizontal")]
             ++  [("action", urlRender act) | Just act <- [action]]
             ++  foldr addClass [] classes
     [whamlet|
@@ -52,17 +52,20 @@ generateFormPostB ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     BForm m a -> m (WidgetFor (HandlerSite m) ())
 generateFormPostB b@BForm{aform} = do
-    (fields, enctype) <-
-        generateFormPost $ renderBootstrap3 BootstrapBasicForm aform
+    (fields, enctype) <- generateFormPost $ renderForm aform
     pure $ makeFormWidget "post" b fields enctype
 
 runFormPostB ::
     (MonadHandler m) =>
     BForm m a -> m (FormResult a, WidgetFor (HandlerSite m) ())
 runFormPostB b@BForm{aform} = do
-    ((result, fields), enctype) <-
-        runFormPostNoToken $ renderBootstrap3 BootstrapBasicForm aform
+    ((result, fields), enctype) <- runFormPostNoToken $ renderForm aform
     pure (result, makeFormWidget "post" b fields enctype)
+
+renderForm :: Monad m => FormRender m a
+renderForm =
+    renderBootstrap3 $
+    BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10)
 
 actionForm ::
     (HasCallStack, MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
