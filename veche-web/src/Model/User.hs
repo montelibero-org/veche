@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -7,6 +8,9 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.User (
+    -- * Data
+    User (..),
+    UserId,
     -- * Create
     getOrInsert,
     -- * Retrieve
@@ -29,6 +33,10 @@ import Database.Persist (delete, get, getBy, insert, repsert, selectList,
                          update, (=.))
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
+
+import Model (EntityField (User_name), Key (TelegramKey), Telegram (Telegram),
+              Unique (UniqueUser), User (User), UserId)
+import Model qualified
 
 getByStellarAddress ::
     PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))

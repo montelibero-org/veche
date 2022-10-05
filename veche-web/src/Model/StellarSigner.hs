@@ -4,6 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Model.StellarSigner (
+    StellarSigner (..),
     dbDelete,
     dbInsertMany,
     dbSelectAll,
@@ -18,6 +19,10 @@ import Database.Persist (deleteBy, insertMany_, selectList, updateWhere, (=.),
                          (==.))
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
+
+import Model (EntityField (StellarSigner_key, StellarSigner_target, StellarSigner_weight),
+              StellarSigner (StellarSigner), Unique (UniqueSigner))
+import Model qualified
 
 getByAddress403 ::
     StellarMultiSigAddress -> Stellar.Address -> Handler (Entity StellarSigner)

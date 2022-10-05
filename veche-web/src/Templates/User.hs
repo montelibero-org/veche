@@ -19,6 +19,9 @@ import Data.Text qualified as Text
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod (getsYesod)
 
+import Model.Telegram (Telegram (Telegram))
+import Model.Telegram qualified
+import Model.User (User (User))
 import Model.User qualified as User
 
 userNameWidget :: User -> Html

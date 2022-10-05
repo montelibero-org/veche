@@ -4,6 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Model.StellarHolder (
+    StellarHolder (..),
     dbDelete,
     dbInsertMany,
     dbSelectAll,
@@ -14,6 +15,10 @@ import Import hiding (deleteBy, keys)
 import Database.Persist (deleteBy, insertMany_, selectList, (==.))
 import Stellar.Horizon.Types (Asset)
 import Stellar.Horizon.Types qualified as Stellar
+
+import Model (EntityField (StellarHolder_asset), StellarHolder (StellarHolder),
+              Unique (UniqueHolder))
+import Model qualified
 
 dbSelectAll :: MonadIO m => Asset -> SqlPersistT m [Entity StellarHolder]
 dbSelectAll asset = selectList [StellarHolder_asset ==. asset] []

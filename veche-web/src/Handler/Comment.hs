@@ -13,10 +13,10 @@ import Import
 
 import Data.Set qualified as Set
 
+import Model.Comment (CommentInput (CommentInput))
 import Model.Comment qualified as Comment
-import Templates.Comment (CommentInput (CommentInput), commentAnchor,
-                          commentForm)
-import Templates.Comment qualified as CommentInput
+import Model.User (UserId)
+import Templates.Comment (commentAnchor, commentForm)
 
 postCommentsR :: Handler Html
 postCommentsR = do
@@ -25,8 +25,7 @@ postCommentsR = do
     requestUsers <- lookupRequestUsers
     case result of
         FormSuccess commentInput@CommentInput{issue} -> do
-            commentId <-
-                Comment.addText user commentInput{CommentInput.requestUsers}
+            commentId <- Comment.addText user commentInput{Comment.requestUsers}
             redirect $ IssueR issue :#: commentAnchor commentId
         _ -> invalidArgs [tshow result]
 

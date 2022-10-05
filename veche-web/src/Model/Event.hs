@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -24,6 +25,11 @@ import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 import Yesod.Persist (get404)
 
+import Model (Comment (Comment), CommentId,
+              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered),
+              Issue (Issue), IssueId, Key (TelegramKey), Request (Request),
+              Telegram, UserId)
+import Model qualified
 import Templates.Comment (commentAnchor)
 
 class (PersistEntity e, PersistEntityBackend e ~ SqlBackend, Show e) => Event e

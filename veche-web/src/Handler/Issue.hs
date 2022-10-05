@@ -23,20 +23,23 @@ import Import
 
 -- global
 import Data.Map.Strict qualified as Map
+import Network.HTTP.Types (badRequest400)
 
 -- component
-import Model.Issue (IssueMaterialized (IssueMaterialized),
+import Genesis (mtlFund)
+import Model.Issue (Issue (Issue), IssueId,
+                    IssueMaterialized (IssueMaterialized),
                     StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
+import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
+import Model.User (User (User))
+import Model.User qualified
 import Model.Vote qualified as Vote
-import Network.HTTP.Types (badRequest400)
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, issueTable,
                         newIssueForm, voteButtons)
 import Templates.User (userNameWidget)
-
-import Genesis (mtlFund)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do

@@ -3,7 +3,7 @@
 
 module Genesis where
 
-import Import
+import Import.NoFoundation
 
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar

@@ -39,7 +39,6 @@ import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
 import Authorization as X
 import Database.Persist.Extra as X
 import Form as X
-import Model as X
 import Model.Types as X
 import Settings as X
 import Settings.StaticFiles as X

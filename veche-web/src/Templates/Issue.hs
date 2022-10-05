@@ -1,6 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,9 +24,13 @@ import Import
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
-import Model.Request (RequestMaterialized (..))
+import Model.Comment (Comment (Comment))
+import Model.Comment qualified
+import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
+import Model.Issue qualified
+import Model.Request (RequestMaterialized (RequestMaterialized))
+import Model.Request qualified
 import Templates.Comment (commentAnchor)
-import Types.Issue (IssueContent (..))
 
 closeReopenButton :: IssueId -> Bool -> Widget
 closeReopenButton issueId issueIsOpen

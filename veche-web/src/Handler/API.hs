@@ -9,6 +9,7 @@ import Import
 import Data.Text qualified as Text
 import Stellar.Horizon.Types qualified as Stellar
 
+import Model.User (User (User))
 import Model.User qualified as User
 import Templates.User (userNameText)
 

@@ -29,6 +29,7 @@ library
     Model.Request
     Model.StellarHolder
     Model.StellarSigner
+    Model.Telegram
     Model.Types
     Model.User
     Model.Verifier
@@ -39,8 +40,6 @@ library
     Templates.Comment
     Templates.Issue
     Templates.User
-    Types.Comment
-    Types.Issue
     Workers.StellarUpdate
     Workers.Telegram
 

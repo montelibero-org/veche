@@ -12,7 +12,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Templates.Comment (
-    CommentInput (..),
     commentAnchor,
     commentForm,
     commentForestWidget,
@@ -28,9 +27,13 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
                               renderBootstrap3)
 
 -- component
-import Model.Request (IssueRequestMaterialized (..))
+import Model.Comment (Comment (Comment), CommentId, CommentInput (CommentInput),
+                      CommentMaterialized (CommentMaterialized))
+import Model.Comment qualified
+import Model.Issue (IssueId)
+import Model.Request (IssueRequestMaterialized (IssueRequestMaterialized))
+import Model.Request qualified
 import Templates.User (userNameText, userNameWidget)
-import Types.Comment (CommentMaterialized (..))
 
 commentForestWidget :: Forest CommentMaterialized -> Widget
 commentForestWidget comments =
@@ -53,15 +56,6 @@ commentWidget
 
 commentAnchor :: CommentId -> Text
 commentAnchor id = "comment" <> toPathPiece id
-
-data CommentInput = CommentInput
-    { issue        :: IssueId
-    , message      :: Text
-    , requestUsers :: Set UserId
-    , provideInfo  :: Set RequestId
-    , parent       :: Maybe CommentId
-    }
-    deriving Show
 
 commentForm ::
     Maybe IssueId ->

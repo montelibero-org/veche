@@ -16,6 +16,9 @@ import Database.Persist.Sql (SqlBackend)
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
+import Model (Unique (UniqueVerifier), Verifier (Verifier))
+import Model qualified
+
 setKey ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
     NominalDiffTime -> Stellar.Address -> Text -> HandlerFor app ()

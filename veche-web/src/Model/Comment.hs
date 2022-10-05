@@ -3,20 +3,51 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Model.Comment (addText, updateIssueCommentNum) where
+module Model.Comment (
+    Comment (..),
+    CommentId,
+    CommentInput (..),
+    CommentMaterialized (..),
+    addText,
+    updateIssueCommentNum,
+) where
 
-import Import
+import Import.NoFoundation
 
 import Database.Persist (count, insert, insertMany_, update, updateWhere, (<-.),
                          (=.), (==.))
-import Yesod.Persist (runDB)
+import Database.Persist.Sql (SqlBackend)
+import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
 import Genesis (mtlAsset)
-import Templates.Comment (CommentInput (CommentInput))
-import Templates.Comment qualified
+import Model (Comment (Comment), CommentId,
+              EntityField (Comment_issue, Comment_type, Issue_commentNum, RequestId, Request_fulfilled, Request_issue, Request_user),
+              Issue (Issue), IssueId, Request (Request), RequestId,
+              Unique (UniqueHolder), User (User), UserId)
+import Model qualified
 
-addText :: Entity User -> CommentInput -> Handler CommentId
+data CommentInput = CommentInput
+    { issue        :: IssueId
+    , message      :: Text
+    , requestUsers :: Set UserId
+    , provideInfo  :: Set RequestId
+    , parent       :: Maybe CommentId
+    }
+    deriving Show
+
+data CommentMaterialized = CommentMaterialized
+    { id             :: CommentId
+    , comment        :: Comment
+    , author         :: Entity User
+    , requestedUsers :: [User]
+    }
+    deriving (Show)
+
+addText ::
+    (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
+    Entity User -> CommentInput -> HandlerFor app CommentId
 addText (Entity userId User{stellarAddress}) commentInput = do
     now <- liftIO getCurrentTime
     let comment =
@@ -60,17 +91,19 @@ addText (Entity userId User{stellarAddress}) commentInput = do
             }
 
 updateIssueCommentNum ::
+    (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
     IssueId ->
     -- | If the issue value is given it will be checked for the need of update.
     Maybe Issue ->
-    Handler ()
+    HandlerFor app ()
 updateIssueCommentNum issueId = runDB . unsafeUpdateIssueCommentNum issueId
 
 unsafeUpdateIssueCommentNum ::
+    MonadIO m =>
     IssueId ->
     -- | If the issue value is given it will be checked for the need of update.
     Maybe Issue ->
-    SqlPersistT Handler ()
+    SqlPersistT m ()
 unsafeUpdateIssueCommentNum issueId mIssue = do
     commentNum <-
         count [Comment_issue ==. issueId, Comment_type ==. CommentText]

@@ -24,6 +24,8 @@ import Web.Telegram.API.Bot qualified as Telegram
 
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
+import Model.Telegram (Telegram (Telegram))
+import Model.Telegram qualified
 import Model.User qualified as User
 
 telegramBot :: App -> IO ()

@@ -5,7 +5,7 @@
 
 module Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR) where
 
-import Import hiding (username)
+import Import
 
 import Yesod.Form (intField, ireq, runInputGet)
 

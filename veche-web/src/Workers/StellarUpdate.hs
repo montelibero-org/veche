@@ -34,7 +34,9 @@ import Stellar.Horizon.Types qualified as Stellar
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model.Issue qualified as Issue
+import Model.StellarHolder (StellarHolder (StellarHolder))
 import Model.StellarHolder qualified as StellarHolder
+import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
 import Model.Vote qualified as Vote
 

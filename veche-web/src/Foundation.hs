@@ -61,6 +61,8 @@ import Yesod.Auth.Stellar qualified
 import Paths_veche (version)
 
 -- component
+import Model.Issue (IssueId)
+import Model.User (User (User), UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
 

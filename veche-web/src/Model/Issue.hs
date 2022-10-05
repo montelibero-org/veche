@@ -1,5 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -10,6 +10,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.Issue (
+    -- * Types
+    Issue (..),
+    IssueContent (..),
+    IssueId,
     IssueMaterialized (..),
     StateAction (..),
     -- * Create
@@ -27,23 +31,31 @@ module Model.Issue (
     edit,
 ) where
 
-import Import
+import Import.NoFoundation
 
 -- global
 import Data.Map.Strict qualified as Map
-import Database.Persist (Filter, get, getBy, getEntity, insert, insert_,
+import Database.Persist (Filter, Key, get, getBy, getEntity, insert, insert_,
                          selectList, toPersistValue, update, (=.), (==.))
-import Database.Persist.Sql (Single, rawSql, unSingle)
-import Yesod.Persist (get404, runDB)
+import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
+import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
+import Model (Comment (Comment),
+              EntityField (Issue_curVersion, Issue_open, Issue_title),
+              Issue (Issue), IssueId, IssueVersion (IssueVersion),
+              Key (CommentKey), Request (Request),
+              Unique (UniqueHolder, UniqueSigner), User (User), UserId,
+              Vote (Vote))
+import Model qualified
+import Model.Comment (CommentMaterialized (CommentMaterialized))
+import Model.Comment qualified
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
-import Types.Comment (CommentMaterialized (CommentMaterialized))
-import Types.Comment qualified
-import Types.Issue (IssueContent (IssueContent))
-import Types.Issue qualified
+
+data IssueContent = IssueContent{title, body :: Text}
+    deriving (Show)
 
 data VoteMaterialized = VoteMaterialized
     { choice :: Choice
@@ -67,7 +79,9 @@ data IssueMaterialized = IssueMaterialized
 data StateAction = Close | Reopen
     deriving (Eq)
 
-countOpenAndClosed :: Handler (Int, Int)
+countOpenAndClosed ::
+    (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
+    HandlerFor app (Int, Int)
 countOpenAndClosed = do
     counts :: [(Bool, Int)] <-
         runDB $
@@ -152,7 +166,13 @@ loadVotes issueId = do
         | (Entity _ Vote{choice}, voter) <- votes
         ]
 
-load :: IssueId -> Handler IssueMaterialized
+load ::
+    ( AuthEntity app ~ User
+    , AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    IssueId -> HandlerFor app IssueMaterialized
 load issueId =
     runDB do
         Entity userId User{stellarAddress} <- requireAuth
@@ -221,7 +241,13 @@ collectChoices votes =
         | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
-selectWith :: [Filter Issue] -> Handler [Entity Issue]
+selectWith ::
+    ( AuthEntity app ~ User
+    , AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    [Filter Issue] -> HandlerFor app [Entity Issue]
 selectWith filters =
     runDB do
         Entity _ User{stellarAddress} <- requireAuth
@@ -229,16 +255,30 @@ selectWith filters =
         requireAuthz $ ListIssues holderId
         selectList filters []
 
-selectByOpen :: Bool -> Handler [Entity Issue]
+selectByOpen ::
+    ( AuthEntity app ~ User
+    , AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    Bool -> HandlerFor app [Entity Issue]
 selectByOpen isOpen = selectWith [Issue_open ==. isOpen]
 
-selectAll :: Handler [Entity Issue]
+selectAll ::
+    ( AuthEntity app ~ User
+    , AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    HandlerFor app [Entity Issue]
 selectAll = selectWith []
 
 dbSelectAll :: MonadIO m => SqlPersistT m [Entity Issue]
 dbSelectAll = selectList [] []
 
-selectWithoutVoteFromUser :: Entity User -> Handler [Entity Issue]
+selectWithoutVoteFromUser ::
+    (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
+    Entity User -> HandlerFor app [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
     runDB do
         Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
@@ -254,7 +294,12 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
             \ WHERE vote.id IS NULL AND issue.open"
             [toPersistValue userId]
 
-getContentForEdit :: IssueId -> Handler IssueContent
+getContentForEdit ::
+    ( AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    IssueId -> HandlerFor app IssueContent
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
@@ -269,7 +314,13 @@ getContentForEdit issueId =
                     "Issue.current_version must exist in IssueVersion table"
         pure IssueContent{title, body}
 
-create :: IssueContent -> Handler IssueId
+create ::
+    ( AuthEntity app ~ User
+    , AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    IssueContent -> HandlerFor app IssueId
 create IssueContent{title, body} = do
     now <- liftIO getCurrentTime
     Entity userId User{stellarAddress} <- requireAuth
@@ -295,7 +346,12 @@ create IssueContent{title, body} = do
         update issueId [Issue_curVersion =. Just versionId]
         pure issueId
 
-edit :: IssueId -> IssueContent -> Handler ()
+edit ::
+    ( AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    IssueId -> IssueContent -> HandlerFor app ()
 edit issueId IssueContent{title, body} = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
@@ -320,7 +376,12 @@ edit issueId IssueContent{title, body} = do
                 , type_             = CommentEdit
                 }
 
-closeReopen :: IssueId -> StateAction -> Handler ()
+closeReopen ::
+    ( AuthId app ~ UserId
+    , YesodAuthPersist app
+    , YesodPersistBackend app ~ SqlBackend
+    ) =>
+    IssueId -> StateAction -> HandlerFor app ()
 closeReopen issueId stateAction = do
     now <- liftIO getCurrentTime
     user <- requireAuthId

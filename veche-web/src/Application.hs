@@ -67,6 +67,7 @@ import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
                       postIssueVoteR, postIssuesR)
 import Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR)
 import Handler.User (getUserR, putUserR)
+import Model (migrateAll)
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
 
