@@ -1,4 +1,6 @@
 #!/bin/bash
 set -eux -o pipefail
 
-./server.sh config/dev-settings.yml "$@"
+. ~/.config/veche.env
+export VECHE_TELEGRAM_TOKEN
+stack run veche -- config/dev-settings.yml "$@"
