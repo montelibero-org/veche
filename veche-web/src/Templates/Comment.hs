@@ -22,9 +22,7 @@ import Import
 -- global
 import Data.Set qualified as Set
 import Data.Time (rfc822DateFormat)
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
-                              BootstrapGridOptions (ColSm), bfs,
-                              renderBootstrap3)
+import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
 import Model.Comment (Comment (Comment), CommentId, CommentInput (CommentInput),
@@ -62,9 +60,7 @@ commentForm ::
     [IssueRequestMaterialized] ->
     (Html -> MForm Handler (FormResult CommentInput, Widget))
 commentForm mIssueId activeRequests =
-    renderBootstrap3
-        (BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10))
-        (commentAForm mIssueId activeRequests)
+    renderForm $ commentAForm mIssueId activeRequests
 
 commentAForm ::
     Maybe IssueId -> [IssueRequestMaterialized] -> AForm Handler CommentInput
