@@ -49,7 +49,7 @@ getIssueR issueId = do
             , isCloseReopenAllowed
             , isCommentAllowed
             , isEditAllowed
-            , issue = Issue{title, open}
+            , issue = Issue{title, open, poll}
             , isVoteAllowed
             , requests
             , votes

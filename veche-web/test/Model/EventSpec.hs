@@ -59,6 +59,7 @@ spec =
             addTokenFromCookie
             addPostParam "title" "Name road"
             addPostParam "body" "Shirt typical invented. Date flower."
+            addPostParam "poll" "1"
         statusIs 303
 
     close = do

@@ -33,6 +33,7 @@ Issue
                                     -- addition/removal of text comments.
 
     eventDelivered  Bool
+    poll            Poll Maybe
 
     deriving Eq
     deriving Show

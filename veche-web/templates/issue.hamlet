@@ -18,22 +18,23 @@ $if isCloseReopenAllowed
 
 <hr>
 
-<div .row>
-    $forall (choice, percentage, share, voters) <- voteResults
-        <label .col-sm-2>#{choice}
-        <div .col-sm-10>
-            <div .progress style="margin-bottom: 3px;">
-                <div .progress-bar role=progressbar
-                    style="width: #{percentage}%;">
-                        #{share}
-            <p .help-block>
-                #{intercalate ", " $ map userNameWidget voters}
-
-$if isVoteAllowed
+$if isJust poll
     <div .row>
-        <div .col-sm-offset-2 .col-sm-10>
-            ^{voteButtons issueId}
-    <hr>
+        $forall (choice, percentage, share, voters) <- voteResults
+            <label .col-sm-2>#{choice}
+            <div .col-sm-10>
+                <div .progress style="margin-bottom: 3px;">
+                    <div .progress-bar role=progressbar
+                        style="width: #{percentage}%;">
+                            #{share}
+                <p .help-block>
+                    #{intercalate ", " $ map userNameWidget voters}
+
+    $if isVoteAllowed
+        <div .row>
+            <div .col-sm-offset-2 .col-sm-10>
+                ^{voteButtons issueId}
+        <hr>
 
 <div #comments>
     ^{commentForestWidget comments}

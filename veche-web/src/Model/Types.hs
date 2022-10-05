@@ -12,6 +12,7 @@
 module Model.Types (
     Choice (..),
     CommentType (..),
+    Poll (..),
     StellarMultiSigAddress (..),
 ) where
 
@@ -20,6 +21,7 @@ import ClassyPrelude
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
+import Database.Persist.TH (derivePersistField)
 import Stellar.Horizon.Types qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
 import Web.PathPieces (PathPiece, readFromPathPiece, showToPathPiece)
@@ -73,3 +75,8 @@ deriving newtype instance PersistFieldSql Stellar.Address
 newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
     deriving newtype (PersistField, PersistFieldSql)
     deriving stock Show
+
+-- | Type of poll
+data Poll = BySignerWeight
+    deriving (Eq, Read, Show)
+derivePersistField "Poll"

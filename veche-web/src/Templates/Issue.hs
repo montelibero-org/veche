@@ -21,6 +21,8 @@ module Templates.Issue
 import Import
 
 -- global
+import Yesod.Form (FormMessage (MsgSelectNone), OptionList, optionsPairs,
+                   withRadioField)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
@@ -42,6 +44,34 @@ voteButtons issueId = do
     actionButton (IssueVoteR issueId Approve) ["btn-success"] "Approve"
     actionButton (IssueVoteR issueId Reject ) ["btn-danger" ] "Reject"
 
+radioFieldList :: Eq a => [(Text, a)] -> Field Handler a
+radioFieldList = radioField . optionsPairs
+
+-- TODO https://github.com/yesodweb/yesod/pull/1783
+radioField :: Eq a => Handler (OptionList a) -> Field Handler a
+radioField =
+    withRadioField
+        (\theId optionWidget ->
+            [whamlet|
+                $newline never
+                <div .radio>
+                    <label for=#{theId}-none>
+                        <div>
+                            ^{optionWidget}
+                            _{MsgSelectNone}
+            |]
+        )
+        (\theId value _isSel text optionWidget ->
+            [whamlet|
+                $newline never
+                <div .radio>
+                    <label for=#{theId}-#{value}>
+                        <div>
+                            ^{optionWidget}
+                            \#{text}
+            |]
+        )
+
 issueForm :: Maybe IssueContent -> Form IssueContent
 issueForm previousContent =
     bform do
@@ -56,7 +86,16 @@ issueForm previousContent =
                 textareaField
                 (bfs ("Message" :: Text)){fsName = Just "body"}
                 (previousContent <&> \IssueContent{body} -> Textarea body)
-        pure IssueContent{..}
+        poll <-
+            areq
+                (radioFieldList
+                    [ ("Disabled",                  Nothing             )
+                    , ("Weighted by signer weight", Just BySignerWeight )
+                    ]
+                )
+                "Poll"{fsName = Just "poll"}
+                (Just do IssueContent{poll} <- previousContent; poll)
+        pure IssueContent{body, poll, title}
 
 editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
 editIssueForm issueId previousContent =

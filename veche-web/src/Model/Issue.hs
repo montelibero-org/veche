@@ -38,12 +38,13 @@ import Data.Map.Strict qualified as Map
 import Database.Persist (Filter, Key, get, getBy, getEntity, insert, insert_,
                          selectList, toPersistValue, update, (=.), (==.))
 import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
+import Yesod.Core (notFound)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
-              EntityField (Issue_curVersion, Issue_open, Issue_title),
+              EntityField (Issue_curVersion, Issue_open, Issue_poll, Issue_title),
               Issue (Issue), IssueId, IssueVersion (IssueVersion),
               Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
@@ -54,7 +55,7 @@ import Model.Comment qualified
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 
-data IssueContent = IssueContent{title, body :: Text}
+data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
     deriving (Show)
 
 data VoteMaterialized = VoteMaterialized
@@ -303,7 +304,7 @@ getContentForEdit ::
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
-        issue@(Entity _ Issue{title, curVersion}) <-
+        issue@(Entity _ Issue{title, curVersion, poll}) <-
             getEntity404 issueId
         requireAuthz $ EditIssue issue userId
         versionId <-
@@ -312,7 +313,7 @@ getContentForEdit issueId =
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
-        pure IssueContent{title, body}
+        pure IssueContent{title, body, poll}
 
 create ::
     ( AuthEntity app ~ User
@@ -321,7 +322,7 @@ create ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     IssueContent -> HandlerFor app IssueId
-create IssueContent{title, body} = do
+create IssueContent{title, body, poll} = do
     now <- liftIO getCurrentTime
     Entity userId User{stellarAddress} <- requireAuth
     runDB do
@@ -336,6 +337,7 @@ create IssueContent{title, body} = do
                     , curVersion        = Nothing
                     , eventDelivered    = False
                     , open              = True
+                    , poll
                     , title
                     }
         issueId <- insert issue
@@ -352,19 +354,29 @@ edit ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     IssueId -> IssueContent -> HandlerFor app ()
-edit issueId IssueContent{title, body} = do
+edit issueId IssueContent{title, body, poll} = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
-        issue <- getEntity404 issueId
-        requireAuthz $ EditIssue issue user
+        old@Issue{title = oldTitle, poll = oldPoll, curVersion} <-
+            get404 issueId
+        version <- maybe notFound pure curVersion
+        requireAuthz $ EditIssue (Entity issueId old) user
+        IssueVersion{body = oldBody} <- get404 version
+        unless (title == oldTitle) updateTitle
+        unless (body == oldBody) $ addVersion now user
+        unless (poll == oldPoll) updatePoll
+        when (title /= oldTitle || body /= oldBody) $ addVersionComment now user
+  where
+
+    addVersion now user = do
         let version =
                 IssueVersion
                     {author = user, body, created = now, issue = issueId}
         versionId <- insert version
-        update
-            issueId
-            [Issue_title =. title, Issue_curVersion =. Just versionId]
+        update issueId [Issue_curVersion =. Just versionId]
+
+    addVersionComment now user =
         insert_
             Comment
                 { author            = user
@@ -375,6 +387,10 @@ edit issueId IssueContent{title, body} = do
                 , parent            = Nothing
                 , type_             = CommentEdit
                 }
+
+    updatePoll = update issueId [Issue_poll =. poll]
+
+    updateTitle = update issueId [Issue_title =. title]
 
 closeReopen ::
     ( AuthId app ~ UserId
