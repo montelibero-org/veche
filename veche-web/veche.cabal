@@ -39,6 +39,7 @@ library
     Settings.StaticFiles
     Templates.Comment
     Templates.Issue
+    Templates.Navbar
     Templates.User
     Workers.StellarUpdate
     Workers.Telegram

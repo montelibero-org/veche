@@ -65,6 +65,8 @@ import Model.Issue (IssueId)
 import Model.User (User (User), UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
+import Templates.Navbar (MenuItem (MenuItem))
+import Templates.Navbar qualified
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -78,19 +80,6 @@ data App = App
     , appLogger         :: Logger
     , appStellarHorizon :: BaseUrl
     }
-
-data MenuItem = MenuItem
-    { itemLabel         :: Text
-    , route             :: Route App
-    , accessCallback    :: Bool
-    }
-
-menuItem :: Text -> Route App -> MenuItem
-menuItem itemLabel route = MenuItem{itemLabel, route, accessCallback = True}
-
-data MenuTypes
-    = NavbarLeft MenuItem
-    | NavbarRight MenuItem
 
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
@@ -148,26 +137,17 @@ instance Yesod App where
         -- (title, parents) <- breadcrumbs
 
         -- Define the menu items of the header.
-        let menuItems =
-                [ NavbarLeft $ menuItem "Dashboard" DashboardR
-                , NavbarLeft $ menuItem "Issues" IssuesR
-                , NavbarRight
-                    (menuItem "Profile" UserR){accessCallback = isJust muser}
-                , NavbarRight
-                    (menuItem "Log in" $ AuthR LoginR)
-                        {accessCallback = isNothing muser}
-                , NavbarRight
-                    (menuItem "Log out" $ AuthR LogoutR)
-                        {accessCallback = isJust muser}
+        let navbarLeftMenu =
+                [ MenuItem "Dashboard" DashboardR
+                , MenuItem "Issues"    IssuesR
                 ]
+        let navbarRightMenu =
+                concat
+                    [ [MenuItem "Profile"   UserR         | isJust    muser]
+                    , [MenuItem "Log in"  $ AuthR LoginR  | isNothing muser]
+                    , [MenuItem "Log out" $ AuthR LogoutR | isJust    muser]
+                    ]
 
-        let navbarLeftMenuItems  = [x | NavbarLeft  x <- menuItems]
-        let navbarRightMenuItems = [x | NavbarRight x <- menuItems]
-
-        let navbarLeftFilteredMenuItems =
-                [x | x <- navbarLeftMenuItems, accessCallback x]
-        let navbarRightFilteredMenuItems =
-                [x | x <- navbarRightMenuItems, accessCallback x]
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -309,7 +289,7 @@ instance YesodAuth App where
         authStellar (authStellarConfig app) : extraAuthPlugins
       where
 
-        -- Enable authDummy login if enabled.
+        -- Enable authDummy login if allowed.
         extraAuthPlugins = [authDummy | appAuthDummyLogin]
 
         AppSettings{appAuthDummyLogin} = appSettings
