@@ -1,22 +1,20 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
+
+{-# OPTIONS -Wno-orphans #-} -- instance {Yesod,YesodBreadcrumbs...} App
 
 module Foundation where
 
+import Foundation.Base
 import Import.NoFoundation
 import Prelude qualified
 
@@ -26,10 +24,9 @@ import Data.CaseInsensitive qualified as CI
 import Data.Text.Encoding qualified as TE
 import Data.Time (secondsToNominalDiffTime)
 import Data.Version (showVersion)
-import Database.Persist.Sql (ConnectionPool, SqlBackend, runSqlPool)
+import Database.Persist.Sql (SqlBackend, runSqlPool)
 import Network.HTTP.Client (HasHttpManager, Manager)
 import Network.HTTP.Client qualified
-import Servant.Client (BaseUrl)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
@@ -40,8 +37,8 @@ import Yesod.Core (Approot (ApprootRequest),
                    defaultCsrfCookieName, defaultCsrfHeaderName,
                    defaultCsrfMiddleware, defaultYesodMiddleware,
                    getApprootText, getMessage, getYesod, guessApproot,
-                   liftHandler, mkYesodData, pageBody, pageHead, pageTitle,
-                   parseRoutesFile, widgetToPageContent)
+                   liftHandler, pageBody, pageHead, pageTitle,
+                   widgetToPageContent)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -50,7 +47,7 @@ import Yesod.Form (FormMessage, defaultFormMessage)
 import Yesod.Persist (DBRunner, YesodPersist, YesodPersistBackend,
                       YesodPersistRunner, defaultGetDBRunner)
 import Yesod.Persist qualified
-import Yesod.Static (Route (StaticRoute), Static, base64md5)
+import Yesod.Static (Route (StaticRoute), base64md5)
 
 -- project
 import Stellar.Horizon.Types qualified as Stellar
@@ -61,39 +58,11 @@ import Yesod.Auth.Stellar qualified
 import Paths_veche (version)
 
 -- component
-import Model.Issue (IssueId)
 import Model.User (User (User), UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
 import Templates.Navbar (MenuItem (MenuItem))
 import Templates.Navbar qualified
-
--- | The foundation datatype for your application. This can be a good place to
--- keep settings and values requiring initialization before your application
--- starts running, such as database connections. Every handler will have
--- access to the data present here.
-data App = App
-    { appSettings       :: AppSettings
-    , appStatic         :: Static -- ^ Settings for static file serving.
-    , appConnPool       :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager    :: Manager
-    , appLogger         :: Logger
-    , appStellarHorizon :: BaseUrl
-    }
-
--- This is where we define all of the routes in our application. For a full
--- explanation of the syntax, please see:
--- http://www.yesodweb.com/book/routing-and-handlers
---
--- Note that this is really half the story; in Application.hs, mkYesodDispatch
--- generates the rest of the code. Please see the following documentation
--- for an explanation for this split:
--- http://www.yesodweb.com/book/scaffolding-and-the-site-template#scaffolding-and-the-site-template_foundation_and_application_modules
---
--- This function also generates the following type synonyms:
--- type Handler = HandlerFor App
--- type Widget = WidgetFor App ()
-mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
 -- | A convenient synonym for database access functions.
 type DB a = forall m. (MonadUnliftIO m) => ReaderT SqlBackend m a
@@ -156,7 +125,7 @@ instance Yesod App where
         -- you to use normal widget features in default-layout.
 
         pc <-
-            widgetToPageContent $ do
+            widgetToPageContent do
                 addScript     $ StaticR js_common_js
                 addStylesheet $ StaticR css_bootstrap_css
                 addStylesheet $ StaticR css_bootstrap_theme_css

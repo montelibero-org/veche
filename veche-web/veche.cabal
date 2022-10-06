@@ -11,6 +11,7 @@ library
     Database.Persist.Extra
     Form
     Foundation
+    Foundation.Base
     Genesis
     Handler.Admin
     Handler.API

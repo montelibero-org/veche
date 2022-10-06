@@ -1,6 +1,5 @@
-module Import
-    ( module Import
-    ) where
+module Import (module X) where
 
-import Foundation as Import
-import Import.NoFoundation as Import
+import Foundation as X
+import Foundation.Base as X
+import Import.NoFoundation as X

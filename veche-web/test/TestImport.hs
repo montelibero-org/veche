@@ -35,6 +35,7 @@ import Yesod.Core (RedirectUrl, Yesod, messageLoggerSource)
 
 import Application (makeFoundation, makeLogWare)
 import Foundation as X
+import Foundation.Base as X
 import Model as X
 import Model.User qualified as User
 
