@@ -14,9 +14,11 @@ module Model.User (
     -- * Create
     getOrInsert,
     -- * Retrieve
+    dbSelectAll,
     getByStellarAddress,
     getTelegram,
-    dbSelectAll,
+    isHolder,
+    isSigner,
     selectAll,
     -- * Update
     setName,
@@ -29,13 +31,15 @@ module Model.User (
 
 import Import.NoFoundation
 
-import Database.Persist (delete, get, getBy, insert, repsert, selectList,
-                         update, (=.))
+import Database.Persist (delete, exists, get, getBy, insert, repsert,
+                         selectList, update, (=.), (==.))
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
 
-import Model (EntityField (User_name), Key (TelegramKey), Telegram (Telegram),
-              Unique (UniqueUser), User (User), UserId)
+import Genesis (mtlAsset, mtlFund)
+import Model (EntityField (StellarHolder_asset, StellarHolder_key, StellarSigner_key, StellarSigner_target, User_name),
+              Key (TelegramKey), Telegram (Telegram), Unique (UniqueUser),
+              User (User), UserId)
 import Model qualified
 
 getByStellarAddress ::
@@ -74,3 +78,15 @@ deleteTelegram = runDB . dbDeleteTelegram
 
 dbDeleteTelegram :: MonadIO m => UserId -> SqlPersistT m ()
 dbDeleteTelegram = delete . TelegramKey
+
+isSigner :: PersistSql app => User -> HandlerFor app Bool
+isSigner User{stellarAddress} =
+    runDB $
+    exists
+        [StellarSigner_target ==. mtlFund, StellarSigner_key ==. stellarAddress]
+
+isHolder :: PersistSql app => User -> HandlerFor app Bool
+isHolder User{stellarAddress} =
+    runDB $
+    exists
+        [StellarHolder_asset ==. mtlAsset, StellarHolder_key ==. stellarAddress]

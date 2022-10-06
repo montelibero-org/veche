@@ -20,6 +20,13 @@
         <div .col-sm-10 .form-control-static .user_stellar_address>
             #{stellarAddress}
     <div .form-group>
+        <label .col-sm-2 .control-label>Roles
+        <div .col-sm-10 .form-control-static>
+            $if isSigner
+                <span .badge>Signer
+            $if isHolder
+                <span .badge>Holder
+    <div .form-group>
         <label .col-sm-2 .control-label>Telegram
         <div .col-sm-10>
             $maybe telegram <- mTelegram
