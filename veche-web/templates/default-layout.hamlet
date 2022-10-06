@@ -12,12 +12,12 @@
             <ul .nav.navbar-nav>
                 $forall MenuItem{label, route} <- navbarLeftMenu
                     <li :Just route == mcurrentRoute:.active>
-                        <a href="@{route}">#{label}
+                        <a href="@{route}">_{label}
 
             <ul .nav.navbar-nav.navbar-right>
                 $forall MenuItem{label, route} <- navbarRightMenu
                     <li :Just route == mcurrentRoute:.active>
-                        <a href="@{route}">#{label}
+                        <a href="@{route}">_{label}
 
 <!-- Page Contents -->
 

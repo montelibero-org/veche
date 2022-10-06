@@ -107,14 +107,14 @@ instance Yesod App where
 
         -- Define the menu items of the header.
         let navbarLeftMenu =
-                [ MenuItem "Dashboard" DashboardR
-                , MenuItem "Issues"    IssuesR
+                [ MenuItem MsgDashboard DashboardR
+                , MenuItem MsgIssues    IssuesR
                 ]
         let navbarRightMenu =
                 concat
-                    [ [MenuItem "Profile"   UserR         | isJust    muser]
-                    , [MenuItem "Log in"  $ AuthR LoginR  | isNothing muser]
-                    , [MenuItem "Log out" $ AuthR LogoutR | isJust    muser]
+                    [ [MenuItem MsgProfile  UserR         | isJust    muser]
+                    , [MenuItem MsgLogIn  $ AuthR LoginR  | isNothing muser]
+                    , [MenuItem MsgLogOut $ AuthR LogoutR | isJust    muser]
                     ]
 
 

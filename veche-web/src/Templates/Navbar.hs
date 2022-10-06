@@ -1,6 +1,9 @@
 module Templates.Navbar where
 
 import Foundation.Base
-import Import.NoFoundation
 
-data MenuItem = MenuItem{label :: Text, route :: Route App}
+data MenuItem app =
+    MenuItem
+        { label     :: AppMessage
+        , route     :: Route App
+        }

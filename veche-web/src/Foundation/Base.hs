@@ -12,7 +12,7 @@ import Import.NoFoundation
 import Database.Persist.Sql (ConnectionPool)
 import Network.HTTP.Client (Manager)
 import Servant.Client (BaseUrl)
-import Yesod.Core (mkYesodData, parseRoutesFile)
+import Yesod.Core (mkMessage, mkYesodData, parseRoutesFile)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Static (Static)
@@ -45,3 +45,6 @@ data App = App
 -- type Handler = HandlerFor App
 -- type Widget = WidgetFor App ()
 mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
+
+mkMessage "App" "messages" "en"
+-- mkMessage "App" "messages" "ru"
