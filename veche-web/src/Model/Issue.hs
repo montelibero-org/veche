@@ -15,6 +15,7 @@ module Model.Issue (
     IssueContent (..),
     IssueId,
     IssueMaterialized (..),
+    Key (IssueKey),
     StateAction (..),
     -- * Create
     create,

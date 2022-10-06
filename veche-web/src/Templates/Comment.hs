@@ -92,8 +92,8 @@ commentAForm mIssueId activeRequests = do
         CommentInput
             { issue
             , message
-            , requestUsers = Set.empty
-            , provideInfo = maybe Set.empty Set.fromList provideInfo
+            , requestUsers  = Set.empty
+            , provideInfo   = maybe Set.empty Set.fromList provideInfo
             , parent
             }
 

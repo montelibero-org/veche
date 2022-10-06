@@ -48,11 +48,11 @@ data CommentMaterialized = CommentMaterialized
 addText ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
     Entity User -> CommentInput -> HandlerFor app CommentId
-addText (Entity userId User{stellarAddress}) commentInput = do
+addText (Entity author User{stellarAddress}) commentInput = do
     now <- liftIO getCurrentTime
     let comment =
             Comment
-                { author            = userId
+                { author
                 , created           = now
                 , eventDelivered    = False
                 , issue
@@ -72,7 +72,7 @@ addText (Entity userId User{stellarAddress}) commentInput = do
         updateWhere
             [ RequestId <-. toList provideInfo
             -- following filters present only for security
-            , Request_user  ==. userId
+            , Request_user  ==. author
             , Request_issue ==. issue
             ]
             [Request_fulfilled =. True]

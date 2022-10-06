@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,6 +10,9 @@ import TestImport
 
 import Data.Text qualified as Text
 import Stellar.Horizon.Types qualified as Stellar
+
+import Model.User (User (User))
+import Model.User qualified
 
 spec :: Spec
 spec =

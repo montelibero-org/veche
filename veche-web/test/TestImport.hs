@@ -21,6 +21,7 @@ import Hedgehog qualified
 import Stellar.Horizon.Types qualified as Stellar
 import Test.Hspec as X
 import Yesod.Auth as X
+import Yesod.Core as X (RedirectUrl, Yesod, messageLoggerSource, toPathPiece)
 import Yesod.Core.Unsafe (fakeHandlerGetLogger)
 import Yesod.Default.Config2 (loadYamlSettings, useEnv)
 import Yesod.Test as X
@@ -31,12 +32,11 @@ import Database.Persist.Sqlite (createSqlitePoolFromInfo, fkEnabled,
                                 mkSqliteConnectionInfo, sqlDatabase)
 import Lens.Micro (set)
 import Settings (appDatabaseConf)
-import Yesod.Core (RedirectUrl, Yesod, messageLoggerSource)
 
 import Application (makeFoundation, makeLogWare)
 import Foundation as X
 import Foundation.Base as X
-import Model as X
+import Model.User (User (User))
 import Model.User qualified as User
 
 runDB :: SqlPersistM a -> YesodExample App a

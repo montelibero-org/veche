@@ -31,6 +31,7 @@ import Model (Comment (Comment), CommentId,
               Telegram, UserId)
 import Model qualified
 import Templates.Comment (commentAnchor)
+import Templates.User (userNameText)
 
 class (PersistEntity e, PersistEntityBackend e ~ SqlBackend, Show e) => Event e
     where
@@ -39,8 +40,8 @@ class (PersistEntity e, PersistEntityBackend e ~ SqlBackend, Show e) => Event e
 
     dbSetDelivered :: MonadIO m => Key e -> SqlPersistT m ()
 
-    makeMessage :: App -> Entity e -> Text
-    makeMessage _ = tshow
+    makeMessage :: MonadIO m => App -> Entity e -> SqlPersistT m Text
+    makeMessage _ = pure . tshow
 
 instance Event Comment where
 
@@ -59,18 +60,23 @@ instance Event Comment where
 
     dbSetDelivered = updateSetTrue Comment_eventDelivered
 
-    makeMessage app (Entity id comment@Comment{type_, issue}) =
+    makeMessage app (Entity id comment@Comment{author, type_, issue}) =
         case type_ of
-            CommentApprove  -> tshow comment
-            CommentClose    -> [st|Discussion is closed #{issueLink}|]
-            CommentEdit     -> tshow comment
-            CommentReject   -> tshow comment
-            CommentReopen   -> [st|Discussion is reopened #{issueLink}|]
+            CommentApprove  -> dflt
+            CommentClose    -> pure [st|Discussion is closed #{issueLink}|]
+            CommentEdit     -> dflt
+            CommentReject   -> dflt
+            CommentReopen   -> pure [st|Discussion is reopened #{issueLink}|]
             CommentStart    -> error "not a real comment"
-            CommentText     -> [st|Somebody replied to you #{commentLink}|]
+            CommentText     -> commentTextMessage
       where
+        dflt = pure $ tshow comment
         issueLink = renderUrl app (IssueR issue)
         commentLink = issueLink <> "#" <> commentAnchor id
+
+        commentTextMessage = do
+            user <- get404 author
+            pure [st|#{userNameText user} replied to you #{commentLink}|]
 
 getIssueAuthor :: MonadIO m => IssueId -> SqlPersistT m [(UserId, Telegram)]
 getIssueAuthor issueId = do
@@ -91,7 +97,7 @@ instance Event Issue where
     dbSetDelivered = updateSetTrue Issue_eventDelivered
 
     makeMessage app (Entity issueId _) =
-        [st|A new discussion is started #{renderUrl app $ IssueR issueId}|]
+        pure [st|A new discussion is started #{renderUrl app $ IssueR issueId}|]
 
 unwrapTgEntity :: Entity Telegram -> (UserId, Telegram)
 unwrapTgEntity (Entity (TelegramKey userId) telegram) = (userId, telegram)
@@ -104,8 +110,10 @@ instance Event Request where
 
     dbSetDelivered = updateSetTrue Request_eventDelivered
 
-    makeMessage app (Entity _ Request{issue = issue, comment}) =
-        [st|Somebody requested you to comment in #{link}|]
+    makeMessage app (Entity _ Request{issue, comment}) = do
+        Comment{author} <- get404 comment
+        user            <- get404 author
+        pure [st|#{userNameText user} requested you to comment on #{link}|]
       where
         link = renderUrl app (IssueR issue) <> "#" <> commentAnchor comment
 

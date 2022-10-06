@@ -34,6 +34,7 @@ import Stellar.Horizon.Types (Account (Account), Signer (Signer),
 import Stellar.Horizon.Types qualified as Stellar
 
 -- package
+import Model.User (User (User))
 import Model.User qualified as User
 
 spec :: Spec

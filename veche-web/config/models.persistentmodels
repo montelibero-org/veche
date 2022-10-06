@@ -47,7 +47,7 @@ IssueVersion
 
 
 Request
-    user            UserId
+    user            UserId  -- who is requested
     comment         CommentId
     fulfilled       Bool
     issue           IssueId -- denormalized, must be:

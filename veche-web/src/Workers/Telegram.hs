@@ -55,16 +55,15 @@ telegramBot app = do
 
     notifyAll event users =
         for_ users \(userId, telegram) -> do
-            result <-
-                runTelegramClient' $
-                notify (Event.makeMessage app event) telegram
+            msg <- runDB $ Event.makeMessage app event
+            result <- runTelegramClient' $ notify telegram msg
             case result of
                 Left (FailureResponse _ Response{responseStatusCode})
                     | responseStatusCode == forbidden403 ->
                         runDB $ User.dbDeleteTelegram userId
                 Left e ->
                     throwIO $
-                    userError $ show (e, event, Event.makeMessage app event)
+                    userError $ show (e, event, msg)
                 Right () -> pure ()
 
     runTelegramClient' =
@@ -72,6 +71,6 @@ telegramBot app = do
             (Token $ "bot" <> appTelegramBotToken)
             appHttpManager
 
-notify :: Text -> Telegram -> TelegramClient ()
-notify text Telegram{chatid} =
+notify :: Telegram -> Text -> TelegramClient ()
+notify Telegram{chatid} text =
     void $ sendMessageM $ sendMessageRequest (ChatId chatid) text
