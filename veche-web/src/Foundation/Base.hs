@@ -47,4 +47,3 @@ data App = App
 mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
 mkMessage "App" "messages" "en"
--- mkMessage "App" "messages" "ru"
