@@ -30,7 +30,7 @@
         <label .col-sm-2 .control-label>Telegram
         <div .col-sm-10>
             $maybe telegram <- mTelegram
-                ^{telegramWidget telegram}
+                ^{telegramUsernameWidget telegram}
                 ^{unlinkTeleram}
             $nothing
                 <script async
