@@ -40,7 +40,8 @@ telegramWidget Telegram{username} = [whamlet|<samp>@#{username}|]
 
 unlinkTeleram :: Widget
 unlinkTeleram =
-    actionButton AuthTelegramUnlinkR ["btn-danger"] "Unlink Telegram account"
+    actionButton
+        AuthTelegramUnlinkR ["btn-danger"] "Unlink Telegram account" True
 
 userPage :: Handler Html
 userPage = do

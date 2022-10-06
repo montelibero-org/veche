@@ -101,8 +101,13 @@ actionButton ::
     Route site ->
     [Text] ->   -- ^ additional classes, e.g. ["btn-ganger"]
     Text ->     -- ^ button text
+    Bool ->     -- ^ is enabled
     WidgetFor site ()
-actionButton route classes text =
-    [whamlet|<button *{attrs} onclick="submitPostForm('@{route}')">#{text}|]
+actionButton route classes text isEnabled =
+    [whamlet|
+        <button *{attrs} onclick="submitPostForm('@{route}')"
+                :not isEnabled:disabled>
+            #{text}
+    |]
   where
     attrs = [("class" :: Text, Text.unwords $ "btn" : classes)]

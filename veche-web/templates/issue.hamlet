@@ -30,11 +30,10 @@ $if isJust poll
                 <p .help-block>
                     #{intercalate ", " $ map userNameWidget voters}
 
-    $if isVoteAllowed
-        <div .row>
-            <div .col-sm-offset-2 .col-sm-10>
-                ^{voteButtons issueId}
-        <hr>
+    <div .row>
+        <div .col-sm-offset-2 .col-sm-10>
+            ^{voteButtons isVoteAllowed issueId}
+    <hr>
 
 <div #comments>
     ^{commentForestWidget comments}

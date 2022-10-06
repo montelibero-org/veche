@@ -36,18 +36,21 @@ import Templates.Comment (commentAnchor)
 
 closeReopenButton :: IssueId -> Bool -> Widget
 closeReopenButton issueId issueIsOpen
-    | issueIsOpen = actionButton (IssueCloseR  issueId) ["btn-danger" ] "Close"
-    | otherwise   = actionButton (IssueReopenR issueId) ["btn-success"] "Reopen"
+    | issueIsOpen =
+        actionButton (IssueCloseR  issueId) ["btn-danger"] "Close" True
+    | otherwise =
+        actionButton (IssueReopenR issueId) ["btn-success"] "Reopen" True
 
-voteButtons :: IssueId -> Widget
-voteButtons issueId = do
-    actionButton (IssueVoteR issueId Approve) ["btn-success"] "Approve"
-    actionButton (IssueVoteR issueId Reject ) ["btn-danger" ] "Reject"
+voteButtons :: Bool -> IssueId -> Widget
+voteButtons isEnabled issueId = do
+    actionButton
+        (IssueVoteR issueId Approve) ["btn-success"] "Approve" isEnabled
+    actionButton (IssueVoteR issueId Reject) ["btn-danger"] "Reject" isEnabled
 
 radioFieldList :: Eq a => [(Text, a)] -> Field Handler a
 radioFieldList = radioField . optionsPairs
 
--- TODO https://github.com/yesodweb/yesod/pull/1783
+-- TODO wait yesod-form 1.7.3
 radioField :: Eq a => Handler (OptionList a) -> Field Handler a
 radioField =
     withRadioField
