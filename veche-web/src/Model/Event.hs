@@ -47,10 +47,10 @@ instance Event Comment where
     dbGetUsersToDeliver Comment{type_, issue, parent} =
         case type_ of
             CommentApprove  -> pure []
-            CommentClose    -> getIssueAuthor issue
+            CommentClose    -> pure []
             CommentEdit     -> pure []
             CommentReject   -> pure []
-            CommentReopen   -> getIssueAuthor issue
+            CommentReopen   -> pure []
             CommentStart    -> error "not a real comment"
             CommentText     -> getParentCommentAuthor
       where

@@ -54,10 +54,6 @@
                             <td>
                                 <input checked disabled type=checkbox>
                         <tr>
-                            <td>A discussion is closed or reopened
-                            <td>
-                                <input checked disabled type=checkbox>
-                        <tr>
                             <td>Somebody replied to you
                             <td>
                                 <input checked disabled type=checkbox>
