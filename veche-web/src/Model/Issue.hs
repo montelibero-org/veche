@@ -21,7 +21,6 @@ module Model.Issue (
     create,
     -- * Retrieve
     countOpenAndClosed,
-    dbSelectAll,
     getContentForEdit,
     load,
     selectAll,
@@ -30,6 +29,8 @@ module Model.Issue (
     -- * Update
     closeReopen,
     edit,
+    -- * Tools
+    dbUpdateAllIssueApprovals,
 ) where
 
 import Import.NoFoundation
@@ -37,7 +38,7 @@ import Import.NoFoundation
 -- global
 import Data.Map.Strict qualified as Map
 import Database.Persist (Filter, Key, get, getBy, getEntity, insert, insert_,
-                         selectList, toPersistValue, update, (=.), (==.))
+                         selectList, toPersistValue, update, (!=.), (=.), (==.))
 import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
 import Yesod.Core (notFound)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
@@ -55,6 +56,7 @@ import Model.Comment (CommentMaterialized (CommentMaterialized))
 import Model.Comment qualified
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
+import Model.Vote qualified as Vote
 
 data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
     deriving (Show)
@@ -275,9 +277,6 @@ selectAll ::
     HandlerFor app [Entity Issue]
 selectAll = selectWith []
 
-dbSelectAll :: MonadIO m => SqlPersistT m [Entity Issue]
-dbSelectAll = selectList [] []
-
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
     Entity User -> HandlerFor app [Entity Issue]
@@ -421,3 +420,9 @@ closeReopen issueId stateAction = do
         case stateAction of
             Close  -> (False, CommentClose )
             Reopen -> (True , CommentReopen)
+
+dbUpdateAllIssueApprovals :: MonadIO m => SqlPersistT m ()
+dbUpdateAllIssueApprovals = do
+    issues <- selectList [Issue_open ==. True, Issue_poll !=. Nothing] []
+    for_ issues \(Entity issueId issue@Issue{poll}) ->
+        when (isJust poll) $ Vote.dbUpdateIssueApproval issueId $ Just issue

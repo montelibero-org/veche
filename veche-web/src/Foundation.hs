@@ -3,11 +3,10 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {-# OPTIONS -Wno-orphans #-} -- instance {Yesod,YesodBreadcrumbs...} App
@@ -19,34 +18,21 @@ import Import.NoFoundation
 import Prelude qualified
 
 -- global
-import Control.Monad.Logger (LogLevel (LevelError, LevelWarn), LogSource)
-import Data.CaseInsensitive qualified as CI
-import Data.Text.Encoding qualified as TE
+import Control.Monad.Logger (LogLevel (LevelWarn), LogSource)
 import Data.Time (secondsToNominalDiffTime)
-import Data.Version (showVersion)
-import Database.Persist.Sql (SqlBackend, runSqlPool)
-import Network.HTTP.Client (HasHttpManager, Manager)
-import Network.HTTP.Client qualified
-import Text.Hamlet (hamletFile)
+import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
 import Yesod.Core (Approot (ApprootRequest),
-                   AuthResult (Authorized, Unauthorized), HandlerSite, Lang,
-                   RenderMessage, SessionBackend, Yesod, YesodBreadcrumbs,
-                   addScript, addStylesheet, defaultClientSessionBackend,
-                   defaultCsrfCookieName, defaultCsrfHeaderName,
-                   defaultCsrfMiddleware, defaultYesodMiddleware,
-                   getApprootText, getMessage, getYesod, guessApproot,
-                   liftHandler, pageBody, pageHead, pageTitle,
-                   widgetToPageContent)
+                   AuthResult (Authorized, Unauthorized), HandlerSite,
+                   SessionBackend, Yesod, YesodBreadcrumbs,
+                   defaultClientSessionBackend, defaultCsrfMiddleware,
+                   defaultYesodMiddleware, getApprootText, getYesod,
+                   guessApproot, liftHandler)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
 import Yesod.Default.Util (addStaticContentExternal)
-import Yesod.Form (FormMessage, defaultFormMessage)
-import Yesod.Persist (DBRunner, YesodPersist, YesodPersistBackend,
-                      YesodPersistRunner, defaultGetDBRunner)
-import Yesod.Persist qualified
 import Yesod.Static (Route (StaticRoute), base64md5)
 
 -- project
@@ -54,15 +40,12 @@ import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
--- package
-import Paths_veche (version)
-
 -- component
 import Model.User (User (User), UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
-import Templates.Navbar (MenuItem (MenuItem))
-import Templates.Navbar qualified
+import Templates.DefaultLayout (isAuthRMay)
+import Templates.DefaultLayout qualified
 
 -- | A convenient synonym for database access functions.
 type DB a = forall m. (MonadUnliftIO m) => ReaderT SqlBackend m a
@@ -95,44 +78,7 @@ instance Yesod App where
     yesodMiddleware = defaultYesodMiddleware . csrfMiddleware
 
     defaultLayout :: Widget -> Handler Html
-    defaultLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
-
-        muser <- maybeAuthPair
-        mcurrentRoute <- getCurrentRoute
-
-        -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
-        -- (title, parents) <- breadcrumbs
-
-        -- Define the menu items of the header.
-        let navbarLeftMenu =
-                [ MenuItem MsgDashboard DashboardR
-                , MenuItem MsgIssues    IssuesR
-                ]
-        let navbarRightMenu =
-                concat
-                    [ [MenuItem MsgProfile  UserR         | isJust    muser]
-                    , [MenuItem MsgLogIn  $ AuthR LoginR  | isNothing muser]
-                    , [MenuItem MsgLogOut $ AuthR LogoutR | isJust    muser]
-                    ]
-
-
-        -- We break up the default layout into two components:
-        -- default-layout is the contents of the body tag, and
-        -- default-layout-wrapper is the entire page. Since the final
-        -- value passed to hamletToRepHtml cannot be a widget, this allows
-        -- you to use normal widget features in default-layout.
-
-        pc <-
-            widgetToPageContent do
-                addScript     $ StaticR js_common_js
-                addStylesheet $ StaticR css_bootstrap_css
-                addStylesheet $ StaticR css_bootstrap_theme_css
-                addStylesheet $ StaticR css_common_css
-                addStylesheet $ StaticR css_fontawesome_all_css
-                $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
+    defaultLayout = Templates.DefaultLayout.defaultLayout
 
     -- The page to be redirected to when authentication is required.
     authRoute
@@ -186,10 +132,7 @@ instance Yesod App where
     -- in development, and warnings and errors in production.
     shouldLogIO :: App -> LogSource -> LogLevel -> IO Bool
     shouldLogIO app _source level =
-        pure $
-            appShouldLogAll (appSettings app)
-            || level == LevelWarn
-            || level == LevelError
+        pure $ appShouldLogAll (appSettings app) || level >= LevelWarn
 
     makeLogger :: App -> IO Logger
     makeLogger = pure . appLogger
@@ -214,18 +157,6 @@ instance YesodBreadcrumbs App where
         -- (AuthR _) -> pure ("Login",   Nothing)
         -- ProfileR  -> pure ("Profile", Nothing)
         _         -> pure ("",    Nothing)
-
--- How to run database actions.
-instance YesodPersist App where
-    type YesodPersistBackend App = SqlBackend
-    runDB :: SqlPersistT Handler a -> Handler a
-    runDB action = do
-        master <- getYesod
-        runSqlPool action $ appConnPool master
-
-instance YesodPersistRunner App where
-    getDBRunner :: Handler (DBRunner App, Handler ())
-    getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
     type AuthId App = UserId
@@ -284,35 +215,8 @@ isAuthenticated = do
 
 instance YesodAuthPersist App
 
--- This instance is required to use forms. You can modify renderMessage to
--- achieve customized and internationalized form validation messages.
-instance RenderMessage App FormMessage where
-    renderMessage :: App -> [Lang] -> FormMessage -> Text
-    renderMessage _ _ = defaultFormMessage
-
--- Useful when writing code that is re-usable outside of the Handler context.
--- An example is background jobs that send email.
--- This can also be useful for writing code that works across multiple Yesod
--- applications.
-instance HasHttpManager App where
-    getHttpManager :: App -> Manager
-    getHttpManager = appHttpManager
-
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
-
--- Note: Some functionality previously present in the scaffolding has been
--- moved to documentation in the Wiki. Following are some hopefully helpful
--- links:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email
--- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
--- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
-
-isAuthRMay :: Maybe (Route App) -> Bool
-isAuthRMay = \case
-    Just (AuthR _)  -> True
-    _               -> False
 
 type Form = BForm Handler
 

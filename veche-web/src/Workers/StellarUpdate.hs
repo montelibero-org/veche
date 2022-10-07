@@ -38,7 +38,6 @@ import Model.StellarHolder (StellarHolder (StellarHolder))
 import Model.StellarHolder qualified as StellarHolder
 import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
-import Model.Vote qualified as Vote
 
 stellarDataUpdater :: BaseUrl -> ConnectionPool -> Manager -> IO ()
 stellarDataUpdater baseUrl connPool manager = do
@@ -88,8 +87,7 @@ updateSignersCache clientEnv connPool target = do
                 Map.assocs $ Map.intersectionWith (,) cached actual
             , weightCached /= weightActual
             ]
-        unless (cached == actual)
-            updateAllIssueApprovals
+        unless (cached == actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
 
@@ -100,11 +98,6 @@ updateSignersCache clientEnv connPool target = do
     handleAdded = StellarSigner.dbInsertMany target . Map.assocs
 
     handleModified = traverse_ $ uncurry $ StellarSigner.dbSetWeight target
-
-    updateAllIssueApprovals = do
-        issues <- Issue.dbSelectAll
-        for_ issues \(Entity issueId issue) ->
-            Vote.dbUpdateIssueApproval issueId $ Just issue
 
 updateHoldersCache ::
     ClientEnv ->

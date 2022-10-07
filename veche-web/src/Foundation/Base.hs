@@ -1,4 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -7,17 +8,25 @@
 
 module Foundation.Base where
 
-import Import.NoFoundation
+import Import.NoFoundation hiding (action)
 
-import Database.Persist.Sql (ConnectionPool)
-import Network.HTTP.Client (Manager)
+-- global
+import Database.Persist.Sql (ConnectionPool, SqlBackend, runSqlPool)
+import Network.HTTP.Client (HasHttpManager, Manager)
+import Network.HTTP.Client qualified
 import Servant.Client (BaseUrl)
-import Yesod.Core (mkMessage, mkYesodData, parseRoutesFile)
+import Yesod.Core (Lang, RenderMessage, getYesod, mkMessage, mkYesodData,
+                   parseRoutesFile)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
+import Yesod.Form (FormMessage, defaultFormMessage)
+import Yesod.Persist (DBRunner, YesodPersist, YesodPersistRunner,
+                      defaultGetDBRunner)
+import Yesod.Persist qualified
 import Yesod.Static (Static)
 
-import Model.Issue (IssueId)
+-- component
+import Model (IssueId)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -47,3 +56,29 @@ data App = App
 mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
 mkMessage "App" "messages" "en"
+
+-- How to run database actions.
+instance YesodPersist App where
+    type YesodPersistBackend App = SqlBackend
+    runDB :: SqlPersistT Handler a -> Handler a
+    runDB action = do
+        master <- getYesod
+        runSqlPool action $ appConnPool master
+
+instance YesodPersistRunner App where
+    getDBRunner :: Handler (DBRunner App, Handler ())
+    getDBRunner = defaultGetDBRunner appConnPool
+
+-- This instance is required to use forms. You can modify renderMessage to
+-- achieve customized and internationalized form validation messages.
+instance RenderMessage App FormMessage where
+    renderMessage :: App -> [Lang] -> FormMessage -> Text
+    renderMessage _ _ = defaultFormMessage
+
+-- Useful when writing code that is re-usable outside of the Handler context.
+-- An example is background jobs that send email.
+-- This can also be useful for writing code that works across multiple Yesod
+-- applications.
+instance HasHttpManager App where
+    getHttpManager :: App -> Manager
+    getHttpManager = appHttpManager

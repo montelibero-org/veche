@@ -39,6 +39,7 @@ library
     Settings
     Settings.StaticFiles
     Templates.Comment
+    Templates.DefaultLayout
     Templates.Issue
     Templates.Navbar
     Templates.User
