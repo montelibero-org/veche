@@ -293,7 +293,7 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
                 \ LEFT JOIN\
                 \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
                 \ ON issue.id = vote.issue\
-            \ WHERE vote.id IS NULL AND issue.open"
+            \ WHERE issue.open AND issue.poll IS NOT NULL AND vote.id IS NULL"
             [toPersistValue userId]
 
 getContentForEdit ::

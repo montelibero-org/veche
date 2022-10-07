@@ -1,7 +1,4 @@
-<h2>Voting required (#{show $ length issues})
-
-^{issueTable issues}
+^{issuesToVote}
 
 <h2>Information requests (#{show $ length requests})
-
 ^{issueRequestTable requests}
