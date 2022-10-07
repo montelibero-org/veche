@@ -2,8 +2,9 @@
     <td>
         <a href=@{IssueR issueId}>#{title}
     <td .text-right>
-        <i .fa-solid .fa-check>
-        #{approvalPercent}%
+        $if isJust poll
+            <i .fa-solid .fa-check>
+            #{approvalPercent}%
     <td .text-right>
         <i .fa-solid .fa-comments>
         #{commentNum}
