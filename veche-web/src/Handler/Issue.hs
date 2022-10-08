@@ -4,16 +4,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Handler.Issue
     ( getIssueEditR
-    , getIssueNewR
+    , getForumIssueNewR
     , getIssueR
-    , getIssuesR
     , postIssueR
-    , postIssuesR
+    , postForumIssuesR
     , postIssueCloseR
     , postIssueReopenR
     , postIssueVoteR
@@ -27,6 +27,8 @@ import Network.HTTP.Types (badRequest400)
 
 -- component
 import Genesis (mtlFund)
+import Model.Forum (Forum (Forum), ForumId)
+import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
                     StateAction (Close, Reopen))
@@ -37,25 +39,35 @@ import Model.User (User (User))
 import Model.User qualified
 import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
-import Templates.Issue (closeReopenButton, editIssueForm, issueTable,
-                        newIssueForm, voteButtons)
+import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
+                        voteButtons)
 import Templates.User (userNameWidget)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
-    IssueMaterialized
-            { comments
-            , body
-            , isCloseReopenAllowed
-            , isCommentAllowed
-            , isEditAllowed
-            , issue = Issue{title, open, poll}
-            , isVoteAllowed
-            , requests
-            , votes
-            } <-
-        Issue.load issueId
+    issueMaterialized <- Issue.load issueId
+    let IssueMaterialized
+                { comments
+                , body
+                , forum = Forum{title = forumTitle}
+                , isCloseReopenAllowed
+                , isCommentAllowed
+                , isEditAllowed
+                , issue = Issue{forum = forumId, open, poll, title}
+                , requests
+                } =
+            issueMaterialized
+    pollWidget <- makePollWidget poll issueId issueMaterialized
+    (commentFormFields, commentFormEnctype) <-
+        generateFormPost $ commentForm (Just issueId) requests
+    defaultLayout $(widgetFile "issue")
 
+makePollWidget :: Maybe Poll -> IssueId -> IssueMaterialized -> Handler Widget
+makePollWidget Nothing _ _ = pure mempty
+makePollWidget
+        (Just BySignerWeight)
+        issueId
+        IssueMaterialized{isVoteAllowed, votes} = do
     signers <- StellarSigner.selectAll mtlFund
     let weights =
             Map.fromList
@@ -74,33 +86,41 @@ getIssueR issueId = do
                     :: Double
                 share = show choiceWeight <> "/" <> show (sum weights)
             ]
+    pure
+        [whamlet|
+            <div .row>
+                $forall (choice, percentage, share, voters) <- voteResults
+                    <label .col-sm-2>#{choice}
+                    <div .col-sm-10>
+                        <div .progress style="margin-bottom: 3px;">
+                            <div .progress-bar role=progressbar
+                                style="width: #{percentage}%;">
+                                    #{share}
+                        <p .help-block>
+                            #{intercalate ", " $ map userNameWidget voters}
+            <div .row>
+                <div .col-sm-offset-2 .col-sm-10>
+                    ^{voteButtons isVoteAllowed issueId}
+            <hr>
+        |]
 
-    (commentFormFields, commentFormEnctype) <-
-        generateFormPost $ commentForm (Just issueId) requests
-    defaultLayout $(widgetFile "issue")
-
-getIssueNewR :: Handler Html
-getIssueNewR = do
-    Entity _ User{stellarAddress} <- requireAuth
-    Entity signerId _ <- StellarSigner.getByAddress403 mtlFund stellarAddress
-    requireAuthz $ CreateIssue signerId
-    formWidget <- generateFormPostB newIssueForm
+getForumIssueNewR :: ForumId -> Handler Html
+getForumIssueNewR forumId = do
+    {-  No sense in checking permissions here:
+        - link here is already checked;
+        - no sensible information exposed;
+        - form sumbission is checked. -}
+    forumE <- Forum.getEntity404 forumId
+    formWidget <- generateFormPostB $ newIssueForm forumE
     defaultLayout formWidget
 
-getIssuesR :: Handler Html
-getIssuesR = do
-    mState <- lookupGetParam "state"
-    let stateOpen = mState /= Just "closed"
-    issues <- Issue.selectByOpen stateOpen
-    (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed
-    defaultLayout $(widgetFile "issues")
-
-postIssuesR :: Handler Void
-postIssuesR = do
-    (result, formWidget) <- runFormPostB newIssueForm
+postForumIssuesR :: ForumId -> Handler Void
+postForumIssuesR forumId = do
+    forumE <- Forum.getEntity404 forumId
+    (result, formWidget) <- runFormPostB $ newIssueForm forumE
     case result of
         FormSuccess content -> do
-            issueId <- Issue.create content
+            issueId <- Issue.create forumE content
             redirect $ IssueR issueId
         _ -> do
             page <- defaultLayout formWidget
@@ -124,7 +144,8 @@ closeReopen action issueId = do
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
-    (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
+    forumE <- Forum.getEntityByIssue404 issueId
+    (result, formWidget) <- runFormPostB $ editIssueForm forumE issueId Nothing
     case result of
         FormSuccess content -> do
             Issue.edit issueId content
@@ -133,6 +154,7 @@ postIssueR issueId = do
 
 getIssueEditR :: IssueId -> Handler Html
 getIssueEditR issueId = do
-    content <- Issue.getContentForEdit issueId
-    formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
+    (forumE, content) <- Issue.getContentForEdit issueId
+    formWidget <-
+        generateFormPostB $ editIssueForm forumE issueId $ Just content
     defaultLayout formWidget

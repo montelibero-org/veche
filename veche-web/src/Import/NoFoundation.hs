@@ -17,7 +17,7 @@ import Data.Proxy as X (Proxy (Proxy))
 import Data.Tree as X (Forest, Tree (Node), unfoldForest)
 import Data.Void as X (Void)
 import Data.Yaml as X (array)
-import Database.Persist as X (Entity (..))
+import Database.Persist as X (Entity (..), Key)
 import Database.Persist.Sql as X (SqlPersistT)
 import Network.HTTP.Types as X (internalServerError500, status400)
 import Yesod.Auth as X
@@ -65,3 +65,5 @@ m ?|> k = m >>= (?| k)
 
 asyncLinked :: MonadUnliftIO m => m a -> m ()
 asyncLinked = async >=> link
+
+type EntitySet a = Map (Key a) a

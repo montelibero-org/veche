@@ -8,14 +8,16 @@ module Handler.Admin (getAdminUpdateDatabaseR) where
 
 import Import
 
+import Database.Persist (selectList)
+import Yesod.Persist (runDB)
+
 import Model.Comment qualified as Comment
-import Model.Issue qualified as Issue
 import Model.Vote qualified as Vote
 
 getAdminUpdateDatabaseR :: Handler TypedContent
 getAdminUpdateDatabaseR = do
     respondSource "text/plain" do
-        issues <- lift Issue.selectAll
+        issues <- lift $ runDB $ selectList [] []
         sendChunkText $
             "Updating issues "
             <> intercalate ", " (map (toPathPiece . entityKey) issues) <> "\n"
@@ -24,4 +26,4 @@ getAdminUpdateDatabaseR = do
             lift do
                 Comment.updateIssueCommentNum issueId $ Just issueVal
                 Vote.updateIssueApproval      issueId $ Just issueVal
-        sendChunkText "Updated all issues\n"
+        sendChunkText "✅ Updated all issues\n"

@@ -30,7 +30,7 @@ import Model.User (User)
 navbarLeftMenu :: [(AppMessage, Route App)]
 navbarLeftMenu =
     [ (MsgDashboard, DashboardR)
-    , (MsgIssues   , IssuesR   )
+    , (MsgForums   , ForumsR   )
     ]
 
 navbarRightMenu :: Bool -> [(AppMessage, Route App)]

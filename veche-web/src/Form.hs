@@ -21,14 +21,21 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), renderBootstrap3)
 
 data BForm m a = BForm
-    { action  :: Maybe (Route (HandlerSite m))
-    , classes :: [Text]
-    , aform   :: AForm m a
-    , footer  :: WidgetFor (HandlerSite m) ()
+    { action            :: Maybe (Route (HandlerSite m))
+    , aform             :: AForm m a
+    , classes           :: [Text]
+    , header, footer    :: WidgetFor (HandlerSite m) ()
     }
 
 bform :: AForm m a -> BForm m a
-bform aform = BForm{aform, action = Nothing, footer = mempty, classes = []}
+bform aform =
+    BForm
+        { action    = Nothing
+        , aform
+        , classes   = []
+        , footer    = mempty
+        , header    = mempty
+        }
 
 makeFormWidget ::
     Text ->
@@ -36,7 +43,7 @@ makeFormWidget ::
     WidgetFor (HandlerSite m) () ->
     Enctype ->
     WidgetFor (HandlerSite m) ()
-makeFormWidget method BForm{action, footer, classes} fields enctype = do
+makeFormWidget method BForm{action, header, footer, classes} fields enctype = do
     urlRender <- getUrlRender
     let attrs =
             [("method", method), ("role", "form"), ("class", "form-horizontal")]
@@ -44,6 +51,7 @@ makeFormWidget method BForm{action, footer, classes} fields enctype = do
             ++  foldr addClass [] classes
     [whamlet|
         <form *{attrs} enctype=#{enctype}>
+            ^{header}
             ^{fields}
             ^{footer}
     |]

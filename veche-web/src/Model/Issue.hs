@@ -23,8 +23,7 @@ module Model.Issue (
     countOpenAndClosed,
     getContentForEdit,
     load,
-    selectAll,
-    selectByOpen,
+    listForumIssues,
     selectWithoutVoteFromUser,
     -- * Update
     closeReopen,
@@ -36,19 +35,21 @@ module Model.Issue (
 import Import.NoFoundation
 
 -- global
+import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
-import Database.Persist (Filter, Key, get, getBy, getEntity, insert, insert_,
-                         selectList, toPersistValue, update, (!=.), (=.), (==.))
+import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
+                         getBy, getEntity, getJust, getJustEntity, insert,
+                         insert_, selectList, toPersistValue, update, (!=.),
+                         (=.), (==.))
 import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
-import Yesod.Core (notFound)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
-              EntityField (Issue_curVersion, Issue_open, Issue_poll, Issue_title),
-              Issue (Issue), IssueId, IssueVersion (IssueVersion),
-              Key (CommentKey), Request (Request),
+              EntityField (Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title),
+              Forum, ForumId, Issue (Issue), IssueId,
+              IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
               Vote (Vote))
 import Model qualified
@@ -66,11 +67,10 @@ data VoteMaterialized = VoteMaterialized
     , voter  :: Entity User
     }
 
-type EntitySet a = Map (Key a) a
-
 data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
     , body                  :: Text
+    , forum                 :: Forum
     , isCloseReopenAllowed  :: Bool
     , isCommentAllowed      :: Bool
     , isEditAllowed         :: Bool
@@ -85,14 +85,14 @@ data StateAction = Close | Reopen
 
 countOpenAndClosed ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    HandlerFor app (Int, Int)
-countOpenAndClosed = do
+    ForumId -> HandlerFor app (Int, Int)
+countOpenAndClosed forum = do
     counts :: [(Bool, Int)] <-
         runDB $
             rawSql
                 @(Single Bool, Single Int)
-                "SELECT open, COUNT(*) FROM issue GROUP BY open"
-                []
+                "SELECT open, COUNT(*) FROM issue WHERE forum = ? GROUP BY open"
+                [toPersistValue forum]
             <&> map (bimap unSingle unSingle)
     pure
         ( findWithDefault 0 True  counts
@@ -179,13 +179,22 @@ load ::
     IssueId -> HandlerFor app IssueMaterialized
 load issueId =
     runDB do
-        Entity userId User{stellarAddress} <- requireAuth
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ ReadIssue holderId
-        mSignerId <-
-            fmap entityKey <$> getBy (UniqueSigner mtlFund stellarAddress)
+        issue <- get404 issueId
+        let Issue   { author    = authorId
+                    , created
+                    , curVersion
+                    , forum     = forumId
+                    } =
+                issue
+        forumE@(Entity _ forum) <- getJustEntity forumId
 
-        issue@Issue{author = authorId, created, curVersion} <- get404 issueId
+        Entity userId User{stellarAddress} <- requireAuth
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        requireAuthz $ ReadForumIssue forumE (mSignerId, mHolderId)
+
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
         author <-
@@ -203,12 +212,14 @@ load issueId =
         let issueE = Entity issueId issue
             isEditAllowed        = isAllowed $ EditIssue        issueE userId
             isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-            isCommentAllowed     = isAllowed $ AddIssueComment holderId
-            isVoteAllowed        = any (isAllowed . AddVote) mSignerId
+            isCommentAllowed     =
+                isAllowed $ AddForumIssueComment forumE (mSignerId, mHolderId)
+            isVoteAllowed        = isAllowed $ AddIssueVote issueE mSignerId
         pure
             IssueMaterialized
             { body
             , comments
+            , forum
             , isCloseReopenAllowed
             , isCommentAllowed
             , isEditAllowed
@@ -245,67 +256,72 @@ collectChoices votes =
         | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
-selectWith ::
+listForumIssues ::
     ( AuthEntity app ~ User
     , AuthId app ~ UserId
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    [Filter Issue] -> HandlerFor app [Entity Issue]
-selectWith filters =
+    Entity Forum -> Maybe Bool -> HandlerFor app [Entity Issue]
+listForumIssues forumE@(Entity forumId _) mIsOpen =
     runDB do
         Entity _ User{stellarAddress} <- requireAuth
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ ListIssues holderId
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        requireAuthz $ ListForumIssues forumE (mSignerId, mHolderId)
         selectList filters []
-
-selectByOpen ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    Bool -> HandlerFor app [Entity Issue]
-selectByOpen isOpen = selectWith [Issue_open ==. isOpen]
-
-selectAll ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    HandlerFor app [Entity Issue]
-selectAll = selectWith []
+  where
+    filters =
+        (Issue_forum ==. forumId)
+        : [Issue_open ==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
     Entity User -> HandlerFor app [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
     runDB do
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ ListIssues holderId
-        rawSql
-            @(Entity Issue)
-            "SELECT ??\
-            \ FROM\
-                \ issue\
-                \ LEFT JOIN\
-                \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
-                \ ON issue.id = vote.issue\
-            \ WHERE issue.open AND issue.poll IS NOT NULL AND vote.id IS NULL"
-            [toPersistValue userId]
+        forums <- do
+            fs <- selectList [] []
+            pure $ Map.fromList [(id, forumE) | forumE@(Entity id _) <- fs]
+        issues <-
+            rawSql
+                @(Entity Issue)
+                "SELECT ??\
+                \ FROM\
+                    \ issue\
+                    \ LEFT JOIN\
+                    \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
+                    \ ON issue.id = vote.issue\
+                \ WHERE issue.open\
+                    \ AND issue.poll IS NOT NULL\
+                    \ AND vote.id IS NULL"
+                [toPersistValue userId]
+                -- TODO(2022-10-08, cblp) filter accessible issues in the DB
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        pure
+            [issue
+            | issue@(Entity _ Issue{forum}) <- issues
+            , let forumE = forums ! forum
+            , isAllowed $ ListForumIssues forumE (mSignerId, mHolderId)
+            ]
 
 getContentForEdit ::
     ( AuthId app ~ UserId
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    IssueId -> HandlerFor app IssueContent
+    IssueId -> HandlerFor app (Entity Forum, IssueContent)
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
-        issue@(Entity _ Issue{title, curVersion, poll}) <-
+        issue@(Entity _ Issue{curVersion, forum = forumId, poll, title}) <-
             getEntity404 issueId
+        forum <- getJust forumId
         requireAuthz $ EditIssue issue userId
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
@@ -313,7 +329,7 @@ getContentForEdit issueId =
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
-        pure IssueContent{title, body, poll}
+        pure (Entity forumId forum, IssueContent{title, body, poll})
 
 create ::
     ( AuthEntity app ~ User
@@ -321,13 +337,16 @@ create ::
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    IssueContent -> HandlerFor app IssueId
-create IssueContent{title, body, poll} = do
+    Entity Forum -> IssueContent -> HandlerFor app IssueId
+create forumE@(Entity forumId _) IssueContent{body, poll, title} = do
     now <- liftIO getCurrentTime
     Entity userId User{stellarAddress} <- requireAuth
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund stellarAddress
-        requireAuthz $ CreateIssue signerId
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        requireAuthz $ AddForumIssue forumE (mSignerId, mHolderId)
         let issue =
                 Issue
                     { approval          = 0
@@ -336,6 +355,7 @@ create IssueContent{title, body, poll} = do
                     , created           = now
                     , curVersion        = Nothing
                     , eventDelivered    = False
+                    , forum             = forumId
                     , open              = True
                     , poll
                     , title
@@ -360,9 +380,13 @@ edit issueId IssueContent{title, body, poll} = do
     runDB do
         old@Issue{title = oldTitle, poll = oldPoll, curVersion} <-
             get404 issueId
-        version <- maybe notFound pure curVersion
+        version <-
+            maybe
+                (throwIO $ PersistForeignConstraintUnmet "issue.version")
+                pure
+                curVersion
         requireAuthz $ EditIssue (Entity issueId old) user
-        IssueVersion{body = oldBody} <- get404 version
+        IssueVersion{body = oldBody} <- getJust version
         unless (title == oldTitle) updateTitle
         unless (body == oldBody) $ addVersion now user
         unless (poll == oldPoll) updatePoll

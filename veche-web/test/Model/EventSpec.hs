@@ -1,7 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,16 +8,12 @@ module Model.EventSpec (spec) where
 
 import TestImport
 
-import Stellar.Horizon.Types qualified as Stellar
-
-import Genesis (mtlAsset, mtlFund)
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
+import Model.Forum (Forum (Forum), Key (ForumKey))
+import Model.Forum qualified
 import Model.Issue (Key (IssueKey))
-import Model.StellarHolder (StellarHolder (StellarHolder))
-import Model.StellarHolder qualified
-import Model.StellarSigner (StellarSigner (StellarSigner))
-import Model.StellarSigner qualified
+import Model.Types (AccessLevel (AccessLevelUninvolved))
 
 spec :: Spec
 spec =
@@ -41,24 +36,31 @@ spec =
                     ]
   where
     userName = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
+    forumId = ForumKey "FELLOW"
     issueId = IssueKey 1
 
     create = do
         userEntity <- createUser userName Nothing
         authenticateAs userEntity
 
-        -- allow the user to create a new issue
-        runDB do
-            let key = Stellar.Address userName
-            insert_ StellarSigner{target = mtlFund, key, weight = 1}
-            insert_ StellarHolder{asset = mtlAsset, key}
+        runDB $
+            -- create the forum
+            insertKey
+                forumId
+                Forum
+                    { title                 = "Fellow forum"
+                    , accessIssueRead       = AccessLevelUninvolved
+                    , accessIssueWrite      = AccessLevelUninvolved
+                    , accessIssueComment    = AccessLevelUninvolved
+                    }
 
-        get IssueNewR -- get CSRF token
+        get $ ForumIssueNewR forumId -- get CSRF token
         statusIs 200
 
         request do
             setMethod "POST"
-            setUrl IssuesR
+            setUrl $ ForumIssuesR forumId
+            addRequestHeader ("Accept", "text/plain")
             addTokenFromCookie
             addPostParam "title" "Name road"
             addPostParam "body" "Shirt typical invented. Date flower."

@@ -20,18 +20,15 @@ import Yesod.Persist (runDB)
 import Genesis (mtlFund)
 import Model (Comment (Comment),
               EntityField (Issue_approval, Vote_choice, Vote_issue),
-              Issue (Issue), IssueId, Unique (UniqueSigner), User (User),
-              UserId, Vote (Vote))
+              Issue (Issue), IssueId, UserId, Vote (Vote))
 import Model qualified
 
 -- | Create a vote or abrogate existing
 record :: IssueId -> Choice -> Handler ()
 record issue choice = do
     now <- liftIO getCurrentTime
-    (user, User{stellarAddress}) <- requireAuthPair
+    user <- requireAuthId
     runDB do
-        Entity signerId _ <- getBy403 $ UniqueSigner mtlFund stellarAddress
-        requireAuthz $ AddVote signerId
         upsert_ Vote{user, issue, choice} [Vote_choice =. choice]
         insert_
             Comment

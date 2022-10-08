@@ -23,6 +23,13 @@ packages:
   original:
     hackage: DRBG-0.5.5
 - completed:
+    hackage: yesod-form-1.7.3@sha256:e3b0dd75253ceb3b5a0d6683fad959cefb8ac996f1611d67c4dcddff549f6282,3388
+    pantry-tree:
+      size: 1729
+      sha256: 175436a59f09a6ea86fdef973255c855616020a0034d760db36946a575b3d9ed
+  original:
+    hackage: yesod-form-1.7.3
+- completed:
     size: 1349719
     url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
     name: telegram-api

@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Model.Types (
+    AccessLevel (..),
     Choice (..),
     CommentType (..),
     Poll (..),
@@ -80,3 +81,11 @@ newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
 data Poll = BySignerWeight
     deriving (Eq, Read, Show)
 derivePersistField "Poll"
+
+-- | Levels are listed here in order of increasing security to use
+-- 'Ord' instance.
+data AccessLevel = AccessLevelUninvolved | AccessLevelHolder | AccessLevelSigner
+    deriving (Eq, Ord, Read, Show)
+deriveJSON defaultOptions{constructorTagModifier = drop 11} ''AccessLevel
+deriving via JsonString AccessLevel instance PersistField    AccessLevel
+deriving via JsonString AccessLevel instance PersistFieldSql AccessLevel

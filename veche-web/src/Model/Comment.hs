@@ -16,16 +16,16 @@ module Model.Comment (
 
 import Import.NoFoundation
 
-import Database.Persist (count, insert, insertMany_, update, updateWhere, (<-.),
-                         (=.), (==.))
+import Database.Persist (count, getBy, getJustEntity, insert, insertMany_,
+                         update, updateWhere, (<-.), (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
-import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
+import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
-import Genesis (mtlAsset)
+import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment), CommentId,
               EntityField (Comment_issue, Comment_type, Issue_commentNum, RequestId, Request_fulfilled, Request_issue, Request_user),
               Issue (Issue), IssueId, Request (Request), RequestId,
-              Unique (UniqueHolder), User (User), UserId)
+              Unique (UniqueHolder, UniqueSigner), User (User), UserId)
 import Model qualified
 
 data CommentInput = CommentInput
@@ -61,8 +61,13 @@ addText (Entity author User{stellarAddress}) commentInput = do
                 , type_             = CommentText
                 }
     runDB do
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ AddIssueComment holderId
+        Issue{forum} <- get404 issue
+        forumE <- getJustEntity forum
+        mSigner <- getBy $ UniqueSigner mtlFund stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        requireAuthz $ AddForumIssueComment forumE (mSignerId, mHolderId)
         commentId <- insert comment
         insertMany_
             [ makeRequest commentId now user

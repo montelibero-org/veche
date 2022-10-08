@@ -16,6 +16,8 @@ module Model.User (
     -- * Retrieve
     dbSelectAll,
     getByStellarAddress,
+    getHolderId,
+    getSignerId,
     getTelegram,
     isHolder,
     isSigner,
@@ -38,8 +40,10 @@ import Yesod.Persist (runDB)
 
 import Genesis (mtlAsset, mtlFund)
 import Model (EntityField (StellarHolder_asset, StellarHolder_key, StellarSigner_key, StellarSigner_target, User_name),
-              Key (TelegramKey), Telegram (Telegram), Unique (UniqueUser),
-              User (User), UserId)
+              Key (TelegramKey), StellarHolderId, StellarSignerId,
+              Telegram (Telegram),
+              Unique (UniqueHolder, UniqueSigner, UniqueUser), User (User),
+              UserId)
 import Model qualified
 
 getByStellarAddress ::
@@ -90,3 +94,13 @@ isHolder User{stellarAddress} =
     runDB $
     exists
         [StellarHolder_asset ==. mtlAsset, StellarHolder_key ==. stellarAddress]
+
+getSignerId :: PersistSql app => User -> HandlerFor app (Maybe StellarSignerId)
+getSignerId User{stellarAddress} = do
+    mEntity <- runDB $ getBy $ UniqueSigner mtlFund stellarAddress
+    pure $ entityKey <$> mEntity
+
+getHolderId :: PersistSql app => User -> HandlerFor app (Maybe StellarHolderId)
+getHolderId User{stellarAddress} = do
+    mEntity <- runDB $ getBy $ UniqueHolder mtlAsset stellarAddress
+    pure $ entityKey <$> mEntity

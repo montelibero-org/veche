@@ -21,13 +21,14 @@ module Templates.Issue
 import Import
 
 -- global
-import Yesod.Form (FormMessage (MsgSelectNone), OptionList, optionsPairs,
-                   withRadioField)
+import Yesod.Form (radioFieldList)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified
+import Model.Forum (Forum (Forum))
+import Model.Forum qualified
 import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
 import Model.Issue qualified
 import Model.Request (RequestMaterialized (RequestMaterialized))
@@ -47,37 +48,18 @@ voteButtons isEnabled issueId = do
         (IssueVoteR issueId Approve) ["btn-success"] "Approve" isEnabled
     actionButton (IssueVoteR issueId Reject) ["btn-danger"] "Reject" isEnabled
 
-radioFieldList :: Eq a => [(Text, a)] -> Field Handler a
-radioFieldList = radioField . optionsPairs
-
--- TODO wait yesod-form 1.7.3
-radioField :: Eq a => Handler (OptionList a) -> Field Handler a
-radioField =
-    withRadioField
-        (\theId optionWidget ->
-            [whamlet|
-                $newline never
-                <div .radio>
-                    <label for=#{theId}-none>
-                        <div>
-                            ^{optionWidget}
-                            _{MsgSelectNone}
-            |]
-        )
-        (\theId value _isSel text optionWidget ->
-            [whamlet|
-                $newline never
-                <div .radio>
-                    <label for=#{theId}-#{value}>
-                        <div>
-                            ^{optionWidget}
-                            \#{text}
-            |]
-        )
-
-issueForm :: Maybe IssueContent -> Form IssueContent
-issueForm previousContent =
-    bform do
+issueForm :: Entity Forum -> Maybe IssueContent -> Form IssueContent
+issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
+    (bform aform){header}
+  where
+    header =
+        [whamlet|
+            <div .form-group>
+                <label .col-sm-2 .control-label>Forum
+                <div .col-sm-10 .form-control-static>
+                    <a href=@{ForumR forumId}>#{forumTitle}
+        |]
+    aform = do
         title <-
             areq
                 textField
@@ -92,7 +74,7 @@ issueForm previousContent =
         poll <-
             areq
                 (radioFieldList
-                    [ ("Disabled",                  Nothing             )
+                    [ ("Disabled" :: Text,          Nothing             )
                     , ("Weighted by signer weight", Just BySignerWeight )
                     ]
                 )
@@ -100,9 +82,10 @@ issueForm previousContent =
                 (Just do IssueContent{poll} <- previousContent; poll)
         pure IssueContent{body, poll, title}
 
-editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
-editIssueForm issueId previousContent =
-    (issueForm previousContent)
+editIssueForm ::
+    Entity Forum -> IssueId -> Maybe IssueContent -> Form IssueContent
+editIssueForm forumE issueId previousContent =
+    (issueForm forumE previousContent)
         { action = Just $ IssueR issueId
         , footer =
             [whamlet|
@@ -113,10 +96,10 @@ editIssueForm issueId previousContent =
             |]
         }
 
-newIssueForm :: Form IssueContent
-newIssueForm =
-    (issueForm Nothing)
-        { action = Just IssuesR
+newIssueForm :: Entity Forum -> Form IssueContent
+newIssueForm forum@(Entity forumId _) =
+    (issueForm forum Nothing)
+        { action = Just $ ForumIssuesR forumId
         , footer =
             [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
         }
