@@ -7,16 +7,23 @@
 
 module Authorization where
 
+-- global
+import Data.Maybe (isJust)
 import Yesod.Core (MonadHandler, permissionDenied)
 import Yesod.Persist (Entity (Entity))
 
-import Model (Issue (Issue), StellarHolderId, StellarSignerId, UserId)
+-- component
+import Model (Forum (Forum), Issue (Issue), StellarHolderId, StellarSignerId,
+              UserId)
 import Model qualified
+import Model.Types (AccessLevel (..))
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
 -- when presence in the database is required.
 data AuthzRequest
-    = ListIssues      StellarHolderId
+    = ListForums
+    | ListForumIssues
+        (Entity Forum) (Maybe StellarSignerId) (Maybe StellarHolderId)
     | CreateIssue     StellarSignerId
     | ReadIssue       StellarHolderId
     | AddIssueComment StellarHolderId
@@ -26,7 +33,12 @@ data AuthzRequest
 
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
-    ListIssues      (_proof :: StellarHolderId) -> True
+    ListForums -> True
+    ListForumIssues (Entity _proof Forum{accessIssueRead}) mSigner mHolder ->
+        case accessIssueRead of
+            AccessLevelSigner       -> isJust mSigner
+            AccessLevelHolder       -> isJust mHolder
+            AccessLevelUninvolved   -> True
     CreateIssue     (_proof :: StellarSignerId) -> True
     ReadIssue       (_proof :: StellarHolderId) -> True
     AddIssueComment (_proof :: StellarHolderId) -> True

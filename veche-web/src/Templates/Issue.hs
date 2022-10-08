@@ -28,6 +28,7 @@ import Yesod.Form.Bootstrap3 (bfs)
 -- component
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified
+import Model.Forum (ForumId)
 import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
 import Model.Issue qualified
 import Model.Request (RequestMaterialized (RequestMaterialized))
@@ -113,10 +114,10 @@ editIssueForm issueId previousContent =
             |]
         }
 
-newIssueForm :: Form IssueContent
-newIssueForm =
+newIssueForm :: ForumId -> Form IssueContent
+newIssueForm forum =
     (issueForm Nothing)
-        { action = Just IssuesR
+        { action = Just $ ForumIssuesR forum
         , footer =
             [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
         }

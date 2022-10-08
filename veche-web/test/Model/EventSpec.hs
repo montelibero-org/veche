@@ -14,6 +14,7 @@ import Stellar.Horizon.Types qualified as Stellar
 import Genesis (mtlAsset, mtlFund)
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
+import Model.Forum (Key (ForumKey))
 import Model.Issue (Key (IssueKey))
 import Model.StellarHolder (StellarHolder (StellarHolder))
 import Model.StellarHolder qualified
@@ -41,6 +42,7 @@ spec =
                     ]
   where
     userName = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
+    forumId = ForumKey 1
     issueId = IssueKey 1
 
     create = do
@@ -53,12 +55,12 @@ spec =
             insert_ StellarSigner{target = mtlFund, key, weight = 1}
             insert_ StellarHolder{asset = mtlAsset, key}
 
-        get IssueNewR -- get CSRF token
+        get $ ForumIssueNewR forumId -- get CSRF token
         statusIs 200
 
         request do
             setMethod "POST"
-            setUrl IssuesR
+            setUrl $ ForumIssuesR forumId
             addTokenFromCookie
             addPostParam "title" "Name road"
             addPostParam "body" "Shirt typical invented. Date flower."

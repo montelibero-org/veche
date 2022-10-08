@@ -19,11 +19,10 @@ module Model.Event (
 import Import hiding (link)
 
 import Database.Persist (PersistEntity, PersistEntityBackend, SelectOpt (Asc),
-                         get, selectList, update, (=.), (==.))
+                         get, getJust, selectList, update, (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
-import Yesod.Persist (get404)
 
 import Model (Comment (Comment), CommentId,
               EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered),
@@ -75,18 +74,20 @@ instance Event Comment where
         commentLink = issueLink <> "#" <> commentAnchor id
 
         commentTextMessage = do
-            user <- get404 author
+            user <- getJust author
             pure [st|#{userNameText user} replied to you #{commentLink}|]
 
+-- | issueId must present
 getIssueAuthor :: MonadIO m => IssueId -> SqlPersistT m [(UserId, Telegram)]
 getIssueAuthor issueId = do
-    Issue{author} <- get404 issueId
+    Issue{author} <- getJust issueId
     mTelegram <- get $ TelegramKey author
     pure $ toList $ (author,) <$> mTelegram
 
+-- | commentId must present
 getCommentAuthor :: MonadIO m => CommentId -> SqlPersistT m [(UserId, Telegram)]
 getCommentAuthor commentId = do
-    Comment{author} <- get404 commentId
+    Comment{author} <- getJust commentId
     mTelegram <- get $ TelegramKey author
     pure $ toList $ (author,) <$> mTelegram
 
@@ -111,8 +112,8 @@ instance Event Request where
     dbSetDelivered = updateSetTrue Request_eventDelivered
 
     makeMessage app (Entity _ Request{issue, comment}) = do
-        Comment{author} <- get404 comment
-        user            <- get404 author
+        Comment{author} <- getJust comment
+        user            <- getJust author
         pure [st|#{userNameText user} requested you to comment on #{link}|]
       where
         link = renderUrl app (IssueR issue) <> "#" <> commentAnchor comment

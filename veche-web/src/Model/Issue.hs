@@ -23,8 +23,7 @@ module Model.Issue (
     countOpenAndClosed,
     getContentForEdit,
     load,
-    selectAll,
-    selectByOpen,
+    listForumIssues,
     selectWithoutVoteFromUser,
     -- * Update
     closeReopen,
@@ -36,19 +35,20 @@ module Model.Issue (
 import Import.NoFoundation
 
 -- global
+import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
-import Database.Persist (Filter, Key, get, getBy, getEntity, insert, insert_,
+import Database.Persist (Key, PersistException (PersistForeignConstraintUnmet),
+                         get, getBy, getEntity, getJust, insert, insert_,
                          selectList, toPersistValue, update, (!=.), (=.), (==.))
 import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
-import Yesod.Core (notFound)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
               EntityField (Issue_curVersion, Issue_open, Issue_poll, Issue_title),
-              Issue (Issue), IssueId, IssueVersion (IssueVersion),
-              Key (CommentKey), Request (Request),
+              Forum, ForumId, Issue (Issue), IssueId,
+              IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
               Vote (Vote))
 import Model qualified
@@ -85,14 +85,14 @@ data StateAction = Close | Reopen
 
 countOpenAndClosed ::
     (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    HandlerFor app (Int, Int)
-countOpenAndClosed = do
+    ForumId -> HandlerFor app (Int, Int)
+countOpenAndClosed forum = do
     counts :: [(Bool, Int)] <-
         runDB $
             rawSql
                 @(Single Bool, Single Int)
-                "SELECT open, COUNT(*) FROM issue GROUP BY open"
-                []
+                "SELECT open, COUNT(*) FROM issue WHERE forum = ? GROUP BY open"
+                [toPersistValue forum]
             <&> map (bimap unSingle unSingle)
     pure
         ( findWithDefault 0 True  counts
@@ -245,55 +245,57 @@ collectChoices votes =
         | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
-selectWith ::
+listForumIssues ::
     ( AuthEntity app ~ User
     , AuthId app ~ UserId
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    [Filter Issue] -> HandlerFor app [Entity Issue]
-selectWith filters =
+    Entity Forum -> Maybe Bool -> HandlerFor app [Entity Issue]
+listForumIssues forumE mIsOpen =
     runDB do
         Entity _ User{stellarAddress} <- requireAuth
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ ListIssues holderId
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        requireAuthz $
+            ListForumIssues
+                forumE (entityKey <$> mSigner) (entityKey <$> mHolder)
         selectList filters []
-
-selectByOpen ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    Bool -> HandlerFor app [Entity Issue]
-selectByOpen isOpen = selectWith [Issue_open ==. isOpen]
-
-selectAll ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    HandlerFor app [Entity Issue]
-selectAll = selectWith []
+  where
+    filters = [Issue_open ==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
     Entity User -> HandlerFor app [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
     runDB do
-        Entity holderId _ <- getBy403 $ UniqueHolder mtlAsset stellarAddress
-        requireAuthz $ ListIssues holderId
-        rawSql
-            @(Entity Issue)
-            "SELECT ??\
-            \ FROM\
-                \ issue\
-                \ LEFT JOIN\
-                \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
-                \ ON issue.id = vote.issue\
-            \ WHERE issue.open AND issue.poll IS NOT NULL AND vote.id IS NULL"
-            [toPersistValue userId]
+        forums <- do
+            fs <- selectList [] []
+            pure $ Map.fromList [(id, forumE) | forumE@(Entity id _) <- fs]
+        issues <-
+            rawSql
+                @(Entity Issue)
+                "SELECT ??, ??\
+                \ FROM\
+                    \ issue\
+                    \ LEFT JOIN\
+                    \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
+                    \ ON issue.id = vote.issue\
+                \ WHERE issue.open\
+                    \ AND issue.poll IS NOT NULL\
+                    \ AND vote.id IS NULL"
+                [toPersistValue userId]
+                -- TODO(2022-10-08, cblp) filter accessible issues in the DB
+        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
+        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
+        let mSignerId = entityKey <$> mSigner
+            mHolderId = entityKey <$> mHolder
+        pure
+            [issue
+            | issue@(Entity _ Issue{forum}) <- issues
+            , let forumE = forums ! forum
+            , isAllowed $ ListForumIssues forumE mSignerId mHolderId
+            ]
 
 getContentForEdit ::
     ( AuthId app ~ UserId
@@ -321,8 +323,8 @@ create ::
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    IssueContent -> HandlerFor app IssueId
-create IssueContent{title, body, poll} = do
+    ForumId -> IssueContent -> HandlerFor app IssueId
+create forum IssueContent{body, poll, title} = do
     now <- liftIO getCurrentTime
     Entity userId User{stellarAddress} <- requireAuth
     runDB do
@@ -336,6 +338,7 @@ create IssueContent{title, body, poll} = do
                     , created           = now
                     , curVersion        = Nothing
                     , eventDelivered    = False
+                    , forum
                     , open              = True
                     , poll
                     , title
@@ -360,9 +363,13 @@ edit issueId IssueContent{title, body, poll} = do
     runDB do
         old@Issue{title = oldTitle, poll = oldPoll, curVersion} <-
             get404 issueId
-        version <- maybe notFound pure curVersion
+        version <-
+            maybe
+                (throwIO $ PersistForeignConstraintUnmet "issue.version")
+                pure
+                curVersion
         requireAuthz $ EditIssue (Entity issueId old) user
-        IssueVersion{body = oldBody} <- get404 version
+        IssueVersion{body = oldBody} <- getJust version
         unless (title == oldTitle) updateTitle
         unless (body == oldBody) $ addVersion now user
         unless (poll == oldPoll) updatePoll

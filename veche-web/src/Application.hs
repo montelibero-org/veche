@@ -62,9 +62,10 @@ import Handler.API (getApiCompleteUserR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
-import Handler.Issue (getIssueEditR, getIssueNewR, getIssueR, getIssuesR,
-                      postIssueCloseR, postIssueR, postIssueReopenR,
-                      postIssueVoteR, postIssuesR)
+import Handler.Forum (getForumR, getForumsR)
+import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
+                      postForumIssuesR, postIssueCloseR, postIssueR,
+                      postIssueReopenR, postIssueVoteR)
 import Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR)
 import Handler.User (getUserR, putUserR)
 import Model (migrateAll)

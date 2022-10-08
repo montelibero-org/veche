@@ -26,7 +26,7 @@ import Yesod.Persist qualified
 import Yesod.Static (Static)
 
 -- component
-import Model (IssueId)
+import Model (ForumId, IssueId)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application

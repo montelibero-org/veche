@@ -15,6 +15,11 @@ Comment
     deriving Show
 
 
+Forum
+    title           Text
+    accessIssueRead AccessLevel
+
+
 Issue
     author      UserId
     open        Bool
@@ -34,6 +39,7 @@ Issue
 
     eventDelivered  Bool
     poll            Poll Maybe
+    forum           ForumId
 
     deriving Eq
     deriving Show

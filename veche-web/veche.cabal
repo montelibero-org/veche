@@ -18,6 +18,7 @@ library
     Handler.Comment
     Handler.Common
     Handler.Dashboard
+    Handler.Forum
     Handler.Issue
     Handler.Telegram
     Handler.User
@@ -26,6 +27,7 @@ library
     Model
     Model.Comment
     Model.Event
+    Model.Forum
     Model.Issue
     Model.Request
     Model.StellarHolder

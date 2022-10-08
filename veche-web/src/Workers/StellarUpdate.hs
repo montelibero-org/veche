@@ -27,8 +27,7 @@ import Text.Read (readMaybe)
 -- project
 import Stellar.Horizon.Client (getAccount, getAllAccounts)
 import Stellar.Horizon.Types (Account (Account), Asset (Asset),
-                              Balance (Balance), Signer (Signer),
-                              SignerType (Ed25519PublicKey))
+                              Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.Types qualified as Stellar
 
 -- component
@@ -69,7 +68,8 @@ updateSignersCache clientEnv connPool target = do
     let actual =
             Map.fromList
                 [ (Stellar.Address key, weight)
-                | Signer{key, weight, type_ = Ed25519PublicKey} <- signers
+                | Stellar.Signer{key, weight, type_ = Ed25519PublicKey} <-
+                    signers
                 , weight > 0
                 ]
     (`runSqlPool` connPool) do

@@ -1,0 +1,5 @@
+<table .table .table-striped>
+    $forall Entity forumId Forum{title} <- forums
+        <tr>
+            <td>
+                <a href=@{ForumR forumId}>#{title}

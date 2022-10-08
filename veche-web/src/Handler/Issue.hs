@@ -9,11 +9,10 @@
 
 module Handler.Issue
     ( getIssueEditR
-    , getIssueNewR
+    , getForumIssueNewR
     , getIssueR
-    , getIssuesR
     , postIssueR
-    , postIssuesR
+    , postForumIssuesR
     , postIssueCloseR
     , postIssueReopenR
     , postIssueVoteR
@@ -27,6 +26,7 @@ import Network.HTTP.Types (badRequest400)
 
 -- component
 import Genesis (mtlFund)
+import Model.Forum (ForumId)
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
                     StateAction (Close, Reopen))
@@ -37,8 +37,8 @@ import Model.User (User (User))
 import Model.User qualified
 import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
-import Templates.Issue (closeReopenButton, editIssueForm, issueTable,
-                        newIssueForm, voteButtons)
+import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
+                        voteButtons)
 import Templates.User (userNameWidget)
 
 getIssueR :: IssueId -> Handler Html
@@ -79,28 +79,20 @@ getIssueR issueId = do
         generateFormPost $ commentForm (Just issueId) requests
     defaultLayout $(widgetFile "issue")
 
-getIssueNewR :: Handler Html
-getIssueNewR = do
+getForumIssueNewR :: ForumId -> Handler Html
+getForumIssueNewR forumId = do
     Entity _ User{stellarAddress} <- requireAuth
     Entity signerId _ <- StellarSigner.getByAddress403 mtlFund stellarAddress
     requireAuthz $ CreateIssue signerId
-    formWidget <- generateFormPostB newIssueForm
+    formWidget <- generateFormPostB $ newIssueForm forumId
     defaultLayout formWidget
 
-getIssuesR :: Handler Html
-getIssuesR = do
-    mState <- lookupGetParam "state"
-    let stateOpen = mState /= Just "closed"
-    issues <- Issue.selectByOpen stateOpen
-    (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed
-    defaultLayout $(widgetFile "issues")
-
-postIssuesR :: Handler Void
-postIssuesR = do
-    (result, formWidget) <- runFormPostB newIssueForm
+postForumIssuesR :: ForumId -> Handler Void
+postForumIssuesR forum = do
+    (result, formWidget) <- runFormPostB $ newIssueForm forum
     case result of
         FormSuccess content -> do
-            issueId <- Issue.create content
+            issueId <- Issue.create forum content
             redirect $ IssueR issueId
         _ -> do
             page <- defaultLayout formWidget
