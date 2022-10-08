@@ -2,14 +2,13 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-# OPTIONS -Wno-orphans #-} -- instance {Yesod,YesodBreadcrumbs...} App
+{-# OPTIONS -Wno-orphans #-} -- instance {Yesod,YesodAuth...} App
 
 module Foundation where
 
@@ -25,10 +24,9 @@ import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
 import Yesod.Core (Approot (ApprootRequest),
                    AuthResult (Authorized, Unauthorized), HandlerSite,
-                   SessionBackend, Yesod, YesodBreadcrumbs,
-                   defaultClientSessionBackend, defaultCsrfMiddleware,
-                   defaultYesodMiddleware, getApprootText, getYesod,
-                   guessApproot, liftHandler)
+                   SessionBackend, Yesod, defaultClientSessionBackend,
+                   defaultCsrfMiddleware, defaultYesodMiddleware,
+                   getApprootText, getYesod, guessApproot, liftHandler)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -144,19 +142,19 @@ csrfMiddleware h = do
             | otherwise         = defaultCsrfMiddleware
     mw h
 
--- Define breadcrumbs.
-instance YesodBreadcrumbs App where
-    -- Takes the route that the user is currently on, and returns a tuple
-    -- of the 'Text' that you want the label to display, and a previous
-    -- breadcrumb route.
-    breadcrumb
-        :: Route App  -- ^ The route the user is visiting currently.
-        -> Handler (Text, Maybe (Route App))
-    breadcrumb = \case
-        -- HomeR     -> pure ("Home",    Nothing)
-        -- (AuthR _) -> pure ("Login",   Nothing)
-        -- ProfileR  -> pure ("Profile", Nothing)
-        _         -> pure ("",    Nothing)
+-- -- Define breadcrumbs.
+-- instance YesodBreadcrumbs App where
+--     -- Takes the route that the user is currently on, and returns a tuple
+--     -- of the 'Text' that you want the label to display, and a previous
+--     -- breadcrumb route.
+--     breadcrumb
+--         :: Route App  -- ^ The route the user is visiting currently.
+--         -> Handler (Text, Maybe (Route App))
+--     breadcrumb = \case
+--         -- HomeR     -> pure ("Home",    Nothing)
+--         -- (AuthR _) -> pure ("Login",   Nothing)
+--         -- ProfileR  -> pure ("Profile", Nothing)
+--         _         -> pure ("",    Nothing)
 
 instance YesodAuth App where
     type AuthId App = UserId

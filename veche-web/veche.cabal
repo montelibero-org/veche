@@ -41,7 +41,6 @@ library
     Templates.Comment
     Templates.DefaultLayout
     Templates.Issue
-    Templates.Navbar
     Templates.User
     Workers.StellarUpdate
     Workers.Telegram

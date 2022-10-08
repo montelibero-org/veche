@@ -26,8 +26,20 @@ import Paths_veche (version)
 
 -- component
 import Model.User (User)
-import Templates.Navbar (MenuItem (MenuItem))
-import Templates.Navbar qualified
+
+navbarLeftMenu :: [(AppMessage, Route App)]
+navbarLeftMenu =
+    [ (MsgDashboard, DashboardR)
+    , (MsgIssues   , IssuesR   )
+    ]
+
+navbarRightMenu :: Bool -> [(AppMessage, Route App)]
+navbarRightMenu isAuthenticated =
+    concat
+        [ [(MsgProfile, UserR        ) | isAuthenticated    ]
+        , [(MsgLogIn  , AuthR LoginR ) | not isAuthenticated]
+        , [(MsgLogOut , AuthR LogoutR) | isAuthenticated    ]
+        ]
 
 defaultLayout ::
     (YesodAuthPersist App, AuthEntity App ~ User) => Widget -> Handler Html
@@ -41,17 +53,7 @@ defaultLayout widget = do
     -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
     -- (title, parents) <- breadcrumbs
 
-    -- Define the menu items of the header.
-    let navbarLeftMenu =
-            [ MenuItem MsgDashboard DashboardR
-            , MenuItem MsgIssues    IssuesR
-            ]
-    let navbarRightMenu =
-            concat
-                [ [MenuItem MsgProfile  UserR         | isJust    muser]
-                , [MenuItem MsgLogIn  $ AuthR LoginR  | isNothing muser]
-                , [MenuItem MsgLogOut $ AuthR LogoutR | isJust    muser]
-                ]
+    let navbarRightMenu' = navbarRightMenu $ isJust muser
 
     -- We break up the default layout into two components:
     -- default-layout is the contents of the body tag, and
