@@ -42,7 +42,7 @@ spec =
                     ]
   where
     userName = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
-    forumId = ForumKey 1
+    forumId = ForumKey "fellow"
     issueId = IssueKey 1
 
     create = do
@@ -61,6 +61,7 @@ spec =
         request do
             setMethod "POST"
             setUrl $ ForumIssuesR forumId
+            addRequestHeader ("Accept", "text/plain")
             addTokenFromCookie
             addPostParam "title" "Name road"
             addPostParam "body" "Shirt typical invented. Date flower."

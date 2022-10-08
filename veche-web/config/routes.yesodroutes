@@ -9,10 +9,10 @@
 /auth-telegram/unlink           AuthTelegramUnlinkR     POST
 /comments                       CommentsR               POST
 /favicon.ico                    FaviconR                GET
-/forum/#ForumId                 ForumR                  GET
-/forum/#ForumId/issue-new       ForumIssueNewR          GET
-/forum/#ForumId/issues          ForumIssuesR            POST
 /forums                         ForumsR                 GET
+/forums/#ForumId                ForumR                  GET
+/forums/#ForumId/issue-new      ForumIssueNewR          GET
+/forums/#ForumId/issues         ForumIssuesR            POST
 /issues/#IssueId                IssueR                  GET POST
 /issues/#IssueId/close          IssueCloseR             POST
 /issues/#IssueId/edit           IssueEditR              GET
