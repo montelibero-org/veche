@@ -36,6 +36,7 @@ import Yesod.Static (CombineSettings, Static, combineScripts',
 data AppSettings = AppSettings
     { appStaticDir              :: String
     -- ^ Directory from which to serve static files.
+    , appSessionKeyFile         :: FilePath
     , appDatabaseConf           :: SqliteConf
     -- ^ Configuration settings for accessing the database.
     , appRoot                   :: Text
@@ -78,6 +79,7 @@ instance FromJSON AppSettings where
     parseJSON =
         withObject "AppSettings" $ \o -> do
             appStaticDir              <- o .: "static-dir"
+            appSessionKeyFile         <- o .: "session-key-file"
             appDatabaseConf           <- o .: "database"
             appRoot                   <- o .: "approot"
             appHost                   <- fromString <$> o .: "host"

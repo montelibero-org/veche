@@ -96,14 +96,13 @@ instance Event Issue where
     dbGetUsersToDeliver _ =
         -- TODO(2022-10-09, cblp) add subscriptions
         pure []
+        -- unwrapTgEntity :: Entity Telegram -> (UserId, Telegram)
+        -- unwrapTgEntity (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
     dbSetDelivered = updateSetTrue Issue_eventDelivered
 
     makeMessage app (Entity issueId _) =
         pure [st|A new discussion is started #{renderUrl app $ IssueR issueId}|]
-
-unwrapTgEntity :: Entity Telegram -> (UserId, Telegram)
-unwrapTgEntity (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
 instance Event Request where
 

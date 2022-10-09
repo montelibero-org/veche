@@ -1,6 +1,3 @@
-ALTER TABLE issue ADD COLUMN poll VARCHAR NULL;
-UPDATE issue SET poll = "BySignerWeight" WHERE poll IS NULL;
-
 CREATE TABLE forum
     ( id                    VARCHAR PRIMARY KEY
     , title                 VARCHAR NOT NULL

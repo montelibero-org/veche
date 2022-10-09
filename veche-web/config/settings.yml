@@ -7,6 +7,7 @@ port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct f
 ip-from-header: "_env:YESOD_IP_FROM_HEADER:false"
 
 approot: https://veche.montelibero.org
+session-key-file: /var/www/client_session_key.aes
 
 # By default, `yesod devel` runs in development, and built executables use
 # production settings (see below). To override this, use the following:
