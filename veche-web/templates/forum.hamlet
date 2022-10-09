@@ -1,3 +1,5 @@
+<h1>#{title}
+
 <div .pull-left .btn-group role=group>
     <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-default
             href=@{ForumIssuesR forumId}>

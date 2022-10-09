@@ -1,3 +1,5 @@
+<h1>Forums
+
 <table .table .table-striped>
     $forall Entity forumId Forum{title} <- forums
         <tr>

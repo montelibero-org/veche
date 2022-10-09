@@ -86,4 +86,6 @@ derivePersistField "Poll"
 -- 'Ord' instance.
 data AccessLevel = AccessLevelUninvolved | AccessLevelHolder | AccessLevelSigner
     deriving (Eq, Ord, Read, Show)
-derivePersistField "AccessLevel"
+deriveJSON defaultOptions{constructorTagModifier = drop 11} ''AccessLevel
+deriving via JsonString AccessLevel instance PersistField    AccessLevel
+deriving via JsonString AccessLevel instance PersistFieldSql AccessLevel

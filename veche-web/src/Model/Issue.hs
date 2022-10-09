@@ -46,7 +46,7 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
-              EntityField (Issue_curVersion, Issue_open, Issue_poll, Issue_title),
+              EntityField (Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title),
               Forum, ForumId, Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
@@ -252,7 +252,7 @@ listForumIssues ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     Entity Forum -> Maybe Bool -> HandlerFor app [Entity Issue]
-listForumIssues forumE mIsOpen =
+listForumIssues forumE@(Entity forumId _) mIsOpen =
     runDB do
         Entity _ User{stellarAddress} <- requireAuth
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
@@ -262,7 +262,9 @@ listForumIssues forumE mIsOpen =
                 forumE (entityKey <$> mSigner) (entityKey <$> mHolder)
         selectList filters []
   where
-    filters = [Issue_open ==. isOpen | Just isOpen <- [mIsOpen]]
+    filters =
+        (Issue_forum ==. forumId)
+        : [Issue_open ==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
@@ -275,7 +277,7 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
         issues <-
             rawSql
                 @(Entity Issue)
-                "SELECT ??, ??\
+                "SELECT ??\
                 \ FROM\
                     \ issue\
                     \ LEFT JOIN\

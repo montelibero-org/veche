@@ -1,5 +1,6 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -19,7 +20,7 @@ getForumR :: ForumId -> Handler Html
 getForumR forumId = do
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
-    forum <- Forum.getEntity404 forumId
+    forum@(Entity _ Forum{title}) <- Forum.getEntity404 forumId
     issues <- Issue.listForumIssues forum $ Just stateOpen
     (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed forumId
     defaultLayout $(widgetFile "forum")
