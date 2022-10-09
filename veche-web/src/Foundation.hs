@@ -39,7 +39,7 @@ import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
 -- component
-import Model.User (User (User), UserId)
+import Model.User (UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
 import Templates.DefaultLayout (isAuthRMay)
@@ -178,9 +178,7 @@ instance YesodAuth App where
         => Creds App -> m (AuthenticationResult App)
     authenticate Creds{credsIdent} =
         fmap Authenticated $
-        liftHandler $
-        User.getOrInsert
-            User{name = Nothing, stellarAddress = Stellar.Address credsIdent}
+        liftHandler $ User.getOrCreate $ Stellar.Address credsIdent
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]

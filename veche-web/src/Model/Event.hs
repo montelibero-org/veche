@@ -20,7 +20,7 @@ import Import hiding (link)
 
 import Database.Persist (PersistEntity, PersistEntityBackend, SelectOpt (Asc),
                          get, getJust, selectList, update, (=.), (==.))
-import Database.Persist.Sql (SqlBackend)
+import Database.Persist.Sql (SqlBackend, rawSql)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 
@@ -94,10 +94,15 @@ getCommentAuthor commentId = do
 instance Event Issue where
 
     dbGetUsersToDeliver _ =
-        -- TODO(2022-10-09, cblp) add subscriptions
-        pure []
-        -- unwrapTgEntity :: Entity Telegram -> (UserId, Telegram)
-        -- unwrapTgEntity (Entity (TelegramKey userId) telegram) = (userId, telegram)
+        rawSql
+            @(Entity Telegram)
+            "SELECT ?? FROM user JOIN telegram ON user.id = telegram.id\
+            \ WHERE user.notify_issue_added"
+            []
+        <&> map unwrap
+      where
+        unwrap :: Entity Telegram -> (UserId, Telegram)
+        unwrap (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
     dbSetDelivered = updateSetTrue Issue_eventDelivered
 

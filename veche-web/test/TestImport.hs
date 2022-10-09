@@ -115,7 +115,11 @@ createUser ident mTelegram =
         for_ mTelegram $ uncurry $ User.dbSetTelegram uid
         pure $ Entity uid usr
   where
-    usr = User{name = Nothing, stellarAddress = Stellar.Address ident}
+    usr =
+        User{ name              = Nothing
+            , notifyIssueAdded  = True
+            , stellarAddress    = Stellar.Address ident
+            }
 
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8

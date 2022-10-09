@@ -89,8 +89,9 @@ StellarSigner
 
 
 User
-    name            Text Maybe
-    stellarAddress  Stellar.Address
+    name                Text Maybe
+    stellarAddress      Stellar.Address
+    notifyIssueAdded    Bool
 
     UniqueUser stellarAddress
 

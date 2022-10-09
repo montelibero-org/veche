@@ -12,7 +12,7 @@ module Model.User (
     User (..),
     UserId,
     -- * Create
-    getOrInsert,
+    getOrCreate,
     -- * Retrieve
     dbSelectAll,
     getByStellarAddress,
@@ -50,13 +50,15 @@ getByStellarAddress ::
     PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))
 getByStellarAddress = runDB . getBy . UniqueUser
 
-getOrInsert :: PersistSql app => User -> HandlerFor app UserId
-getOrInsert record@User{stellarAddress} =
+getOrCreate :: PersistSql app => Stellar.Address -> HandlerFor app UserId
+getOrCreate stellarAddress =
     runDB do
         mExisted <- getBy $ UniqueUser stellarAddress
         case mExisted of
-            Just (Entity id _) -> pure id
-            Nothing            -> insert record
+            Just (Entity id _)  -> pure id
+            Nothing             -> insert fresh
+  where
+    fresh = User{name = Nothing, notifyIssueAdded = False, stellarAddress}
 
 selectAll :: PersistSql app => HandlerFor app [Entity User]
 selectAll = runDB $ selectList [] []

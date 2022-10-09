@@ -109,8 +109,13 @@ testAuthenticationOk keyPair network = do
     users <- runDB User.dbSelectAll
     assertEq
         "users after auth"
+        [ User
+            { name              = Nothing
+            , notifyIssueAdded  = False
+            , stellarAddress    = Stellar.Address address
+            }
+        ]
         users
-        [User{name = Nothing, stellarAddress = Stellar.Address address}]
 
   where
     Stellar.KeyPair{kpPublicKey} = keyPair
