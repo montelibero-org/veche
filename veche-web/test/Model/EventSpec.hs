@@ -1,7 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,19 +8,12 @@ module Model.EventSpec (spec) where
 
 import TestImport
 
-import Stellar.Horizon.Types qualified as Stellar
-
-import Genesis (mtlAsset, mtlFund)
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
 import Model.Forum (Forum (Forum), Key (ForumKey))
 import Model.Forum qualified
 import Model.Issue (Key (IssueKey))
-import Model.StellarHolder (StellarHolder (StellarHolder))
-import Model.StellarHolder qualified
-import Model.StellarSigner (StellarSigner (StellarSigner))
-import Model.StellarSigner qualified
-import Model.Types (AccessLevel (AccessLevelSigner))
+import Model.Types (AccessLevel (AccessLevelUninvolved))
 
 spec :: Spec
 spec =
@@ -51,19 +43,16 @@ spec =
         userEntity <- createUser userName Nothing
         authenticateAs userEntity
 
-        runDB do
+        runDB $
             -- create the forum
             insertKey
                 forumId
                 Forum
-                    { title             = "Fellow forum"
-                    , accessIssueRead   = AccessLevelSigner
+                    { title                 = "Fellow forum"
+                    , accessIssueRead       = AccessLevelUninvolved
+                    , accessIssueWrite      = AccessLevelUninvolved
+                    , accessIssueComment    = AccessLevelUninvolved
                     }
-
-            -- allow the user to create a new issue
-            let key = Stellar.Address userName
-            insert_ StellarSigner{target = mtlFund, key, weight = 1}
-            insert_ StellarHolder{asset = mtlAsset, key}
 
         get $ ForumIssueNewR forumId -- get CSRF token
         statusIs 200

@@ -2,9 +2,11 @@ ALTER TABLE issue ADD COLUMN poll VARCHAR NULL;
 UPDATE issue SET poll = "BySignerWeight" WHERE poll IS NULL;
 
 CREATE TABLE forum (
-    id                  VARCHAR PRIMARY KEY,
-    title               VARCHAR NOT NULL,
-    access_issue_read   VARCHAR NOT NULL
+    id                      VARCHAR PRIMARY KEY,
+    title                   VARCHAR NOT NULL,
+    access_issue_read       VARCHAR NOT NULL,
+    access_issue_write      VARCHAR NOT NULL,
+    access_issue_comment    VARCHAR NOT NULL,
 );
 
 INSERT INTO forum VALUES

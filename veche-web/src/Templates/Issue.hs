@@ -28,7 +28,8 @@ import Yesod.Form.Bootstrap3 (bfs)
 -- component
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified
-import Model.Forum (ForumId)
+import Model.Forum (Forum (Forum))
+import Model.Forum qualified
 import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
 import Model.Issue qualified
 import Model.Request (RequestMaterialized (RequestMaterialized))
@@ -76,9 +77,18 @@ radioField =
             |]
         )
 
-issueForm :: Maybe IssueContent -> Form IssueContent
-issueForm previousContent =
-    bform do
+issueForm :: Entity Forum -> Maybe IssueContent -> Form IssueContent
+issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
+    (bform aform){header}
+  where
+    header =
+        [whamlet|
+            <div .form-group>
+                <label .col-sm-2 .control-label>Forum
+                <div .col-sm-10 .form-control-static>
+                    <a href=@{ForumR forumId}>#{forumTitle}
+        |]
+    aform = do
         title <-
             areq
                 textField
@@ -101,9 +111,10 @@ issueForm previousContent =
                 (Just do IssueContent{poll} <- previousContent; poll)
         pure IssueContent{body, poll, title}
 
-editIssueForm :: IssueId -> Maybe IssueContent -> Form IssueContent
-editIssueForm issueId previousContent =
-    (issueForm previousContent)
+editIssueForm ::
+    Entity Forum -> IssueId -> Maybe IssueContent -> Form IssueContent
+editIssueForm forumE issueId previousContent =
+    (issueForm forumE previousContent)
         { action = Just $ IssueR issueId
         , footer =
             [whamlet|
@@ -114,10 +125,10 @@ editIssueForm issueId previousContent =
             |]
         }
 
-newIssueForm :: ForumId -> Form IssueContent
-newIssueForm forum =
-    (issueForm Nothing)
-        { action = Just $ ForumIssuesR forum
+newIssueForm :: Entity Forum -> Form IssueContent
+newIssueForm forum@(Entity forumId _) =
+    (issueForm forum Nothing)
+        { action = Just $ ForumIssuesR forumId
         , footer =
             [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
         }

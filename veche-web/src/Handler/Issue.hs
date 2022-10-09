@@ -27,6 +27,7 @@ import Network.HTTP.Types (badRequest400)
 -- component
 import Genesis (mtlFund)
 import Model.Forum (ForumId)
+import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
                     StateAction (Close, Reopen))
@@ -56,6 +57,7 @@ getIssueR issueId = do
             } <-
         Issue.load issueId
 
+    -- TODO if poll
     signers <- StellarSigner.selectAll mtlFund
     let weights =
             Map.fromList
@@ -81,18 +83,21 @@ getIssueR issueId = do
 
 getForumIssueNewR :: ForumId -> Handler Html
 getForumIssueNewR forumId = do
-    Entity _ User{stellarAddress} <- requireAuth
-    Entity signerId _ <- StellarSigner.getByAddress403 mtlFund stellarAddress
-    requireAuthz $ CreateIssue signerId
-    formWidget <- generateFormPostB $ newIssueForm forumId
+    {-  No sense in checking permissions here:
+        - link here is already checked;
+        - no sensible information exposed;
+        - form sumbission is checked. -}
+    forumE <- Forum.getEntity404 forumId
+    formWidget <- generateFormPostB $ newIssueForm forumE
     defaultLayout formWidget
 
 postForumIssuesR :: ForumId -> Handler Void
-postForumIssuesR forum = do
-    (result, formWidget) <- runFormPostB $ newIssueForm forum
+postForumIssuesR forumId = do
+    forumE <- Forum.getEntity404 forumId
+    (result, formWidget) <- runFormPostB $ newIssueForm forumE
     case result of
         FormSuccess content -> do
-            issueId <- Issue.create forum content
+            issueId <- Issue.create forumE content
             redirect $ IssueR issueId
         _ -> do
             page <- defaultLayout formWidget
@@ -116,7 +121,8 @@ closeReopen action issueId = do
 
 postIssueR :: IssueId -> Handler Html
 postIssueR issueId = do
-    (result, formWidget) <- runFormPostB $ editIssueForm issueId Nothing
+    forumE <- Forum.getEntityByIssue404 issueId
+    (result, formWidget) <- runFormPostB $ editIssueForm forumE issueId Nothing
     case result of
         FormSuccess content -> do
             Issue.edit issueId content
@@ -125,6 +131,7 @@ postIssueR issueId = do
 
 getIssueEditR :: IssueId -> Handler Html
 getIssueEditR issueId = do
-    content <- Issue.getContentForEdit issueId
-    formWidget <- generateFormPostB $ editIssueForm issueId $ Just content
+    (forumE, content) <- Issue.getContentForEdit issueId
+    formWidget <-
+        generateFormPostB $ editIssueForm forumE issueId $ Just content
     defaultLayout formWidget
