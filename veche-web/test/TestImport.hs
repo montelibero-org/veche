@@ -117,7 +117,7 @@ createUser ident mTelegram =
   where
     usr =
         User{ name              = Nothing
-            , notifyIssueAdded  = True
+            , notifyIssueAdded  = False
             , stellarAddress    = Stellar.Address ident
             }
 

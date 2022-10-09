@@ -47,7 +47,11 @@ userPage :: Handler Html
 userPage = do
     telegramBotName <- getsYesod $ appTelegramBotName . appSettings
     Entity uid user <- requireAuth
-    let User{name, stellarAddress = Stellar.Address stellarAddress} = user
+    let User    { name
+                , notifyIssueAdded
+                , stellarAddress = Stellar.Address stellarAddress
+                } =
+            user
     isSigner <- User.isSigner user
     isHolder <- User.isHolder user
     mTelegram <- User.getTelegram uid
