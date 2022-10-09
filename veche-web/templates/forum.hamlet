@@ -2,10 +2,10 @@
 
 <div .pull-left .btn-group role=group>
     <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-default
-            href=@{ForumIssuesR forumId}>
+            href=@{ForumR forumId}>
         #{openIssueCount} open
     <a .btn :stateOpen:.btn-default :not stateOpen:.btn-primary
-            href=@?{(ForumIssuesR forumId, [("state", "closed")])}>
+            href=@?{(ForumR forumId, [("state", "closed")])}>
         #{closedIssueCount} closed
 <div .pull-right>
     <a .btn .btn-success href=@{ForumIssueNewR forumId}>
