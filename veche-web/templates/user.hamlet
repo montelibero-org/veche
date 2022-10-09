@@ -52,7 +52,7 @@
                         <tr>
                             <td>A new discussion is started
                             <td>
-                                <input checked disabled type=checkbox>
+                                <input disabled type=checkbox>
                         <tr>
                             <td>Somebody replied to you
                             <td>
