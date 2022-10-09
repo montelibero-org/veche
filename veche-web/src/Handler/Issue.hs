@@ -26,7 +26,7 @@ import Network.HTTP.Types (badRequest400)
 
 -- component
 import Genesis (mtlFund)
-import Model.Forum (ForumId)
+import Model.Forum (Forum (Forum), ForumId)
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
@@ -47,10 +47,11 @@ getIssueR issueId = do
     IssueMaterialized
             { comments
             , body
+            , forum = Forum{title = forumTitle}
             , isCloseReopenAllowed
             , isCommentAllowed
             , isEditAllowed
-            , issue = Issue{title, open, poll}
+            , issue = Issue{forum = forumId, open, poll, title}
             , isVoteAllowed
             , requests
             , votes

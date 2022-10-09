@@ -1,4 +1,8 @@
 <h1>
+    <small>
+        <a href=@{ForumR forumId}>#{forumTitle}
+        /
+    <br>
     #{title}
     $if open
         <span .badge .badge-success>Open

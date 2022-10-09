@@ -72,6 +72,7 @@ type EntitySet a = Map (Key a) a
 data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
     , body                  :: Text
+    , forum                 :: Forum
     , isCloseReopenAllowed  :: Bool
     , isCommentAllowed      :: Bool
     , isEditAllowed         :: Bool
@@ -187,7 +188,7 @@ load issueId =
                     , forum     = forumId
                     } =
                 issue
-        forumE <- getJustEntity forumId
+        forumE@(Entity _ forum) <- getJustEntity forumId
 
         Entity userId User{stellarAddress} <- requireAuth
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
@@ -220,6 +221,7 @@ load issueId =
             IssueMaterialized
             { body
             , comments
+            , forum
             , isCloseReopenAllowed
             , isCommentAllowed
             , isEditAllowed
