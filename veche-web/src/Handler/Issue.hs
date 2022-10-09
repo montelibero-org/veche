@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -44,21 +45,29 @@ import Templates.User (userNameWidget)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
-    IssueMaterialized
-            { comments
-            , body
-            , forum = Forum{title = forumTitle}
-            , isCloseReopenAllowed
-            , isCommentAllowed
-            , isEditAllowed
-            , issue = Issue{forum = forumId, open, poll, title}
-            , isVoteAllowed
-            , requests
-            , votes
-            } <-
-        Issue.load issueId
+    issueMaterialized <- Issue.load issueId
+    let IssueMaterialized
+                { comments
+                , body
+                , forum = Forum{title = forumTitle}
+                , isCloseReopenAllowed
+                , isCommentAllowed
+                , isEditAllowed
+                , issue = Issue{forum = forumId, open, poll, title}
+                , requests
+                } =
+            issueMaterialized
+    pollWidget <- makePollWidget poll issueId issueMaterialized
+    (commentFormFields, commentFormEnctype) <-
+        generateFormPost $ commentForm (Just issueId) requests
+    defaultLayout $(widgetFile "issue")
 
-    -- TODO if poll
+makePollWidget :: Maybe Poll -> IssueId -> IssueMaterialized -> Handler Widget
+makePollWidget Nothing _ _ = pure mempty
+makePollWidget
+        (Just BySignerWeight)
+        issueId
+        IssueMaterialized{isVoteAllowed, votes} = do
     signers <- StellarSigner.selectAll mtlFund
     let weights =
             Map.fromList
@@ -77,10 +86,23 @@ getIssueR issueId = do
                     :: Double
                 share = show choiceWeight <> "/" <> show (sum weights)
             ]
-
-    (commentFormFields, commentFormEnctype) <-
-        generateFormPost $ commentForm (Just issueId) requests
-    defaultLayout $(widgetFile "issue")
+    pure
+        [whamlet|
+            <div .row>
+                $forall (choice, percentage, share, voters) <- voteResults
+                    <label .col-sm-2>#{choice}
+                    <div .col-sm-10>
+                        <div .progress style="margin-bottom: 3px;">
+                            <div .progress-bar role=progressbar
+                                style="width: #{percentage}%;">
+                                    #{share}
+                        <p .help-block>
+                            #{intercalate ", " $ map userNameWidget voters}
+            <div .row>
+                <div .col-sm-offset-2 .col-sm-10>
+                    ^{voteButtons isVoteAllowed issueId}
+            <hr>
+        |]
 
 getForumIssueNewR :: ForumId -> Handler Html
 getForumIssueNewR forumId = do

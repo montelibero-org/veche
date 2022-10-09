@@ -93,7 +93,9 @@ getCommentAuthor commentId = do
 
 instance Event Issue where
 
-    dbGetUsersToDeliver _ = map unwrapTgEntity <$> selectList @Telegram [] []
+    dbGetUsersToDeliver _ =
+        -- TODO(2022-10-09, cblp) only signer/holder forum
+        map unwrapTgEntity <$> selectList @Telegram [] []
 
     dbSetDelivered = updateSetTrue Issue_eventDelivered
 

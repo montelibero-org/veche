@@ -37,8 +37,8 @@ import Import.NoFoundation
 -- global
 import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
-import Database.Persist (Key, PersistException (PersistForeignConstraintUnmet),
-                         get, getBy, getEntity, getJust, getJustEntity, insert,
+import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
+                         getBy, getEntity, getJust, getJustEntity, insert,
                          insert_, selectList, toPersistValue, update, (!=.),
                          (=.), (==.))
 import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
@@ -66,8 +66,6 @@ data VoteMaterialized = VoteMaterialized
     { choice :: Choice
     , voter  :: Entity User
     }
-
-type EntitySet a = Map (Key a) a
 
 data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
