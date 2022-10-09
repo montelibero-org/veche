@@ -21,8 +21,7 @@ module Templates.Issue
 import Import
 
 -- global
-import Yesod.Form (FormMessage (MsgSelectNone), OptionList, optionsPairs,
-                   withRadioField)
+import Yesod.Form (radioFieldList)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
@@ -48,34 +47,6 @@ voteButtons isEnabled issueId = do
     actionButton
         (IssueVoteR issueId Approve) ["btn-success"] "Approve" isEnabled
     actionButton (IssueVoteR issueId Reject) ["btn-danger"] "Reject" isEnabled
-
-radioFieldList :: Eq a => [(Text, a)] -> Field Handler a
-radioFieldList = radioField . optionsPairs
-
--- TODO wait yesod-form 1.7.3
-radioField :: Eq a => Handler (OptionList a) -> Field Handler a
-radioField =
-    withRadioField
-        (\theId optionWidget ->
-            [whamlet|
-                $newline never
-                <div .radio>
-                    <label for=#{theId}-none>
-                        <div>
-                            ^{optionWidget}
-                            _{MsgSelectNone}
-            |]
-        )
-        (\theId value _isSel text optionWidget ->
-            [whamlet|
-                $newline never
-                <div .radio>
-                    <label for=#{theId}-#{value}>
-                        <div>
-                            ^{optionWidget}
-                            \#{text}
-            |]
-        )
 
 issueForm :: Entity Forum -> Maybe IssueContent -> Form IssueContent
 issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
@@ -103,7 +74,7 @@ issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
         poll <-
             areq
                 (radioFieldList
-                    [ ("Disabled",                  Nothing             )
+                    [ ("Disabled" :: Text,          Nothing             )
                     , ("Weighted by signer weight", Just BySignerWeight )
                     ]
                 )

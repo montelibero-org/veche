@@ -81,7 +81,7 @@ library
     , yesod              >=1.6     && <1.7
     , yesod-auth         >=1.6     && <1.7
     , yesod-core         >=1.6     && <1.7
-    , yesod-form         >=1.6
+    , yesod-form         >=1.7.3
     , yesod-persistent
     , yesod-static       >=1.6     && <1.7
 

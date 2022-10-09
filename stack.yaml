@@ -13,6 +13,7 @@ extra-deps:
   # stellar-sdk
     - DRBG-0.5.5
   # veche-web
+    - yesod-form-1.7.3
     - github: cblp/haskell-telegram-api
       commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
   # yesod-auth-stellar
