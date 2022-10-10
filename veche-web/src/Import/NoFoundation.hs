@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -19,6 +20,8 @@ import Data.Void as X (Void)
 import Data.Yaml as X (array)
 import Database.Persist as X (Entity (..), Key)
 import Database.Persist.Sql as X (SqlPersistT)
+import GHC.Stack (CallStack, callStack, prettyCallStack)
+import GHC.Stack as X (HasCallStack)
 import Network.HTTP.Types as X (internalServerError500, status400)
 import Yesod.Auth as X
 import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
@@ -67,3 +70,19 @@ asyncLinked :: MonadUnliftIO m => m a -> m ()
 asyncLinked = async >=> link
 
 type EntitySet a = Map (Key a) a
+
+data ExceptionWithCallStack = ExceptionWithCallStack
+    { stack     :: CallStack
+    , parent    :: SomeException
+    }
+
+instance Exception ExceptionWithCallStack where
+    displayException ExceptionWithCallStack{stack, parent} =
+        prettyCallStack stack <> ('\n' : displayException parent)
+
+instance Show ExceptionWithCallStack where
+    show = displayException
+
+addCallStack :: (HasCallStack, MonadUnliftIO m) => m a -> m a
+addCallStack action =
+    action `catchAny` \e -> throwIO $ ExceptionWithCallStack callStack e

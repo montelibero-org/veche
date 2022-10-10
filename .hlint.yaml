@@ -1,0 +1,4 @@
+- error: {lhs: a $ b, rhs: a b, side: isRecUpdate b || isRecConstr b}
+- error: {lhs: a do b, rhs: a $ b}
+- error: {lhs: do b, rhs: b}
+- ignore: {name: Use camelCase}

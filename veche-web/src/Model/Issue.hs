@@ -445,7 +445,7 @@ closeReopen issueId stateAction = do
             Close  -> (False, CommentClose )
             Reopen -> (True , CommentReopen)
 
-dbUpdateAllIssueApprovals :: MonadIO m => SqlPersistT m ()
+dbUpdateAllIssueApprovals :: (HasCallStack, MonadUnliftIO m) => SqlPersistT m ()
 dbUpdateAllIssueApprovals = do
     issues <- selectList [Issue_open ==. True, Issue_poll !=. Nothing] []
     for_ issues \(Entity issueId issue@Issue{poll}) ->

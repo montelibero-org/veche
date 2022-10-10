@@ -57,6 +57,7 @@ library
     , containers
     , data-default
     , Decimal
+    , esqueleto
     , fast-logger
     , file-embed
     , hjsmin             >=0.1     && <0.3
@@ -115,6 +116,7 @@ test-suite veche-test
     Handler.CommonSpec
     Handler.UserSpec
     Model.EventSpec
+    Model.VoteSpec
     TestImport
 
   hs-source-dirs:   test
@@ -141,6 +143,7 @@ test-suite veche-test
     , yesod              >=1.6     && <1.7
     , yesod-auth         >=1.6     && <1.7
     , yesod-core         >=1.6     && <1.7
+    , yesod-persistent
     , yesod-test
 
   -- project

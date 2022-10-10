@@ -15,7 +15,7 @@ import Model.Comment qualified as Comment
 import Model.Vote qualified as Vote
 
 getAdminUpdateDatabaseR :: Handler TypedContent
-getAdminUpdateDatabaseR = do
+getAdminUpdateDatabaseR =
     respondSource "text/plain" do
         issues <- lift $ runDB $ selectList [] []
         sendChunkText $

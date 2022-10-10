@@ -43,7 +43,7 @@ spec =
     withApp $
     describe "Auth.Stellar" do
 
-        describe "initial public key form" do
+        describe "initial public key form" $
 
             it "shows public key form" do
                 get $ AuthR LoginR
@@ -67,10 +67,10 @@ spec =
 
         describe "authentication with tx-response" do
 
-            it "authenticates when correct tx-response (public network)" do
+            it "authenticates when correct tx-response (public network)" $
                 testAuthenticationOk testGoodKeyPair Stellar.publicNetwork
 
-            it "authenticates when correct tx-response (test network)" do
+            it "authenticates when correct tx-response (test network)" $
                 testAuthenticationOk testGoodKeyPair Stellar.testNetwork
 
             it "doesn't authenticate when incorrect tx-response" do
