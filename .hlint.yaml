@@ -1,4 +1,21 @@
 - error: {lhs: a $ b, rhs: a b, side: isRecUpdate b || isRecConstr b}
 - error: {lhs: a do b, rhs: a $ b}
 - error: {lhs: do b, rhs: b}
-- ignore: {name: Use camelCase}
+- error:
+    lhs: v Database.Esqueleto.!=. Database.Esqueleto.nothing
+    rhs: not_ (Database.Esqueleto.isNothing v)
+    name: Use Esqueleto's not isNothing
+- error:
+    lhs: v Database.Esqueleto.!=. Database.Esqueleto.val Nothing
+    rhs: not_ (Database.Esqueleto.isNothing v)
+    name: Use Esqueleto's not isNothing
+- error:
+    lhs: v Database.Esqueleto.==. Database.Esqueleto.nothing
+    rhs: Database.Esqueleto.isNothing v
+    name: Use Esqueleto's isNothing
+- error:
+    lhs: v Database.Esqueleto.==. Database.Esqueleto.val Nothing
+    rhs: Database.Esqueleto.isNothing v
+    name: Use Esqueleto's isNothing
+- ignore:
+    name: Use camelCase
