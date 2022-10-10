@@ -32,16 +32,20 @@ module Model.Issue (
     dbUpdateAllIssueApprovals,
 ) where
 
-import Import.NoFoundation
+import Import.NoFoundation hiding (groupBy)
 
 -- global
+import Data.Coerce (coerce)
 import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
+import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
+                                        select, table, val, where_, (==.), (^.))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
                          getBy, getEntity, getJust, getJustEntity, insert,
                          insert_, selectList, toPersistValue, update, (!=.),
-                         (=.), (==.))
-import Database.Persist.Sql (Single, SqlBackend, rawSql, unSingle)
+                         (=.))
+import Database.Persist qualified as Persist
+import Database.Persist.Sql (SqlBackend, rawSql)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
@@ -89,11 +93,12 @@ countOpenAndClosed ::
 countOpenAndClosed forum = do
     counts :: [(Bool, Int)] <-
         runDB $
-            rawSql
-                @(Single Bool, Single Int)
-                "SELECT open, COUNT(*) FROM issue WHERE forum = ? GROUP BY open"
-                [toPersistValue forum]
-            <&> map (bimap unSingle unSingle)
+            select do
+                issue <- from $ table @Issue
+                where_ $ issue ^. Issue_forum ==. val forum
+                groupBy $ issue ^. Issue_open
+                pure (issue ^. Issue_open, countRows @Int)
+            <&> coerce
     pure
         ( findWithDefault 0 True  counts
         , findWithDefault 0 False counts
@@ -274,8 +279,8 @@ listForumIssues forumE@(Entity forumId _) mIsOpen =
         selectList filters []
   where
     filters =
-        (Issue_forum ==. forumId)
-        : [Issue_open ==. isOpen | Just isOpen <- [mIsOpen]]
+        (Issue_forum Persist.==. forumId)
+        : [Issue_open Persist.==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
@@ -447,6 +452,7 @@ closeReopen issueId stateAction = do
 
 dbUpdateAllIssueApprovals :: (HasCallStack, MonadUnliftIO m) => SqlPersistT m ()
 dbUpdateAllIssueApprovals = do
-    issues <- selectList [Issue_open ==. True, Issue_poll !=. Nothing] []
+    issues <-
+        selectList [Issue_open Persist.==. True, Issue_poll !=. Nothing] []
     for_ issues \(Entity issueId issue@Issue{poll}) ->
         when (isJust poll) $ Vote.dbUpdateIssueApproval issueId $ Just issue
