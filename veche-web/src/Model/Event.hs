@@ -4,6 +4,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TupleSections #-}
@@ -29,7 +30,7 @@ import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 
 import Model (Comment (Comment), CommentId,
-              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered, TelegramId, UserId, User_notifyIssueAdded),
+              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered),
               Issue (Issue), IssueId, Key (TelegramKey), Request (Request),
               Telegram, User, UserId)
 import Model qualified
@@ -102,8 +103,8 @@ instance Event Issue where
             user :& telegram <- from $
                 table @User `innerJoin` table @Telegram
                 `on` \(user :& telegram) ->
-                    coerce (user ^. UserId) ==. telegram ^. TelegramId
-            where_ $ user ^. User_notifyIssueAdded
+                    coerce (user ^. #id) ==. telegram ^. #id
+            where_ $ user ^. #notifyIssueAdded
             pure telegram
         <&> map unwrap
       where

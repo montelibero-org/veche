@@ -3,6 +3,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -26,7 +27,7 @@ import Yesod.Persist (runDB)
 
 import Genesis (mtlFund)
 import Model (Comment (Comment),
-              EntityField (Issue_approval, StellarSigner_key, StellarSigner_target, StellarSigner_weight, UserId, User_stellarAddress, Vote_choice, Vote_issue),
+              EntityField (Issue_approval, Vote_choice, Vote_issue),
               Issue (Issue), IssueId, StellarSigner, User, UserId, Vote (Vote))
 import Model qualified
 
@@ -80,10 +81,9 @@ dbUpdateIssueApproval issueId mIssue = do
                     from $
                         table @StellarSigner `leftJoin` table @User
                         `on` \(signer :& user) ->
-                            just (signer ^. StellarSigner_key)
-                            ==. user ?. User_stellarAddress
-                where_ $ signer ^. StellarSigner_target ==. val mtlFund
-                pure (signer ^. StellarSigner_weight, user ?. UserId)
+                            just (signer ^. #key) ==. user ?. #stellarAddress
+                where_ $ signer ^. #target ==. val mtlFund
+                pure (signer ^. #weight, user ?. #id)
             <&> coerce
     let totalSignersWeight = sum $ map fst weights
         userWeights =

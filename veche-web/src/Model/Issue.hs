@@ -4,6 +4,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -52,7 +53,7 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
-              EntityField (Comment_author, Comment_issue, IssueId, Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title, Request_issue, Request_user, UserId, VoteId, Vote_issue, Vote_user),
+              EntityField (Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title),
               Forum, ForumId, Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
@@ -96,9 +97,9 @@ countOpenAndClosed forum = do
         runDB $
             select do
                 issue <- from $ table @Issue
-                where_ $ issue ^. Issue_forum ==. val forum
-                groupBy $ issue ^. Issue_open
-                pure (issue ^. Issue_open, countRows @Int)
+                where_ $ issue ^. #forum ==. val forum
+                groupBy $ issue ^. #open
+                pure (issue ^. #open, countRows @Int)
             <&> coerce
     pure
         ( findWithDefault 0 True  counts
@@ -117,9 +118,8 @@ loadComments issueId =
         select do
             comment :& user <- from $
                 table @Comment `innerJoin` table @User
-                `on` \(comment :& user) ->
-                    comment ^. Comment_author ==. user ^. UserId
-            where_ $ comment ^. Comment_issue ==. val issueId
+                `on` \(comment :& user) -> comment ^. #author ==. user ^. #id
+            where_ $ comment ^. #issue ==. val issueId
             pure (comment, user)
 
     loadRawRequests ::
@@ -128,9 +128,8 @@ loadComments issueId =
         select do
             request :& user <- from $
                 table @Request `innerJoin` table @User
-                `on` \(request :& user) ->
-                    request ^. Request_user ==. user ^. UserId
-            where_ $ request ^. Request_issue ==. val issueId
+                `on` \(request :& user) -> request ^. #user ==. user ^. #id
+            where_ $ request ^. #issue ==. val issueId
             pure (request, user)
 
 materializeComments ::
@@ -172,8 +171,8 @@ loadVotes issueId = do
         select do
             vote :& user <- from $
                 table @Vote `innerJoin` table @User
-                `on` \(vote :& user) -> vote ^. Vote_user ==. user ^. UserId
-            where_ $ vote ^. Vote_issue ==. val issueId
+                `on` \(vote :& user) -> vote ^. #user ==. user ^. #id
+            where_ $ vote ^. #issue ==. val issueId
             pure (vote, user)
     pure
         [ VoteMaterialized{choice, voter}
@@ -301,12 +300,12 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
                 issue :& vote <- from $
                     table @Issue `leftJoin` table @Vote
                     `on` \(issue :& vote) ->
-                        just (issue ^. IssueId) ==. vote ?. Vote_issue
-                        &&. vote ?. Vote_user ==. val (Just userId)
+                        just (issue ^. #id) ==. vote ?. #issue
+                        &&. vote ?. #user ==. val (Just userId)
                 where_ $
-                    (issue ^. Issue_open)
-                    &&. not_ (isNothing $ issue ^. Issue_poll)
-                    &&. isNothing (vote ?. VoteId)
+                    (issue ^. #open)
+                    &&. not_ (isNothing $ issue ^. #poll)
+                    &&. isNothing (vote ?. #id)
                 pure issue
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
         mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
