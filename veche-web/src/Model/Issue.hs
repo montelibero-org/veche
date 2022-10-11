@@ -52,9 +52,7 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
-import Model (Comment (Comment),
-              EntityField (Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title),
-              Forum, ForumId, Issue (Issue), IssueId,
+import Model (Comment (Comment), Forum, ForumId, Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
               Vote (Vote))
@@ -283,8 +281,8 @@ listForumIssues forumE@(Entity forumId _) mIsOpen =
         selectList filters []
   where
     filters =
-        (Issue_forum Persist.==. forumId)
-        : [Issue_open Persist.==. isOpen | Just isOpen <- [mIsOpen]]
+        (#forum Persist.==. forumId)
+        : [#open Persist.==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
     (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
@@ -372,7 +370,7 @@ create forumE@(Entity forumId _) IssueContent{body, poll, title} = do
                 IssueVersion
                     {issue = issueId, body, created = now, author = userId}
         versionId <- insert version
-        update issueId [Issue_curVersion =. Just versionId]
+        update issueId [#curVersion =. Just versionId]
         pure issueId
 
 edit ::
@@ -405,7 +403,7 @@ edit issueId IssueContent{title, body, poll} = do
                 IssueVersion
                     {author = user, body, created = now, issue = issueId}
         versionId <- insert version
-        update issueId [Issue_curVersion =. Just versionId]
+        update issueId [#curVersion =. Just versionId]
 
     addVersionComment now user =
         insert_
@@ -419,9 +417,9 @@ edit issueId IssueContent{title, body, poll} = do
                 , type_             = CommentEdit
                 }
 
-    updatePoll = update issueId [Issue_poll =. poll]
+    updatePoll = update issueId [#poll =. poll]
 
-    updateTitle = update issueId [Issue_title =. title]
+    updateTitle = update issueId [#title =. title]
 
 closeReopen ::
     ( AuthId app ~ UserId
@@ -435,7 +433,7 @@ closeReopen issueId stateAction = do
     runDB do
         issue <- getEntity404 issueId
         requireAuthz $ CloseReopenIssue issue user
-        update issueId [Issue_open =. newState]
+        update issueId [#open =. newState]
         insert_
             Comment
                 { author            = user
@@ -454,7 +452,6 @@ closeReopen issueId stateAction = do
 
 dbUpdateAllIssueApprovals :: (HasCallStack, MonadUnliftIO m) => SqlPersistT m ()
 dbUpdateAllIssueApprovals = do
-    issues <-
-        selectList [Issue_open Persist.==. True, Issue_poll !=. Nothing] []
+    issues <- selectList [#open Persist.==. True, #poll !=. Nothing] []
     for_ issues \(Entity issueId issue@Issue{poll}) ->
         when (isJust poll) $ Vote.dbUpdateIssueApproval issueId $ Just issue

@@ -2,6 +2,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
 
 module Model.StellarHolder (
     StellarHolder (..),
@@ -16,12 +17,11 @@ import Database.Persist (deleteBy, insertMany_, selectList, (==.))
 import Stellar.Horizon.Types (Asset)
 import Stellar.Horizon.Types qualified as Stellar
 
-import Model (EntityField (StellarHolder_asset), StellarHolder (StellarHolder),
-              Unique (UniqueHolder))
+import Model (StellarHolder (StellarHolder), Unique (UniqueHolder))
 import Model qualified
 
 dbSelectAll :: MonadIO m => Asset -> SqlPersistT m [Entity StellarHolder]
-dbSelectAll asset = selectList [StellarHolder_asset ==. asset] []
+dbSelectAll asset = selectList [#asset ==. asset] []
 
 dbDelete :: MonadIO m => Asset -> Stellar.Address -> SqlPersistT m ()
 dbDelete asset = deleteBy . UniqueHolder asset

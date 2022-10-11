@@ -1,12 +1,17 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -20,19 +25,17 @@ module Model.Event (
 import Import hiding (Value, link)
 
 import Data.Coerce (coerce)
-import Database.Esqueleto.Experimental (from, innerJoin, on, select, table,
-                                        where_, (:&) ((:&)), (==.), (^.))
-import Database.Persist (PersistEntity, PersistEntityBackend, SelectOpt (Asc),
-                         get, getJust, selectList, update, (=.))
-import Database.Persist qualified as Persist
+import Database.Esqueleto.Experimental (asc, from, innerJoin, not_, on, orderBy,
+                                        select, table, unValue, where_,
+                                        (:&) ((:&)), (==.), (^.))
+import Database.Persist (EntityField, PersistEntity, PersistEntityBackend,
+                         SymbolToField, get, getJust, update, (=.))
 import Database.Persist.Sql (SqlBackend)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 
-import Model (Comment (Comment), CommentId,
-              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered),
-              Issue (Issue), IssueId, Key (TelegramKey), Request (Request),
-              Telegram, User, UserId)
+import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
+              Key (TelegramKey), Request (Request), Telegram, User, UserId)
 import Model qualified
 import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
@@ -43,6 +46,10 @@ class (PersistEntity e, PersistEntityBackend e ~ SqlBackend, Show e) => Event e
     dbGetUsersToDeliver :: MonadIO m => e -> SqlPersistT m [(UserId, Telegram)]
 
     dbSetDelivered :: MonadIO m => Key e -> SqlPersistT m ()
+    default dbSetDelivered ::
+        (MonadIO m, SymbolToField "eventDelivered" e Bool) =>
+        Key e -> SqlPersistT m ()
+    dbSetDelivered = updateSetTrue #eventDelivered
 
     makeMessage :: MonadIO m => App -> Entity e -> SqlPersistT m Text
     makeMessage _ = pure . tshow
@@ -61,8 +68,6 @@ instance Event Comment where
       where
         getParentCommentAuthor =
             maybe (getIssueAuthor issue) getCommentAuthor parent
-
-    dbSetDelivered = updateSetTrue Comment_eventDelivered
 
     makeMessage app (Entity id comment@Comment{author, type_, issue}) =
         case type_ of
@@ -111,8 +116,6 @@ instance Event Issue where
         unwrap :: Entity Telegram -> (UserId, Telegram)
         unwrap (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
-    dbSetDelivered = updateSetTrue Issue_eventDelivered
-
     makeMessage app (Entity issueId _) =
         pure [st|A new discussion is started #{renderUrl app $ IssueR issueId}|]
 
@@ -121,8 +124,6 @@ instance Event Request where
     dbGetUsersToDeliver Request{user} = do
         mTelegram <- get $ TelegramKey user
         pure $ toList $ (user,) <$> mTelegram
-
-    dbSetDelivered = updateSetTrue Request_eventDelivered
 
     makeMessage app (Entity _ Request{issue, comment}) = do
         Comment{author} <- getJust comment
@@ -135,23 +136,30 @@ data SomeEvent = forall e. Event e => SomeEvent (Entity e)
 
 -- | Get all undelivered events
 dbGetUndelivered :: MonadIO m => SqlPersistT m [SomeEvent]
-dbGetUndelivered = do
-    comments <-
-        selectList
-            [Comment_eventDelivered Persist.==. False] [Asc Comment_created]
-    issues <-
-        selectList
-            [Issue_eventDelivered Persist.==. False] [Asc Issue_created]
-    requests <-
-        selectList
-            [Request_eventDelivered Persist.==. False] [Asc Request_created]
-    pure $
-        map snd . sortOn fst $
-        map wrapC comments ++ map wrapI issues ++ map wrapR requests
+dbGetUndelivered =
+    sequence
+        [ selectUndelivered @Comment
+        , selectUndelivered @Issue
+        , selectUndelivered @Request
+        ]
+    <&> map snd . sortOn fst . concat
   where
-    wrapC e@(Entity _ Comment{created}) = (created, SomeEvent e)
-    wrapI e@(Entity _ Issue  {created}) = (created, SomeEvent e)
-    wrapR e@(Entity _ Request{created}) = (created, SomeEvent e)
+
+    selectUndelivered ::
+        forall r m.
+        ( MonadIO m
+        , Event r
+        , SymbolToField "created"        r UTCTime
+        , SymbolToField "eventDelivered" r Bool
+        ) =>
+        SqlPersistT m [(UTCTime, SomeEvent)]
+    selectUndelivered =
+        select do
+            r <- from $ table @r
+            where_ $ not_ $ r ^. #eventDelivered
+            orderBy [asc $ r ^. #created]
+            pure (r ^. #created, r)
+        <&> map (bimap unValue SomeEvent)
 
 updateSetTrue ::
     (Event e, MonadIO m) => EntityField e Bool -> Key e -> SqlPersistT m ()

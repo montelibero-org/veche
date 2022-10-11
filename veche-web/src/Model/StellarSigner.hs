@@ -2,6 +2,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Model.StellarSigner (
     StellarSigner (..),
@@ -20,8 +22,7 @@ import Database.Persist (deleteBy, insertMany_, selectList, updateWhere, (=.),
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
 
-import Model (EntityField (StellarSigner_key, StellarSigner_target, StellarSigner_weight),
-              StellarSigner (StellarSigner), Unique (UniqueSigner))
+import Model (StellarSigner (StellarSigner), Unique (UniqueSigner))
 import Model qualified
 
 getByAddress403 ::
@@ -33,7 +34,7 @@ selectAll = runDB . dbSelectAll
 
 dbSelectAll ::
     MonadIO m => StellarMultiSigAddress -> SqlPersistT m [Entity StellarSigner]
-dbSelectAll target = selectList [StellarSigner_target ==. target] []
+dbSelectAll target = selectList [#target ==. target] []
 
 dbDelete ::
     MonadIO m => StellarMultiSigAddress -> Stellar.Address -> SqlPersistT m ()
@@ -50,5 +51,8 @@ dbSetWeight ::
     StellarMultiSigAddress -> Stellar.Address -> Int -> SqlPersistT m ()
 dbSetWeight target key weight =
     updateWhere
-        [StellarSigner_target ==. target, StellarSigner_key ==. key]
-        [StellarSigner_weight =. weight]
+        @_
+        @_
+        @StellarSigner
+        [#target ==. target, #key ==. key]
+        [#weight =. weight]

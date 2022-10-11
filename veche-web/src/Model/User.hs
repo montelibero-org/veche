@@ -5,6 +5,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.User (
@@ -40,9 +42,8 @@ import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Persist (runDB)
 
 import Genesis (mtlAsset, mtlFund)
-import Model (EntityField (StellarHolder_asset, StellarHolder_key, StellarSigner_key, StellarSigner_target, User_name),
-              Key (TelegramKey), StellarHolderId, StellarSignerId,
-              Telegram (Telegram),
+import Model (Key (TelegramKey), StellarHolder, StellarHolderId, StellarSigner,
+              StellarSignerId, Telegram (Telegram),
               Unique (UniqueHolder, UniqueSigner, UniqueUser), User (User),
               UserId)
 import Model qualified
@@ -68,7 +69,7 @@ dbSelectAll :: MonadIO m => SqlPersistT m [User]
 dbSelectAll = map entityVal <$> selectList [] []
 
 setName :: PersistSql app => UserId -> Maybe Text -> HandlerFor app ()
-setName id mname = runDB $ update id [User_name =. mname]
+setName id mname = runDB $ update id [#name =. mname]
 
 getTelegram :: PersistSql app => UserId -> HandlerFor app (Maybe Telegram)
 getTelegram uid = runDB $ get (TelegramKey uid)
@@ -89,14 +90,12 @@ dbDeleteTelegram = delete . TelegramKey
 isSigner :: PersistSql app => User -> HandlerFor app Bool
 isSigner User{stellarAddress} =
     runDB $
-    exists
-        [StellarSigner_target ==. mtlFund, StellarSigner_key ==. stellarAddress]
+    exists @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. stellarAddress]
 
 isHolder :: PersistSql app => User -> HandlerFor app Bool
 isHolder User{stellarAddress} =
     runDB $
-    exists
-        [StellarHolder_asset ==. mtlAsset, StellarHolder_key ==. stellarAddress]
+    exists @_ @_ @StellarHolder [#asset ==. mtlAsset, #key ==. stellarAddress]
 
 getSignerId :: PersistSql app => User -> HandlerFor app (Maybe StellarSignerId)
 getSignerId User{stellarAddress} = do

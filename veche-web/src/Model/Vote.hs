@@ -26,9 +26,8 @@ import Database.Persist qualified as Persist
 import Yesod.Persist (runDB)
 
 import Genesis (mtlFund)
-import Model (Comment (Comment),
-              EntityField (Issue_approval, Vote_choice, Vote_issue),
-              Issue (Issue), IssueId, StellarSigner, User, UserId, Vote (Vote))
+import Model (Comment (Comment), Issue (Issue), IssueId, StellarSigner, User,
+              UserId, Vote (Vote))
 import Model qualified
 
 -- | Create a vote or abrogate existing
@@ -41,7 +40,7 @@ dbRecord ::
     (HasCallStack, MonadUnliftIO m) =>
     UserId -> IssueId -> Choice -> SqlPersistT m ()
 dbRecord user issue choice = do
-    addCallStack $ upsert_ Vote{user, issue, choice} [Vote_choice =. choice]
+    addCallStack $ upsert_ Vote{user, issue, choice} [#choice =. choice]
     now <- liftIO getCurrentTime
     addCallStack $
         insert_
@@ -93,9 +92,7 @@ dbUpdateIssueApproval issueId mIssue = do
 
     approves <-
         addCallStack $
-        selectList
-            [Vote_choice Persist.==. Approve, Vote_issue Persist.==. issueId]
-            []
+        selectList [#choice Persist.==. Approve, #issue Persist.==. issueId] []
     let approvers = map (\(Entity _ Vote{user}) -> user) approves
 
     let totalApproveWeight =
@@ -105,7 +102,7 @@ dbUpdateIssueApproval issueId mIssue = do
             | otherwise = totalApproveWeight ./. totalSignersWeight
     case mIssue of
         Just Issue{approval = oldApproval} | approval == oldApproval -> pure ()
-        _ -> addCallStack $ update issueId [Issue_approval =. approval]
+        _ -> addCallStack $ update issueId [#approval =. approval]
 
 (./.) :: (Integral a, Integral b) => a -> b -> Double
 a ./. b = fromIntegral a / fromIntegral b

@@ -3,6 +3,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.Comment (
@@ -22,10 +24,9 @@ import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 import Genesis (mtlAsset, mtlFund)
-import Model (Comment (Comment), CommentId,
-              EntityField (Comment_issue, Comment_type, Issue_commentNum, RequestId, Request_fulfilled, Request_issue, Request_user),
-              Issue (Issue), IssueId, Request (Request), RequestId,
-              Unique (UniqueHolder, UniqueSigner), User (User), UserId)
+import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
+              Request (Request), RequestId, Unique (UniqueHolder, UniqueSigner),
+              User (User), UserId)
 import Model qualified
 
 data CommentInput = CommentInput
@@ -74,13 +75,13 @@ addText (Entity author User{stellarAddress}) commentInput = do
             | user <- toList requestUsers
             ]
         unsafeUpdateIssueCommentNum issue Nothing
-        updateWhere
-            [ RequestId <-. toList provideInfo
+        updateWhere @_ @_ @Request
+            [ #id <-. toList provideInfo
             -- following filters present only for security
-            , Request_user  ==. author
-            , Request_issue ==. issue
+            , #user  ==. author
+            , #issue ==. issue
             ]
-            [Request_fulfilled =. True]
+            [#fulfilled =. True]
         pure commentId
   where
     CommentInput{issue, message, requestUsers, provideInfo, parent} =
@@ -111,8 +112,8 @@ unsafeUpdateIssueCommentNum ::
     SqlPersistT m ()
 unsafeUpdateIssueCommentNum issueId mIssue = do
     commentNum <-
-        count [Comment_issue ==. issueId, Comment_type ==. CommentText]
+        count @_ @_ @Comment [#issue ==. issueId, #type ==. CommentText]
     case mIssue of
         Just Issue{commentNum = oldCommentNum}
             | commentNum == oldCommentNum -> pure ()
-        _ -> update issueId [Issue_commentNum =. commentNum]
+        _ -> update issueId [#commentNum =. commentNum]
