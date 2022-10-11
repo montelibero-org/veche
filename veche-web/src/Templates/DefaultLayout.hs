@@ -4,6 +4,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -18,8 +20,8 @@ import Data.Text.Encoding qualified as TE
 import Data.Version (showVersion)
 import Text.Hamlet (hamletFile)
 import Yesod.Core (addScript, addStylesheet, defaultCsrfCookieName,
-                   defaultCsrfHeaderName, getMessage, getYesod, pageBody,
-                   pageHead, pageTitle, widgetToPageContent)
+                   defaultCsrfHeaderName, getMessage, getYesod, languages,
+                   pageBody, pageHead, pageTitle, widgetToPageContent)
 
 -- package
 import Paths_veche (version)
@@ -40,6 +42,34 @@ navbarRightMenu isAuthenticated =
         , [(MsgLogIn  , AuthR LoginR ) | not isAuthenticated]
         , [(MsgLogOut , AuthR LogoutR) | isAuthenticated    ]
         ]
+
+-- | Translate a 'MonadHandler'-like action, e.g. a 'Widget'.
+tr :: MonadHandler m => (Text, m a) -> [(Text, m a)] -> m a
+tr (defaultLanguage, defaultMessage) messages = languages >>= go where
+    go []                                   = defaultMessage
+    go (lang : langs)
+        | lang == defaultLanguage           = defaultMessage
+        | Just msg <- lookup lang messages  = msg
+        | otherwise                         = go langs
+
+msgBeta :: Widget
+msgBeta =
+    tr
+    ("en", [whamlet|
+        This is a beta version of the service.
+        If you find any problems, please contact
+        <a href="https://t.me/cblp_su">@cblp_su
+        or open an issue on
+        <a href="https://github.com/montelibero-org/veche/issues/new">GitHub
+    |])
+    [   ("ru", [whamlet|
+            Это бета-версия сервиса.
+            Если вы обнаружите какие-либо проблемы, пожалуйста, свяжитесь с
+            <a href="https://t.me/cblp_su">@cblp_su
+            или откройте карточку на
+            <a href="https://github.com/montelibero-org/veche/issues/new">GitHub
+        |])
+    ]
 
 defaultLayout ::
     (YesodAuthPersist App, AuthEntity App ~ User) => Widget -> Handler Html

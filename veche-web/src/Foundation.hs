@@ -22,11 +22,11 @@ import Data.Time (secondsToNominalDiffTime)
 import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
-import Yesod.Core (Approot (ApprootRequest),
-                   AuthResult (Authorized, Unauthorized), HandlerSite,
-                   SessionBackend, Yesod, defaultClientSessionBackend,
-                   defaultCsrfMiddleware, defaultYesodMiddleware,
-                   getApprootText, getYesod, guessApproot, liftHandler)
+import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
+                   HandlerSite, SessionBackend, Yesod,
+                   defaultClientSessionBackend, defaultCsrfMiddleware,
+                   defaultYesodMiddleware, getApprootText, getYesod,
+                   guessApproot, liftHandler, unauthorizedI)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -206,9 +206,9 @@ authStellarConfig App{appStellarHorizon} =
 isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
-    pure $ case muid of
-        Nothing -> Unauthorized "You must log in to access this page"
-        Just _  -> Authorized
+    case muid of
+        Nothing -> unauthorizedI MsgMustLogin
+        Just _  -> pure Authorized
 
 instance YesodAuthPersist App
 
