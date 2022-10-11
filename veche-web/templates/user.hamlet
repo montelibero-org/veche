@@ -42,7 +42,7 @@
     <div .form-group>
         <label .col-sm-2 .control-label>Notifications
         <div .col-sm-10>
-            $if isJust mTelegram
+            $maybe Telegram{notifyIssueAdded} <- mTelegram
                 <table .table .table-hover>
                     <thead>
                         <tr>
@@ -62,5 +62,5 @@
                             <td>Somebody requested you to comment
                             <td>
                                 <input checked disabled type=checkbox>
-            $else
+            $nothing
                 Connect Telegram to enable notifications

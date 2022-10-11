@@ -24,18 +24,17 @@ module Model.Event (
 
 import Import hiding (Value, link)
 
-import Data.Coerce (coerce)
-import Database.Esqueleto.Experimental (asc, from, innerJoin, not_, on, orderBy,
-                                        select, table, unValue, where_,
-                                        (:&) ((:&)), (==.), (^.))
+import Database.Esqueleto.Experimental (asc, from, not_, orderBy, select, table,
+                                        unValue, where_, (^.))
 import Database.Persist (EntityField, PersistEntity, PersistEntityBackend,
-                         SymbolToField, get, getJust, update, (=.))
+                         SymbolToField, get, getJust, selectList, update, (=.),
+                         (==.))
 import Database.Persist.Sql (SqlBackend)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 
 import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
-              Key (TelegramKey), Request (Request), Telegram, User, UserId)
+              Key (TelegramKey), Request (Request), Telegram, UserId)
 import Model qualified
 import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
@@ -104,14 +103,7 @@ getCommentAuthor commentId = do
 instance Event Issue where
 
     dbGetUsersToDeliver _ =
-        select do
-            user :& telegram <- from $
-                table @User `innerJoin` table @Telegram
-                `on` \(user :& telegram) ->
-                    coerce (user ^. #id) ==. telegram ^. #id
-            where_ $ user ^. #notifyIssueAdded
-            pure telegram
-        <&> map unwrap
+        selectList [#notifyIssueAdded ==. True] [] <&> map unwrap
       where
         unwrap :: Entity Telegram -> (UserId, Telegram)
         unwrap (Entity (TelegramKey userId) telegram) = (userId, telegram)

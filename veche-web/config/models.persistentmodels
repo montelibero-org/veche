@@ -87,9 +87,8 @@ StellarSigner
 
 
 User
-    name                Text Maybe
-    stellarAddress      Stellar.Address
-    notifyIssueAdded    Bool
+    name            Text Maybe
+    stellarAddress  Stellar.Address
 
     UniqueUser stellarAddress
 
@@ -98,9 +97,10 @@ User
 
 
 Telegram
-    Id          UserId
-    chatid      Int64   -- unique, but we don't want to enforce it
-    username    Text    -- unique, but we don't want to enforce it
+    Id                  UserId
+    chatid              Int64   -- unique, but we don't want to enforce it
+    username            Text    -- unique, but we don't want to enforce it
+    notifyIssueAdded    Bool
 
     deriving Eq
     deriving Show

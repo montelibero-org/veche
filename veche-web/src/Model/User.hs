@@ -60,7 +60,7 @@ getOrCreate stellarAddress =
             Just (Entity id _)  -> pure id
             Nothing             -> insert fresh
   where
-    fresh = User{name = Nothing, notifyIssueAdded = False, stellarAddress}
+    fresh = User{name = Nothing, stellarAddress}
 
 selectAll :: PersistSql app => HandlerFor app [Entity User]
 selectAll = runDB $ selectList [] []
@@ -75,8 +75,11 @@ getTelegram :: PersistSql app => UserId -> HandlerFor app (Maybe Telegram)
 getTelegram uid = runDB $ get (TelegramKey uid)
 
 dbSetTelegram :: MonadIO m => UserId -> Int64 -> Text -> SqlPersistT m ()
-dbSetTelegram uid chatid username = repsert key Telegram{chatid, username} where
+dbSetTelegram uid chatid username =
+    repsert key Telegram{chatid, notifyIssueAdded, username}
+  where
     key = TelegramKey uid
+    notifyIssueAdded = False -- default
 
 setTelegram :: PersistSql app => UserId -> Int64 -> Text -> HandlerFor app ()
 setTelegram uid chatid username = runDB $ dbSetTelegram uid chatid username
