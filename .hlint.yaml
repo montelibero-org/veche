@@ -17,5 +17,4 @@
     lhs: v Database.Esqueleto.==. Database.Esqueleto.val Nothing
     rhs: Database.Esqueleto.isNothing v
     name: Use Esqueleto's isNothing
-- ignore:
-    name: Use camelCase
+- ignore: {name: Use camelCase}
