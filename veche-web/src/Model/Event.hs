@@ -16,18 +16,22 @@ module Model.Event (
     dbGetUndelivered,
 ) where
 
-import Import hiding (link)
+import Import hiding (Value, link)
 
+import Data.Coerce (coerce)
+import Database.Esqueleto.Experimental (from, innerJoin, on, select, table,
+                                        where_, (:&) ((:&)), (==.), (^.))
 import Database.Persist (PersistEntity, PersistEntityBackend, SelectOpt (Asc),
-                         get, getJust, selectList, update, (=.), (==.))
-import Database.Persist.Sql (SqlBackend, rawSql)
+                         get, getJust, selectList, update, (=.))
+import Database.Persist qualified as Persist
+import Database.Persist.Sql (SqlBackend)
 import Text.Shakespeare.Text (st)
 import Yesod.Core (yesodRender)
 
 import Model (Comment (Comment), CommentId,
-              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered),
+              EntityField (Comment_created, Comment_eventDelivered, Issue_created, Issue_eventDelivered, Request_created, Request_eventDelivered, TelegramId, UserId, User_notifyIssueAdded),
               Issue (Issue), IssueId, Key (TelegramKey), Request (Request),
-              Telegram, UserId)
+              Telegram, User, UserId)
 import Model qualified
 import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
@@ -94,11 +98,13 @@ getCommentAuthor commentId = do
 instance Event Issue where
 
     dbGetUsersToDeliver _ =
-        rawSql
-            @(Entity Telegram)
-            "SELECT ?? FROM user JOIN telegram ON user.id = telegram.id\
-            \ WHERE user.notify_issue_added"
-            []
+        select do
+            user :& telegram <- from $
+                table @User `innerJoin` table @Telegram
+                `on` \(user :& telegram) ->
+                    coerce (user ^. UserId) ==. telegram ^. TelegramId
+            where_ $ user ^. User_notifyIssueAdded
+            pure telegram
         <&> map unwrap
       where
         unwrap :: Entity Telegram -> (UserId, Telegram)
@@ -130,11 +136,14 @@ data SomeEvent = forall e. Event e => SomeEvent (Entity e)
 dbGetUndelivered :: MonadIO m => SqlPersistT m [SomeEvent]
 dbGetUndelivered = do
     comments <-
-        selectList [Comment_eventDelivered ==. False] [Asc Comment_created]
-    issues   <-
-        selectList [Issue_eventDelivered   ==. False] [Asc Issue_created  ]
+        selectList
+            [Comment_eventDelivered Persist.==. False] [Asc Comment_created]
+    issues <-
+        selectList
+            [Issue_eventDelivered Persist.==. False] [Asc Issue_created]
     requests <-
-        selectList [Request_eventDelivered ==. False] [Asc Request_created]
+        selectList
+            [Request_eventDelivered Persist.==. False] [Asc Request_created]
     pure $
         map snd . sortOn fst $
         map wrapC comments ++ map wrapI issues ++ map wrapR requests

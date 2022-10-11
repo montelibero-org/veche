@@ -13,7 +13,7 @@ module Model.Vote (
     updateIssueApproval,
 ) where
 
-import Import hiding (Value, on)
+import Import hiding (Value)
 
 import Data.Coerce (coerce)
 import Data.Map.Strict qualified as Map

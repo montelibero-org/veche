@@ -7,7 +7,7 @@ module Import.NoFoundation
     , module Import.NoFoundation
     ) where
 
-import ClassyPrelude as X hiding (Handler, delete, id, poll)
+import ClassyPrelude as X hiding (Handler, delete, id, on, poll)
 
 import Control.Arrow as X ((>>>))
 import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))

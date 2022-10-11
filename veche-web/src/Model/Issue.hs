@@ -32,7 +32,7 @@ module Model.Issue (
     dbUpdateAllIssueApprovals,
 ) where
 
-import Import.NoFoundation hiding (groupBy, isNothing, on)
+import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global
 import Data.Coerce (coerce)
@@ -295,7 +295,7 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
         forums <- do
             fs <- selectList [] []
             pure $ Map.fromList [(id, forumE) | forumE@(Entity id _) <- fs]
-        issues <- do
+        issues <-
             -- TODO(2022-10-08, cblp) filter accessible issues in the DB
             select do
                 issue :& vote <- from $
