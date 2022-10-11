@@ -33,12 +33,10 @@ Issue
     curVersion  IssueVersionId Maybe    -- Must be equal to max version.
                                         -- Must be Just after creation.
                                         -- May be Nothing only during creation.
-    approval    Double  default=0   -- Share of 'approve' votes.
-                                    -- Must be recalculated every time somebody
-                                    -- votes or the set of voters is changed.
-    commentNum  Int     default=0   -- Number of text comments.
-                                    -- Must be recalculated on every
-                                    -- addition/removal of text comments.
+    approval    Double  -- Share of 'approve' votes. Must be recalculated every
+                        -- time somebody votes or the set of voters is changed.
+    commentNum  Int -- Number of text comments. Must be recalculated on every
+                    -- addition/removal of text comments.
 
     eventDelivered  Bool
     poll            Poll Maybe

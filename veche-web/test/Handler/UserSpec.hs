@@ -16,26 +16,24 @@ import Model.User qualified
 
 spec :: Spec
 spec =
-    withApp do
+    withApp $
+    describe "User page" do
+        it "asserts no access to my-account for anonymous users" do
+            get UserR
+            statusIs 403
 
-        describe "User page" do
-            it "asserts no access to my-account for anonymous users" do
-                get UserR
-                statusIs 403
+        it "asserts access to my-account for authenticated users" do
+            userEntity <- createUser "foo" Nothing
+            authenticateAs userEntity
 
-            it "asserts access to my-account for authenticated users" do
-                userEntity <- createUser "foo" Nothing
-                authenticateAs userEntity
+            get UserR
+            statusIs 200
 
-                get UserR
-                statusIs 200
+        it "asserts user's information is shown" do
+            userEntity <- createUser "bar" Nothing
+            authenticateAs userEntity
 
-            it "asserts user's information is shown" do
-                userEntity <- createUser "bar" Nothing
-                authenticateAs userEntity
-
-                get UserR
-                let Entity  _
-                            User{stellarAddress = Stellar.Address address} =
-                        userEntity
-                htmlAnyContain ".user_stellar_address" $ Text.unpack address
+            get UserR
+            let Entity _ User{stellarAddress = Stellar.Address address} =
+                    userEntity
+            htmlAnyContain ".user_stellar_address" $ Text.unpack address

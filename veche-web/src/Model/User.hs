@@ -9,6 +9,7 @@
 
 module Model.User (
     -- * Data
+    Key (UserKey),
     User (..),
     UserId,
     -- * Create
