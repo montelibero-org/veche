@@ -76,10 +76,9 @@ dbUpdateIssueApproval issueId mIssue = do
     weights :: [(Int, Maybe UserId)] <-
         addCallStack $
             select do
-                (signer :& user) <-
+                signer :& user <-
                     from $
-                        table @StellarSigner
-                        `leftJoin` table @User
+                        table @StellarSigner `leftJoin` table @User
                         `on` \(signer :& user) ->
                             just (signer ^. StellarSigner_key)
                             ==. user ?. User_stellarAddress

@@ -32,26 +32,27 @@ module Model.Issue (
     dbUpdateAllIssueApprovals,
 ) where
 
-import Import.NoFoundation hiding (groupBy)
+import Import.NoFoundation hiding (groupBy, isNothing, on)
 
 -- global
 import Data.Coerce (coerce)
 import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
 import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
-                                        select, table, val, where_, (==.), (^.))
+                                        innerJoin, isNothing, just, leftJoin,
+                                        not_, on, select, table, val, where_,
+                                        (&&.), (:&) ((:&)), (==.), (?.), (^.))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
                          getBy, getEntity, getJust, getJustEntity, insert,
-                         insert_, selectList, toPersistValue, update, (!=.),
-                         (=.))
+                         insert_, selectList, update, (!=.), (=.))
 import Database.Persist qualified as Persist
-import Database.Persist.Sql (SqlBackend, rawSql)
+import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment),
-              EntityField (Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title),
+              EntityField (Comment_author, Comment_issue, IssueId, Issue_curVersion, Issue_forum, Issue_open, Issue_poll, Issue_title, Request_issue, Request_user, UserId, VoteId, Vote_issue, Vote_user),
               Forum, ForumId, Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
@@ -113,20 +114,24 @@ loadComments issueId =
     loadRawComments ::
         MonadIO m => SqlPersistT m [(Entity Comment, Entity User)]
     loadRawComments =
-        rawSql
-            "SELECT ??, ??\
-            \ FROM comment, user ON comment.author = user.id\
-            \ WHERE comment.issue = ?"
-            [toPersistValue issueId]
+        select do
+            comment :& user <- from $
+                table @Comment `innerJoin` table @User
+                `on` \(comment :& user) ->
+                    comment ^. Comment_author ==. user ^. UserId
+            where_ $ comment ^. Comment_issue ==. val issueId
+            pure (comment, user)
 
     loadRawRequests ::
         MonadIO m => SqlPersistT m [(Entity Request, Entity User)]
     loadRawRequests =
-        rawSql
-            "SELECT ??, ??\
-            \ FROM request, user ON request.user = user.id\
-            \ WHERE request.issue = ?"
-            [toPersistValue issueId]
+        select do
+            request :& user <- from $
+                table @Request `innerJoin` table @User
+                `on` \(request :& user) ->
+                    request ^. Request_user ==. user ^. UserId
+            where_ $ request ^. Request_issue ==. val issueId
+            pure (request, user)
 
 materializeComments ::
     [(Entity Comment, Entity User)] ->
@@ -164,12 +169,12 @@ materializeComments comments requests =
 loadVotes :: MonadIO m => IssueId -> SqlPersistT m [VoteMaterialized]
 loadVotes issueId = do
     votes <-
-        rawSql
-            @(Entity Vote, Entity User)
-            "SELECT ??, ??\
-            \ FROM vote, user ON vote.user = user.id\
-            \ WHERE vote.issue = ?"
-            [toPersistValue issueId]
+        select do
+            vote :& user <- from $
+                table @Vote `innerJoin` table @User
+                `on` \(vote :& user) -> vote ^. Vote_user ==. user ^. UserId
+            where_ $ vote ^. Vote_issue ==. val issueId
+            pure (vote, user)
     pure
         [ VoteMaterialized{choice, voter}
         | (Entity _ Vote{choice}, voter) <- votes
@@ -290,30 +295,28 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
         forums <- do
             fs <- selectList [] []
             pure $ Map.fromList [(id, forumE) | forumE@(Entity id _) <- fs]
-        issues <-
-            rawSql
-                @(Entity Issue)
-                "SELECT ??\
-                \ FROM\
-                    \ issue\
-                    \ LEFT JOIN\
-                    \ (SELECT * FROM vote WHERE vote.user = ?) AS vote\
-                    \ ON issue.id = vote.issue\
-                \ WHERE issue.open\
-                    \ AND issue.poll IS NOT NULL\
-                    \ AND vote.id IS NULL"
-                [toPersistValue userId]
-                -- TODO(2022-10-08, cblp) filter accessible issues in the DB
+        issues <- do
+            -- TODO(2022-10-08, cblp) filter accessible issues in the DB
+            select do
+                issue :& vote <- from $
+                    table @Issue `leftJoin` table @Vote
+                    `on` \(issue :& vote) ->
+                        just (issue ^. IssueId) ==. vote ?. Vote_issue
+                        &&. vote ?. Vote_user ==. val (Just userId)
+                where_ $
+                    (issue ^. Issue_open)
+                    &&. not_ (isNothing $ issue ^. Issue_poll)
+                    &&. isNothing (vote ?. VoteId)
+                pure issue
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
         mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
         let mSignerId = entityKey <$> mSigner
             mHolderId = entityKey <$> mHolder
-        pure
-            [issue
-            | issue@(Entity _ Issue{forum}) <- issues
-            , let forumE = forums ! forum
-            , isAllowed $ ListForumIssues forumE (mSignerId, mHolderId)
-            ]
+        pure $
+            issues
+            & filter \(Entity _ Issue{forum}) ->
+                isAllowed $
+                ListForumIssues (forums ! forum) (mSignerId, mHolderId)
 
 getContentForEdit ::
     ( AuthId app ~ UserId
