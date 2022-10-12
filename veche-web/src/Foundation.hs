@@ -207,7 +207,7 @@ isAuthenticated :: Handler AuthResult
 isAuthenticated = do
     muid <- maybeAuthId
     pure $ case muid of
-        Nothing -> Unauthorized "You must log in to access this page"
+        Nothing -> Unauthorized MsgMustLogin
         Just _  -> Authorized
 
 instance YesodAuthPersist App
