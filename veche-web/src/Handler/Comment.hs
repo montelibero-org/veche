@@ -20,12 +20,11 @@ import Templates.Comment (commentAnchor, commentForm)
 
 postCommentsR :: Handler Html
 postCommentsR = do
-    user <- requireAuth
     ((result, _widget), _enctype) <- runFormPost $ commentForm Nothing []
     requestUsers <- lookupRequestUsers
     case result of
         FormSuccess commentInput@CommentInput{issue} -> do
-            commentId <- Comment.addText user commentInput{Comment.requestUsers}
+            commentId <- Comment.addText commentInput{Comment.requestUsers}
             redirect $ IssueR issue :#: commentAnchor commentId
         _ -> invalidArgs [tshow result]
 

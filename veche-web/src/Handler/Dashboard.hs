@@ -17,11 +17,11 @@ import Templates.Issue (issueRequestTable, issueTable)
 
 getDashboardR :: Handler Html
 getDashboardR = do
-    userE@(Entity userId user) <- requireAuth
+    Entity userId user <- requireAuth
     isSigner <- User.isSigner user
     issuesToVote <-
         if isSigner then do
-            issues <- Issue.selectWithoutVoteFromUser userE
+            issues <- Issue.selectWithoutVoteFromUser
             pure
                 [whamlet|
                     <h2>Voting required (#{show $ length issues})

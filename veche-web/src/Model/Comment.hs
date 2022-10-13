@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -18,17 +19,16 @@ module Model.Comment (
 
 import Import.NoFoundation
 
-import Database.Persist (count, getBy, insert, insertMany_, update, updateWhere,
-                         (<-.), (=.), (==.))
+import Database.Persist (count, insert, insertMany_, update, updateWhere, (<-.),
+                         (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
-import Genesis (mtlAsset, mtlFund)
 import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
-              Request (Request), RequestId, Unique (UniqueHolder, UniqueSigner),
-              User (User), UserId)
+              Request (Request), RequestId, User, UserId)
 import Model qualified
 import Model.Forum qualified as Forum
+import Model.User (maybeAuthzGroups)
 
 data CommentInput = CommentInput
     { issue        :: IssueId
@@ -48,9 +48,10 @@ data CommentMaterialized = CommentMaterialized
     deriving (Show)
 
 addText ::
-    (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    Entity User -> CommentInput -> HandlerFor app CommentId
-addText (Entity author User{stellarAddress}) commentInput = do
+    (PersistSql app, AuthId app ~ UserId, AuthEntity app ~ User) =>
+    CommentInput -> HandlerFor app CommentId
+addText commentInput = do
+    author <- requireAuthId
     now <- liftIO getCurrentTime
     let comment =
             Comment
@@ -62,14 +63,13 @@ addText (Entity author User{stellarAddress}) commentInput = do
                 , parent
                 , type_             = CommentText
                 }
+
     runDB do
         Issue{forum} <- get404 issue
         forumE <- Forum.getJustEntity forum
-        mSigner <- getBy $ UniqueSigner mtlFund stellarAddress
-        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
-        let mSignerId = entityKey <$> mSigner
-            mHolderId = entityKey <$> mHolder
-        requireAuthz $ AddForumIssueComment forumE (mSignerId, mHolderId)
+        groups <- maybeAuthzGroups
+        requireAuthz $ AddForumIssueComment forumE groups
+
         commentId <- insert comment
         insertMany_
             [ makeRequest commentId now user

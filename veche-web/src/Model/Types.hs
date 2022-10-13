@@ -11,7 +11,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Model.Types (
-    AccessLevel (..),
     Choice (..),
     CommentType (..),
     EntityForum,
@@ -19,6 +18,8 @@ module Model.Types (
     ForumId (..),
     Poll (..),
     StellarMultiSigAddress (..),
+    UserGroup (..),
+    UserGroups,
 ) where
 
 import ClassyPrelude
@@ -86,15 +87,14 @@ data Poll = BySignerWeight
     deriving (Eq, Read, Show)
 derivePersistField "Poll"
 
--- | Levels are listed here in order of increasing security to use
--- 'Ord' instance.
--- TODO migrate to group-based access
-data AccessLevel = AccessLevelPublic | AccessLevelHolder | AccessLevelSigner
-    deriving (Eq, Ord, Show)
+data UserGroup = Holders | Signers
+    deriving (Eq, Ord)
+
+type UserGroups = Set UserGroup
 
 data Forum = Forum
-    { title     :: Text
-    , access    :: AccessLevel
+    { title             :: Text
+    , requireUserGroup  :: Maybe UserGroup
     }
 
 newtype ForumId = ForumKey Text

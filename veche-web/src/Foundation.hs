@@ -2,6 +2,7 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -39,6 +40,7 @@ import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
 -- component
+import Model.Forum qualified as Forum
 import Model.User (UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
@@ -89,24 +91,7 @@ instance Yesod App where
         :: Route App  -- ^ The route the user is visiting.
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
-    isAuthorized route _isWrite =
-        -- Actually, we check only authentication here.
-        -- Authorization requires data from the database,
-        -- and happens inside handlers after the data is got
-        -- to minimize DB requests.
-        case route of
-            -- Routes not requiring authentication.
-            AboutR{}  -> authorized
-            AuthR{}   -> authorized
-            FaviconR  -> authorized
-            ForumsR{} -> authorized
-            RobotsR   -> authorized
-            RootR     -> authorized
-            StaticR{} -> authorized
-            -- All other routes require authentication.
-            _         -> authorizedIfAuthenticated
-      where
-        authorized = pure Authorized
+    isAuthorized route _isWrite = isAuthorized route
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -206,6 +191,28 @@ authStellarConfig App{appStellarHorizon} =
         }
   where
     nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
+
+-- Actually, we check only authentication here.
+-- Authorization requires data from the database,
+-- and happens inside handlers after the data is got to minimize DB requests.
+isAuthorized :: Route App -> HandlerFor App AuthResult
+isAuthorized = \case
+    -- Routes not requiring authentication.
+    AboutR{}  -> authorized
+    AuthR{}   -> authorized
+    FaviconR  -> authorized
+    ForumsR{} -> authorized
+    RobotsR   -> authorized
+    RootR     -> authorized
+    StaticR{} -> authorized
+    -- Some forums are public
+    ForumR id
+        | Forum.isPublic id -> authorized
+        | otherwise         -> authorizedIfAuthenticated
+    -- All other routes require authentication.
+    _ -> authorizedIfAuthenticated
+  where
+    authorized = pure Authorized
 
 -- | Access function to determine if a user is logged in.
 authorizedIfAuthenticated :: Handler AuthResult

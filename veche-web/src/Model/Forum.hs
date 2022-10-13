@@ -1,9 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Model.Forum (
     Forum (..),
@@ -12,9 +15,10 @@ module Model.Forum (
     getEntityByIssue404,
     getJust,
     getJustEntity,
+    isPublic,
 ) where
 
-import Import hiding (getEntity404)
+import Import.NoFoundation hiding (getEntity404)
 
 import Data.Map.Strict ((!?))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet))
@@ -40,8 +44,12 @@ getJust id =
 getJustEntity :: (HasCallStack, MonadIO m) => ForumId -> m EntityForum
 getJustEntity id = (id,) <$> getJust id
 
-getEntityByIssue404 :: IssueId -> Handler EntityForum
+getEntityByIssue404 :: PersistSql app => IssueId -> HandlerFor app EntityForum
 getEntityByIssue404 issueId =
     runDB do
         Issue{forum = forumId} <- Persist.get404 issueId
         getJustEntity forumId
+
+isPublic :: ForumId -> Bool
+isPublic id =
+    all (\Forum{requireUserGroup} -> null requireUserGroup) $ forums !? id

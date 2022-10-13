@@ -44,24 +44,24 @@ import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
                                         not_, on, select, table, val, where_,
                                         (&&.), (:&) ((:&)), (==.), (?.), (^.))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
-                         getBy, getEntity, getJust, insert, insert_, selectList,
+                         getEntity, getJust, insert, insert_, selectList,
                          update, (!=.), (=.))
 import Database.Persist qualified as Persist
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
-import Genesis (forums, mtlAsset, mtlFund)
+import Genesis (forums)
 import Model (Comment (Comment), Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
-              Unique (UniqueHolder, UniqueSigner), User (User), UserId,
-              Vote (Vote))
+              User, UserId, Vote (Vote))
 import Model qualified
 import Model.Comment (CommentMaterialized (CommentMaterialized))
 import Model.Comment qualified
 import Model.Forum qualified as Forum
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
+import Model.User (maybeAuthzGroups, requireAuthzGroups)
 import Model.Vote qualified as Vote
 
 data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
@@ -196,12 +196,8 @@ load issueId =
                 issue
         forumE@(_, forum) <- Forum.getJustEntity forumId
 
-        Entity userId User{stellarAddress} <- requireAuth
-        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
-        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
-        let mSignerId = entityKey <$> mSigner
-            mHolderId = entityKey <$> mHolder
-        requireAuthz $ ReadForumIssue forumE (mSignerId, mHolderId)
+        (userId, groups) <- requireAuthzGroups
+        requireAuthz $ ReadForumIssue forumE groups
 
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
@@ -221,8 +217,8 @@ load issueId =
             isEditAllowed        = isAllowed $ EditIssue        issueE userId
             isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
             isCommentAllowed     =
-                isAllowed $ AddForumIssueComment forumE (mSignerId, mHolderId)
-            isVoteAllowed        = isAllowed $ AddIssueVote issueE mSignerId
+                isAllowed $ AddForumIssueComment forumE groups
+            isVoteAllowed        = isAllowed $ AddIssueVote issueE groups
         pure
             IssueMaterialized
             { body
@@ -271,24 +267,20 @@ listForumIssues ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     EntityForum -> Maybe Bool -> HandlerFor app [Entity Issue]
-listForumIssues forumE@(forumId, _) mIsOpen =
-    runDB do
-        Entity _ User{stellarAddress} <- requireAuth
-        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
-        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
-        let mSignerId = entityKey <$> mSigner
-            mHolderId = entityKey <$> mHolder
-        requireAuthz $ ReadForum forumE (mSignerId, mHolderId)
-        selectList filters []
+listForumIssues forumE@(forumId, _) mIsOpen = do
+    groups <- maybeAuthzGroups
+    requireAuthz $ ReadForum forumE groups
+    runDB $ selectList filters []
   where
     filters =
         (#forum Persist.==. forumId)
         : [#open Persist.==. isOpen | Just isOpen <- [mIsOpen]]
 
 selectWithoutVoteFromUser ::
-    (YesodAuthPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    Entity User -> HandlerFor app [Entity Issue]
-selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
+    (PersistSql app, AuthEntity app ~ User, AuthId app ~ UserId) =>
+    HandlerFor app [Entity Issue]
+selectWithoutVoteFromUser = do
+    (userId, groups) <- requireAuthzGroups
     runDB do
         issues <-
             -- TODO(2022-10-08, cblp) filter accessible issues in the DB
@@ -303,15 +295,10 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
                     &&. not_ (isNothing $ issue ^. #poll)
                     &&. isNothing (vote ?. #id)
                 pure issue
-        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
-        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
-        let mSignerId = entityKey <$> mSigner
-            mHolderId = entityKey <$> mHolder
         pure $
             issues
             & filter \(Entity _ Issue{forum}) ->
-                isAllowed $
-                ReadForum (forum, forums ! forum) (mSignerId, mHolderId)
+                isAllowed $ ReadForum (forum, forums ! forum) groups
 
 getContentForEdit ::
     ( AuthId app ~ UserId
@@ -342,14 +329,9 @@ create ::
     ) =>
     EntityForum -> IssueContent -> HandlerFor app IssueId
 create forumE@(forumId, _) content = do
-    Entity userId User{stellarAddress} <- requireAuth
-    runDB do
-        mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
-        mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
-        let mSignerId = entityKey <$> mSigner
-            mHolderId = entityKey <$> mHolder
-        requireAuthz $ AddForumIssue forumE (mSignerId, mHolderId)
-        dbCreate forumId content userId
+    (userId, groups) <- requireAuthzGroups
+    requireAuthz $ AddForumIssue forumE groups
+    runDB $ dbCreate forumId content userId
 
 dbCreate ::
     (HasCallStack, MonadUnliftIO m) =>

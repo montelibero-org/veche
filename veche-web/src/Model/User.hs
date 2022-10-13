@@ -32,13 +32,18 @@ module Model.User (
     -- * Delete
     dbDeleteTelegram,
     deleteTelegram,
+    -- * Authorization
+    maybeAuthzGroups,
+    requireAuthzGroups,
 ) where
 
 import Import.NoFoundation
 
+import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
                          selectList, update, (=.), (==.))
 import Stellar.Horizon.Types qualified as Stellar
+import Yesod.Core (HandlerSite, liftHandler)
 import Yesod.Persist (runDB)
 
 import Genesis (mtlAsset, mtlFund)
@@ -109,3 +114,36 @@ getHolderId :: PersistSql app => User -> HandlerFor app (Maybe StellarHolderId)
 getHolderId User{stellarAddress} = do
     mEntity <- runDB $ getBy $ UniqueHolder mtlAsset stellarAddress
     pure $ entityKey <$> mEntity
+
+maybeAuthzGroups ::
+    ( MonadHandler m
+    , AuthId (HandlerSite m) ~ UserId
+    , AuthEntity (HandlerSite m) ~ User
+    , PersistSql (HandlerSite m)
+    ) =>
+    m UserGroups
+maybeAuthzGroups = do
+    mUserE <- maybeAuth
+    case mUserE of
+        Nothing -> pure Set.empty
+        Just (Entity _ User{stellarAddress}) ->
+            liftHandler $
+            runDB do
+                signer <-
+                    exists
+                        @_ @_ @StellarSigner
+                        [#target ==. mtlFund, #key ==. stellarAddress]
+                holder <-
+                    exists
+                        @_ @_ @StellarHolder
+                        [#asset ==. mtlAsset, #key ==. stellarAddress]
+                pure $ Set.fromList $ [Signers | signer] ++ [Holders | holder]
+
+requireAuthzGroups ::
+    ( MonadHandler m
+    , AuthId (HandlerSite m) ~ UserId
+    , AuthEntity (HandlerSite m) ~ User
+    , PersistSql (HandlerSite m)
+    ) =>
+    m (UserId, UserGroups)
+requireAuthzGroups = (,) <$> requireAuthId <*> maybeAuthzGroups
