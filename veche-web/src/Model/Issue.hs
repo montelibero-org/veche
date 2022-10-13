@@ -84,6 +84,7 @@ data IssueMaterialized = IssueMaterialized
     , requests              :: [IssueRequestMaterialized]
     , votes                 :: Map Choice (EntitySet User)
     }
+    deriving (Show)
 
 data StateAction = Close | Reopen
     deriving (Eq)
@@ -185,7 +186,9 @@ load ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     IssueId -> HandlerFor app IssueMaterialized
-load issueId =
+load issueId = do
+    (mUserId, groups) <- maybeAuthzGroups
+    let authenticated = isJust mUserId
     runDB do
         issue <- get404 issueId
         let Issue   { author    = authorId
@@ -196,7 +199,6 @@ load issueId =
                 issue
         forumE@(_, forum) <- Forum.getJustEntity forumId
 
-        (userId, groups) <- requireAuthzGroups
         requireAuthz $ ReadForumIssue forumE groups
 
         versionId <-
@@ -211,27 +213,32 @@ load issueId =
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
         votes <- collectChoices <$> loadVotes issueId
-        requests <- Request.selectActiveByIssueAndUser issueId userId
+        requests <-
+            case mUserId of
+                Just userId -> Request.selectActiveByIssueAndUser issueId userId
+                Nothing     -> pure []
 
         let issueE = Entity issueId issue
-            isEditAllowed        = isAllowed $ EditIssue        issueE userId
-            isCloseReopenAllowed = isAllowed $ CloseReopenIssue issueE userId
-            isCommentAllowed     =
-                isAllowed $ AddForumIssueComment forumE groups
-            isVoteAllowed        = isAllowed $ AddIssueVote issueE groups
+            isEditAllowed = any (isAllowed . EditIssue issueE) mUserId
+            isCloseReopenAllowed =
+                any (isAllowed . CloseReopenIssue issueE) mUserId
+            isCommentAllowed =
+                authenticated && isAllowed (AddForumIssueComment forumE groups)
+            isVoteAllowed =
+                authenticated && isAllowed (AddIssueVote issueE groups)
         pure
             IssueMaterialized
-            { body
-            , comments
-            , forum
-            , isCloseReopenAllowed
-            , isCommentAllowed
-            , isEditAllowed
-            , issue
-            , isVoteAllowed
-            , requests
-            , votes
-            }
+                { body
+                , comments
+                , forum
+                , isCloseReopenAllowed
+                , isCommentAllowed
+                , isEditAllowed
+                , issue
+                , isVoteAllowed
+                , requests
+                , votes
+                }
   where
     startingPseudoComment authorId author created =
         Node
@@ -268,7 +275,7 @@ listForumIssues ::
     ) =>
     EntityForum -> Maybe Bool -> HandlerFor app [Entity Issue]
 listForumIssues forumE@(forumId, _) mIsOpen = do
-    groups <- maybeAuthzGroups
+    (_, groups) <- maybeAuthzGroups
     requireAuthz $ ReadForum forumE groups
     runDB $ selectList filters []
   where

@@ -88,7 +88,7 @@ data Poll = BySignerWeight
 derivePersistField "Poll"
 
 data UserGroup = Holders | Signers
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Show)
 
 type UserGroups = Set UserGroup
 
@@ -96,6 +96,7 @@ data Forum = Forum
     { title             :: Text
     , requireUserGroup  :: Maybe UserGroup
     }
+    deriving (Show)
 
 newtype ForumId = ForumKey Text
     deriving newtype

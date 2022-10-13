@@ -202,6 +202,7 @@ isAuthorized = \case
     AuthR{}   -> authorized
     FaviconR  -> authorized
     ForumsR{} -> authorized
+    IssueR{}  -> authorized
     RobotsR   -> authorized
     RootR     -> authorized
     StaticR{} -> authorized

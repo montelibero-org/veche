@@ -43,7 +43,7 @@ import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
                          selectList, update, (=.), (==.))
 import Stellar.Horizon.Types qualified as Stellar
-import Yesod.Core (HandlerSite, liftHandler)
+import Yesod.Core (HandlerSite, liftHandler, notAuthenticated)
 import Yesod.Persist (runDB)
 
 import Genesis (mtlAsset, mtlFund)
@@ -121,12 +121,12 @@ maybeAuthzGroups ::
     , AuthEntity (HandlerSite m) ~ User
     , PersistSql (HandlerSite m)
     ) =>
-    m UserGroups
+    m (Maybe UserId, UserGroups)
 maybeAuthzGroups = do
     mUserE <- maybeAuth
     case mUserE of
-        Nothing -> pure Set.empty
-        Just (Entity _ User{stellarAddress}) ->
+        Nothing -> pure (Nothing, Set.empty)
+        Just (Entity id User{stellarAddress}) ->
             liftHandler $
             runDB do
                 signer <-
@@ -137,7 +137,10 @@ maybeAuthzGroups = do
                     exists
                         @_ @_ @StellarHolder
                         [#asset ==. mtlAsset, #key ==. stellarAddress]
-                pure $ Set.fromList $ [Signers | signer] ++ [Holders | holder]
+                pure
+                    ( Just id
+                    , Set.fromList $ [Signers | signer] ++ [Holders | holder]
+                    )
 
 requireAuthzGroups ::
     ( MonadHandler m
@@ -146,4 +149,8 @@ requireAuthzGroups ::
     , PersistSql (HandlerSite m)
     ) =>
     m (UserId, UserGroups)
-requireAuthzGroups = (,) <$> requireAuthId <*> maybeAuthzGroups
+requireAuthzGroups = do
+    (mUserId, groups) <- maybeAuthzGroups
+    case mUserId of
+        Nothing -> notAuthenticated
+        Just id -> pure (id, groups)

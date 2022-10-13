@@ -67,7 +67,7 @@ addText commentInput = do
     runDB do
         Issue{forum} <- get404 issue
         forumE <- Forum.getJustEntity forum
-        groups <- maybeAuthzGroups
+        (_, groups) <- maybeAuthzGroups
         requireAuthz $ AddForumIssueComment forumE groups
 
         commentId <- insert comment

@@ -22,7 +22,7 @@ import Templates.Issue (issueTable)
 
 getForumR :: ForumId -> Handler Html
 getForumR forumId = do
-    groups <- maybeAuthzGroups
+    (_, groups) <- maybeAuthzGroups
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
     forumE@(_, Forum{title}) <- Forum.getEntity404 forumId
@@ -33,6 +33,6 @@ getForumR forumId = do
 
 getForumsR :: Handler Html
 getForumsR = do
-    groups <- maybeAuthzGroups
+    (_, groups) <- maybeAuthzGroups
     let isReadAllowed forumE = isAllowed $ ReadForum forumE groups
     defaultLayout $(widgetFile "forums")
