@@ -1,9 +1,0 @@
-ALTER TABLE issue ADD COLUMN forum2 VARCHAR NOT NULL DEFAULT '';
-UPDATE issue SET forum2 = forum;
-ALTER TABLE issue DROP COLUMN forum;
-
-ALTER TABLE issue ADD COLUMN forum VARCHAR NOT NULL DEFAULT '';
-UPDATE issue SET forum = forum2;
-ALTER TABLE issue DROP COLUMN forum2;
-
-DROP TABLE forum;
