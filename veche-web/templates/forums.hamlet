@@ -1,7 +1,7 @@
 <h1>Forums
 
 <table .table .table-striped>
-    $forall Entity forumId Forum{title} <- forums
+    $forall (forumId, Forum{title}) <- Map.assocs forums
         <tr>
             <td>
                 <a href=@{ForumR forumId}>#{title}

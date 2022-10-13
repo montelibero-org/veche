@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -28,11 +29,12 @@ import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         MonadHandler, PathPiece, TypedContent (TypedContent),
                         addHeader, cacheSeconds, defaultLayout, fromPathPiece,
                         getCurrentRoute, hamlet, invalidArgs, julius,
-                        lookupGetParam, lookupPostParams, permissionDenied,
-                        redirect, requireCheckJsonBody, respondSource,
-                        returnJson, sendChunkText, sendResponseStatus, setTitle,
-                        toContent, toHtml, toPathPiece, toWidget, typePlain,
-                        whamlet, withUrlRenderer)
+                        lookupGetParam, lookupPostParams, notFound,
+                        permissionDenied, redirect, requireCheckJsonBody,
+                        respondSource, returnJson, sendChunkText,
+                        sendResponseStatus, setTitle, toContent, toHtml,
+                        toPathPiece, toWidget, typePlain, whamlet,
+                        withUrlRenderer)
 import Yesod.Core.Types as X (loggerSet)
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
                         FieldSettings (..), FormResult (FormSuccess), MForm,
@@ -71,18 +73,24 @@ asyncLinked = async >=> link
 
 type EntitySet a = Map (Key a) a
 
-data ExceptionWithCallStack = ExceptionWithCallStack
+data WithCallStack = WithCallStack
     { stack     :: CallStack
     , parent    :: SomeException
     }
 
-instance Exception ExceptionWithCallStack where
-    displayException ExceptionWithCallStack{stack, parent} =
+instance Exception WithCallStack where
+    displayException WithCallStack{stack, parent} =
         prettyCallStack stack <> ('\n' : displayException parent)
 
-instance Show ExceptionWithCallStack where
+instance Show WithCallStack where
     show = displayException
 
 addCallStack :: (HasCallStack, MonadUnliftIO m) => m a -> m a
 addCallStack action =
-    action `catchAny` \e -> throwIO $ ExceptionWithCallStack callStack e
+    action `catchAny` \e -> throwIO $ WithCallStack callStack e
+
+withCallStack :: (HasCallStack, Exception e) => e -> WithCallStack
+withCallStack e = WithCallStack{stack = callStack, parent = SomeException e}
+
+throwWithCallStack :: (HasCallStack, Exception e, MonadIO m) => e -> m a
+throwWithCallStack = throwIO . withCallStack

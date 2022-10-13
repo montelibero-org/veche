@@ -8,11 +8,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Model.Types (
     AccessLevel (..),
     Choice (..),
     CommentType (..),
+    EntityForum,
+    Forum (..),
+    ForumId (..),
     Poll (..),
     StellarMultiSigAddress (..),
 ) where
@@ -84,8 +88,17 @@ derivePersistField "Poll"
 
 -- | Levels are listed here in order of increasing security to use
 -- 'Ord' instance.
+-- TODO migrate to group-based access
 data AccessLevel = AccessLevelUninvolved | AccessLevelHolder | AccessLevelSigner
-    deriving (Eq, Ord, Read, Show)
-deriveJSON defaultOptions{constructorTagModifier = drop 11} ''AccessLevel
-deriving via JsonString AccessLevel instance PersistField    AccessLevel
-deriving via JsonString AccessLevel instance PersistFieldSql AccessLevel
+    deriving (Eq, Ord, Show)
+
+data Forum = Forum
+    { title     :: Text
+    , access    :: AccessLevel
+    }
+
+newtype ForumId = ForumKey Text
+    deriving newtype
+        (Eq, Ord, PathPiece, PersistField, PersistFieldSql, Read, Show)
+
+type EntityForum = (ForumId, Forum)

@@ -2,35 +2,46 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Model.Forum (
     Forum (..),
-    ForumId,
-    Key (ForumKey),
-    getAll,
+    ForumId (ForumKey),
     getEntity404,
     getEntityByIssue404,
+    getJust,
+    getJustEntity,
 ) where
 
 import Import hiding (getEntity404)
 
-import Database.Persist (getJustEntity, selectList)
-import Database.Persist.Extra qualified
-import Yesod.Persist (get404, runDB)
+import Data.Map.Strict ((!?))
+import Database.Persist (PersistException (PersistForeignConstraintUnmet))
+import Yesod.Persist (runDB)
+import Yesod.Persist qualified as Persist
 
-import Model (Forum (..), ForumId, Issue (Issue), IssueId, Key (ForumKey))
+import Genesis (forums)
+import Model (Issue (Issue), IssueId)
 import Model qualified
 
-getAll :: Handler [Entity Forum]
-getAll = do
-    requireAuthz ListForums
-    runDB $ selectList [] []
+get404 :: (HasCallStack, MonadHandler m, MonadUnliftIO m) => ForumId -> m Forum
+get404 id = forums !? id ?| addCallStack notFound
 
-getEntity404 :: ForumId -> Handler (Entity Forum)
-getEntity404 = runDB . Database.Persist.Extra.getEntity404
+getEntity404 ::
+    (HasCallStack, MonadHandler m, MonadUnliftIO m) => ForumId -> m EntityForum
+getEntity404 id = (id,) <$> get404 id
 
-getEntityByIssue404 :: IssueId -> Handler (Entity Forum)
+getJust :: (HasCallStack, MonadIO m) => ForumId -> m Forum
+getJust id =
+    forums !? id
+    ?| throwWithCallStack (PersistForeignConstraintUnmet "forum.id")
+
+getJustEntity :: (HasCallStack, MonadIO m) => ForumId -> m EntityForum
+getJustEntity id = (id,) <$> getJust id
+
+getEntityByIssue404 :: IssueId -> Handler EntityForum
 getEntityByIssue404 issueId =
     runDB do
-        Issue{forum = forumId} <- get404 issueId
+        Issue{forum = forumId} <- Persist.get404 issueId
         getJustEntity forumId

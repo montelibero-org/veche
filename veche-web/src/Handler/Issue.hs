@@ -27,7 +27,6 @@ import Network.HTTP.Types (badRequest400)
 
 -- component
 import Genesis (mtlFund)
-import Model.Forum (Forum (Forum), ForumId)
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),

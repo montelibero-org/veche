@@ -15,14 +15,6 @@ Comment
     deriving Show
 
 
-Forum
-    Id                  Text -- human-readable handle
-    title               Text
-    accessIssueRead     AccessLevel
-    accessIssueWrite    AccessLevel
-    accessIssueComment  AccessLevel
-
-
 Issue
     author      UserId
     open        Bool

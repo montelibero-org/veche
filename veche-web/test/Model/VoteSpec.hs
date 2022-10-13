@@ -13,14 +13,12 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Yesod.Persist (get404)
 
 import Genesis (mtlFund)
-import Model.Forum (Forum (Forum), Key (ForumKey))
-import Model.Forum qualified
+import Model.Forum (ForumId (ForumKey))
 import Model.Issue (Issue (Issue), Key (IssueKey))
 import Model.Issue qualified as Issue
 import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified
-import Model.Types (AccessLevel (AccessLevelUninvolved),
-                    Choice (Approve, Reject))
+import Model.Types (Choice (Approve, Reject))
 import Model.User (User (User))
 import Model.User qualified
 import Model.Vote qualified as Vote
@@ -39,22 +37,13 @@ spec =
             Issue{approval} <- runDB $ get404 issueId
             approval === 0.5
   where
-    forumId = ForumKey "POINT"
+    forumId = ForumKey "OFFTOPIC"
     issueId = IssueKey 1
 
     prepare users@(user :| _) = do
         authenticateAs user
 
-        runDB do
-            -- create the forum
-            insertKey
-                forumId
-                Forum
-                    { title                 = "Point forum"
-                    , accessIssueRead       = AccessLevelUninvolved
-                    , accessIssueWrite      = AccessLevelUninvolved
-                    , accessIssueComment    = AccessLevelUninvolved
-                    }
+        runDB $
             for_ users \(Entity _ User{stellarAddress}) ->
                 insert_
                     StellarSigner

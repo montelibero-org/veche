@@ -44,21 +44,22 @@ import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
                                         not_, on, select, table, val, where_,
                                         (&&.), (:&) ((:&)), (==.), (?.), (^.))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
-                         getBy, getEntity, getJust, getJustEntity, insert,
-                         insert_, selectList, update, (!=.), (=.))
+                         getBy, getEntity, getJust, insert, insert_, selectList,
+                         update, (!=.), (=.))
 import Database.Persist qualified as Persist
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
-import Genesis (mtlAsset, mtlFund)
-import Model (Comment (Comment), Forum, ForumId, Issue (Issue), IssueId,
+import Genesis (forums, mtlAsset, mtlFund)
+import Model (Comment (Comment), Issue (Issue), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               Unique (UniqueHolder, UniqueSigner), User (User), UserId,
               Vote (Vote))
 import Model qualified
 import Model.Comment (CommentMaterialized (CommentMaterialized))
 import Model.Comment qualified
+import Model.Forum qualified as Forum
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
 import Model.Vote qualified as Vote
@@ -193,7 +194,7 @@ load issueId =
                     , forum     = forumId
                     } =
                 issue
-        forumE@(Entity _ forum) <- getJustEntity forumId
+        forumE@(_, forum) <- Forum.getJustEntity forumId
 
         Entity userId User{stellarAddress} <- requireAuth
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
@@ -269,8 +270,8 @@ listForumIssues ::
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    Entity Forum -> Maybe Bool -> HandlerFor app [Entity Issue]
-listForumIssues forumE@(Entity forumId _) mIsOpen =
+    EntityForum -> Maybe Bool -> HandlerFor app [Entity Issue]
+listForumIssues forumE@(forumId, _) mIsOpen =
     runDB do
         Entity _ User{stellarAddress} <- requireAuth
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
@@ -289,9 +290,6 @@ selectWithoutVoteFromUser ::
     Entity User -> HandlerFor app [Entity Issue]
 selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
     runDB do
-        forums <- do
-            fs <- selectList [] []
-            pure $ Map.fromList [(id, forumE) | forumE@(Entity id _) <- fs]
         issues <-
             -- TODO(2022-10-08, cblp) filter accessible issues in the DB
             select do
@@ -313,20 +311,20 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
             issues
             & filter \(Entity _ Issue{forum}) ->
                 isAllowed $
-                ListForumIssues (forums ! forum) (mSignerId, mHolderId)
+                ListForumIssues (forum, forums ! forum) (mSignerId, mHolderId)
 
 getContentForEdit ::
     ( AuthId app ~ UserId
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    IssueId -> HandlerFor app (Entity Forum, IssueContent)
+    IssueId -> HandlerFor app (EntityForum, IssueContent)
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
         issue@(Entity _ Issue{curVersion, forum = forumId, poll, title}) <-
             getEntity404 issueId
-        forum <- getJust forumId
+        forum <- Forum.getJust forumId
         requireAuthz $ EditIssue issue userId
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
@@ -334,7 +332,7 @@ getContentForEdit issueId =
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
-        pure (Entity forumId forum, IssueContent{title, body, poll})
+        pure ((forumId, forum), IssueContent{title, body, poll})
 
 create ::
     ( AuthEntity app ~ User
@@ -342,9 +340,8 @@ create ::
     , YesodAuthPersist app
     , YesodPersistBackend app ~ SqlBackend
     ) =>
-    Entity Forum -> IssueContent -> HandlerFor app IssueId
-create forumE@(Entity forumId _) IssueContent{body, poll, title} = do
-    now <- liftIO getCurrentTime
+    EntityForum -> IssueContent -> HandlerFor app IssueId
+create forumE@(forumId, _) content = do
     Entity userId User{stellarAddress} <- requireAuth
     runDB do
         mSigner <- getBy $ UniqueSigner mtlFund  stellarAddress
@@ -352,26 +349,32 @@ create forumE@(Entity forumId _) IssueContent{body, poll, title} = do
         let mSignerId = entityKey <$> mSigner
             mHolderId = entityKey <$> mHolder
         requireAuthz $ AddForumIssue forumE (mSignerId, mHolderId)
-        let issue =
-                Issue
-                    { approval          = 0
-                    , author            = userId
-                    , commentNum        = 0
-                    , created           = now
-                    , curVersion        = Nothing
-                    , eventDelivered    = False
-                    , forum             = forumId
-                    , open              = True
-                    , poll
-                    , title
-                    }
-        issueId <- insert issue
-        let version =
-                IssueVersion
-                    {issue = issueId, body, created = now, author = userId}
-        versionId <- insert version
-        update issueId [#curVersion =. Just versionId]
-        pure issueId
+        dbCreate forumId content userId
+
+dbCreate ::
+    (HasCallStack, MonadUnliftIO m) =>
+    ForumId -> IssueContent -> UserId -> SqlPersistT m IssueId
+dbCreate forumId IssueContent{body, poll, title} userId = do
+    now <- liftIO getCurrentTime
+    let issue =
+            Issue
+                { approval          = 0
+                , author            = userId
+                , commentNum        = 0
+                , created           = now
+                , curVersion        = Nothing
+                , eventDelivered    = False
+                , forum             = forumId
+                , open              = True
+                , poll
+                , title
+                }
+    issueId <- addCallStack $ insert issue
+    let version =
+            IssueVersion{issue = issueId, body, created = now, author = userId}
+    versionId <- addCallStack $ insert version
+    addCallStack $ update issueId [#curVersion =. Just versionId]
+    pure issueId
 
 edit ::
     ( AuthId app ~ UserId

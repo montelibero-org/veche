@@ -10,10 +10,8 @@ import TestImport
 
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
-import Model.Forum (Forum (Forum), Key (ForumKey))
-import Model.Forum qualified
+import Model.Forum (ForumId (ForumKey))
 import Model.Issue (Key (IssueKey))
-import Model.Types (AccessLevel (AccessLevelUninvolved))
 
 spec :: Spec
 spec =
@@ -36,23 +34,12 @@ spec =
                     ]
   where
     userName = "ff0aca40-ed41-5ab5-8dd4-6dd03ae92ccb"
-    forumId = ForumKey "FELLOW"
+    forumId = ForumKey "OFFTOPIC"
     issueId = IssueKey 1
 
     create = do
         userEntity <- createUser userName Nothing
         authenticateAs userEntity
-
-        runDB $
-            -- create the forum
-            insertKey
-                forumId
-                Forum
-                    { title                 = "Fellow forum"
-                    , accessIssueRead       = AccessLevelUninvolved
-                    , accessIssueWrite      = AccessLevelUninvolved
-                    , accessIssueComment    = AccessLevelUninvolved
-                    }
 
         get $ ForumIssueNewR forumId -- get CSRF token
         statusIs 200

@@ -27,8 +27,6 @@ import Yesod.Form.Bootstrap3 (bfs)
 -- component
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified
-import Model.Forum (Forum (Forum))
-import Model.Forum qualified
 import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
 import Model.Issue qualified
 import Model.Request (RequestMaterialized (RequestMaterialized))
@@ -48,8 +46,8 @@ voteButtons isEnabled issueId = do
         (IssueVoteR issueId Approve) ["btn-success"] "Approve" isEnabled
     actionButton (IssueVoteR issueId Reject) ["btn-danger"] "Reject" isEnabled
 
-issueForm :: Entity Forum -> Maybe IssueContent -> Form IssueContent
-issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
+issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
+issueForm (forumId, Forum{title = forumTitle}) previousContent =
     (bform aform){header}
   where
     header =
@@ -83,7 +81,7 @@ issueForm (Entity forumId Forum{title = forumTitle}) previousContent =
         pure IssueContent{body, poll, title}
 
 editIssueForm ::
-    Entity Forum -> IssueId -> Maybe IssueContent -> Form IssueContent
+    EntityForum -> IssueId -> Maybe IssueContent -> Form IssueContent
 editIssueForm forumE issueId previousContent =
     (issueForm forumE previousContent)
         { action = Just $ IssueR issueId
@@ -96,8 +94,8 @@ editIssueForm forumE issueId previousContent =
             |]
         }
 
-newIssueForm :: Entity Forum -> Form IssueContent
-newIssueForm forum@(Entity forumId _) =
+newIssueForm :: EntityForum -> Form IssueContent
+newIssueForm forum@(forumId, _) =
     (issueForm forum Nothing)
         { action = Just $ ForumIssuesR forumId
         , footer =

@@ -18,8 +18,8 @@ module Model.Comment (
 
 import Import.NoFoundation
 
-import Database.Persist (count, getBy, getJustEntity, insert, insertMany_,
-                         update, updateWhere, (<-.), (=.), (==.))
+import Database.Persist (count, getBy, insert, insertMany_, update, updateWhere,
+                         (<-.), (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
@@ -28,6 +28,7 @@ import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
               Request (Request), RequestId, Unique (UniqueHolder, UniqueSigner),
               User (User), UserId)
 import Model qualified
+import Model.Forum qualified as Forum
 
 data CommentInput = CommentInput
     { issue        :: IssueId
@@ -63,7 +64,7 @@ addText (Entity author User{stellarAddress}) commentInput = do
                 }
     runDB do
         Issue{forum} <- get404 issue
-        forumE <- getJustEntity forum
+        forumE <- Forum.getJustEntity forum
         mSigner <- getBy $ UniqueSigner mtlFund stellarAddress
         mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
         let mSignerId = entityKey <$> mSigner

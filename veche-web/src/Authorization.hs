@@ -14,10 +14,10 @@ import Yesod.Core (MonadHandler, permissionDenied)
 import Yesod.Persist (Entity (Entity))
 
 -- component
-import Model (Forum (Forum), Issue (Issue), StellarHolderId, StellarSignerId,
-              UserId)
+import Model (Issue (Issue), StellarHolderId, StellarSignerId, UserId)
 import Model qualified
-import Model.Types (AccessLevel (..), Poll (..))
+import Model.Types (AccessLevel (..), EntityForum, Forum (Forum), Poll (..))
+import Model.Types qualified
 
 type RoleProofs = (Maybe StellarSignerId, Maybe StellarHolderId)
 
@@ -25,10 +25,10 @@ type RoleProofs = (Maybe StellarSignerId, Maybe StellarHolderId)
 -- when presence in the database is required.
 data AuthzRequest
     = ListForums
-    | ListForumIssues       (Entity Forum) RoleProofs
-    | AddForumIssue         (Entity Forum) RoleProofs
-    | ReadForumIssue        (Entity Forum) RoleProofs
-    | AddForumIssueComment  (Entity Forum) RoleProofs
+    | ListForumIssues       EntityForum RoleProofs
+    | AddForumIssue         EntityForum RoleProofs
+    | ReadForumIssue        EntityForum RoleProofs
+    | AddForumIssueComment  EntityForum RoleProofs
     | AddIssueVote (Entity Issue) (Maybe StellarSignerId)
     | EditIssue        (Entity Issue) UserId
     | CloseReopenIssue (Entity Issue) UserId
@@ -36,14 +36,13 @@ data AuthzRequest
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
     ListForums -> True
-    ListForumIssues (Entity _proof Forum{accessIssueRead}) roles ->
-        checkAccessLevel accessIssueRead roles
-    AddForumIssue (Entity _proof Forum{accessIssueWrite}) roles ->
-        checkAccessLevel accessIssueWrite roles
-    ReadForumIssue (Entity _proof Forum{accessIssueRead}) roles ->
-        checkAccessLevel accessIssueRead roles
-    AddForumIssueComment (Entity _proof Forum{accessIssueComment}) roles ->
-        checkAccessLevel accessIssueComment roles
+    ListForumIssues (_proof, Forum{access}) roles ->
+        checkAccessLevel access roles
+    AddForumIssue (_proof, Forum{access}) roles -> checkAccessLevel access roles
+    ReadForumIssue (_proof, Forum{access}) roles ->
+        checkAccessLevel access roles
+    AddForumIssueComment (_proof, Forum{access}) roles ->
+        checkAccessLevel access roles
     AddIssueVote (Entity _proof Issue{poll}) mSignerId ->
         checkVote poll mSignerId
     EditIssue        issue user -> authzEditIssue issue user

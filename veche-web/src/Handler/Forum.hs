@@ -11,7 +11,9 @@ module Handler.Forum (
 
 import Import
 
-import Model.Forum (Forum (Forum), ForumId)
+import Data.Map.Strict qualified as Map
+
+import Genesis (forums)
 import Model.Forum qualified as Forum
 import Model.Issue qualified as Issue
 import Model.User qualified as User
@@ -23,7 +25,7 @@ getForumR forumId = do
 
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
-    forumE@(Entity _ Forum{title}) <- Forum.getEntity404 forumId
+    forumE@(_, Forum{title}) <- Forum.getEntity404 forumId
     issues <- Issue.listForumIssues forumE $ Just stateOpen
     (openIssueCount, closedIssueCount) <- Issue.countOpenAndClosed forumId
 
@@ -35,6 +37,4 @@ getForumR forumId = do
     defaultLayout $(widgetFile "forum")
 
 getForumsR :: Handler Html
-getForumsR = do
-    forums <- Forum.getAll
-    defaultLayout $(widgetFile "forums")
+getForumsR = defaultLayout $(widgetFile "forums")
