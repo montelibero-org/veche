@@ -13,6 +13,7 @@ library
     Foundation
     Foundation.Base
     Genesis
+    Handler.About
     Handler.Admin
     Handler.API
     Handler.Comment

@@ -2,6 +2,7 @@
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
 /                               RootR                   GET
+/about                          AboutR                  GET
 /admin/update-database          AdminUpdateDatabaseR    GET
 /api/complete-user              ApiCompleteUserR        GET
 /auth                           AuthR                   Auth getAuth

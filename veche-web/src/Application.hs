@@ -57,6 +57,7 @@ import Yesod.Persist qualified as Unsafe (runDB)
 import Yesod.Static (static, staticDevel)
 
 -- component
+import Handler.About (getAboutR)
 import Handler.Admin (getAdminUpdateDatabaseR)
 import Handler.API (getApiCompleteUserR)
 import Handler.Comment (postCommentsR)

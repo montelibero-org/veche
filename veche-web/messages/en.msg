@@ -1,4 +1,5 @@
 # navbar
+About: About
 Dashboard: Dashboard
 Forums: Forums
 Issues: Issues

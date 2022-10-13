@@ -29,19 +29,23 @@ import Paths_veche (version)
 -- component
 import Model.User (User)
 
-navbarLeftMenu :: [(AppMessage, Route App)]
-navbarLeftMenu =
-    [ (MsgDashboard, DashboardR)
-    , (MsgForums   , ForumsR   )
-    ]
+navbarLeftMenu :: Bool -> [(AppMessage, Route App)]
+navbarLeftMenu isAuthenticated
+    | isAuthenticated =
+        [ (MsgDashboard, DashboardR)
+        , (MsgForums   , ForumsR   )
+        ]
+    | otherwise =
+        [(MsgAbout, AboutR)]
 
 navbarRightMenu :: Bool -> [(AppMessage, Route App)]
-navbarRightMenu isAuthenticated =
-    concat
-        [ [(MsgProfile, UserR        ) | isAuthenticated    ]
-        , [(MsgLogIn  , AuthR LoginR ) | not isAuthenticated]
-        , [(MsgLogOut , AuthR LogoutR) | isAuthenticated    ]
+navbarRightMenu isAuthenticated
+    | isAuthenticated =
+        [ (MsgProfile, UserR        )
+        , (MsgLogOut , AuthR LogoutR)
         ]
+    | otherwise =
+        [(MsgLogIn, AuthR LoginR)]
 
 -- | Translate a 'MonadHandler'-like action, e.g. a 'Widget'.
 tr :: MonadHandler m => (Text, m a) -> [(Text, m a)] -> m a
@@ -83,7 +87,8 @@ defaultLayout widget = do
     -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
     -- (title, parents) <- breadcrumbs
 
-    let navbarRightMenu' = navbarRightMenu $ isJust muser
+    let navbarLeftMenu'  = navbarLeftMenu  $ isJust muser
+        navbarRightMenu' = navbarRightMenu $ isJust muser
 
     -- We break up the default layout into two components:
     -- default-layout is the contents of the body tag, and

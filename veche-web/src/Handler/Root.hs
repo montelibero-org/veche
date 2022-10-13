@@ -3,4 +3,8 @@ module Handler.Root (getRootR) where
 import Import
 
 getRootR :: Handler Void
-getRootR = redirect DashboardR
+getRootR = do
+    muid <- maybeAuthId
+    case muid of
+        Just _  -> redirect DashboardR
+        Nothing -> redirect AboutR

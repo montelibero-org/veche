@@ -96,10 +96,12 @@ instance Yesod App where
         -- to minimize DB requests.
         case route of
             -- Routes not requiring authentication.
-            AuthR _   -> pure Authorized
+            AboutR{}  -> pure Authorized
+            AuthR{}   -> pure Authorized
             FaviconR  -> pure Authorized
             RobotsR   -> pure Authorized
-            StaticR _ -> pure Authorized
+            RootR     -> pure Authorized
+            StaticR{} -> pure Authorized
             -- All other routes require authentication.
             _         -> isAuthenticated
 
