@@ -216,11 +216,3 @@ unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 
 type Form = BForm Handler
-
-defaultRoute :: Route App
-defaultRoute = DashboardR
-
-refresh :: Handler a
-refresh = do
-    r <- getCurrentRoute
-    redirect $ fromMaybe defaultRoute r

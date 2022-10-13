@@ -1,13 +1,14 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/                               DashboardR              GET
+/                               RootR                   GET
 /admin/update-database          AdminUpdateDatabaseR    GET
 /api/complete-user              ApiCompleteUserR        GET
 /auth                           AuthR                   Auth getAuth
 /auth-telegram                  AuthTelegramR           GET
 /auth-telegram/unlink           AuthTelegramUnlinkR     POST
 /comments                       CommentsR               POST
+/dashboard                      DashboardR              GET
 /favicon.ico                    FaviconR                GET
 /forums                         ForumsR                 GET
 /forums/#ForumId                ForumR                  GET

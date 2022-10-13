@@ -20,6 +20,7 @@ library
     Handler.Dashboard
     Handler.Forum
     Handler.Issue
+    Handler.Root
     Handler.Telegram
     Handler.User
     Import
