@@ -30,13 +30,13 @@ import Paths_veche (version)
 import Model.User (User)
 
 navbarLeftMenu :: Bool -> [(AppMessage, Route App)]
-navbarLeftMenu isAuthenticated
-    | isAuthenticated =
-        [ (MsgDashboard, DashboardR)
-        , (MsgForums   , ForumsR   )
-        ]
-    | otherwise =
-        [(MsgAbout, AboutR)]
+navbarLeftMenu isAuthenticated =
+    (   if isAuthenticated then
+            (MsgDashboard, DashboardR)
+        else
+            (MsgAbout, AboutR)
+    )
+    : [(MsgForums, ForumsR)]
 
 navbarRightMenu :: Bool -> [(AppMessage, Route App)]
 navbarRightMenu isAuthenticated

@@ -278,7 +278,7 @@ listForumIssues forumE@(forumId, _) mIsOpen =
         mHolder <- getBy $ UniqueHolder mtlAsset stellarAddress
         let mSignerId = entityKey <$> mSigner
             mHolderId = entityKey <$> mHolder
-        requireAuthz $ ListForumIssues forumE (mSignerId, mHolderId)
+        requireAuthz $ ReadForum forumE (mSignerId, mHolderId)
         selectList filters []
   where
     filters =
@@ -311,7 +311,7 @@ selectWithoutVoteFromUser (Entity userId User{stellarAddress}) =
             issues
             & filter \(Entity _ Issue{forum}) ->
                 isAllowed $
-                ListForumIssues (forum, forums ! forum) (mSignerId, mHolderId)
+                ReadForum (forum, forums ! forum) (mSignerId, mHolderId)
 
 getContentForEdit ::
     ( AuthId app ~ UserId

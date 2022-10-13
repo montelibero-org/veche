@@ -1,7 +1,8 @@
 <h1>Forums
 
 <table .table .table-striped>
-    $forall (forumId, Forum{title}) <- Map.assocs forums
-        <tr>
-            <td>
-                <a href=@{ForumR forumId}>#{title}
+    $forall forumE@(forumId, Forum{title}) <- Map.assocs forums
+        $if isReadAllowed forumE
+            <tr>
+                <td>
+                    <a href=@{ForumR forumId}>#{title}

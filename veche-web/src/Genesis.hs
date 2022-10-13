@@ -30,12 +30,12 @@ forums =
             , Forum{title = "MTL holders", access = AccessLevelHolder}
             )
         ,   ( ForumKey "OFFTOPIC"
-            , Forum{title = "Offtopic", access = AccessLevelUninvolved}
+            , Forum{title = "Offtopic", access = AccessLevelPublic}
             )
         ,   ( ForumKey "FREELANCE"
             , Forum
                 { title     = "Freelance: one-time work offers"
-                , access    = AccessLevelUninvolved
+                , access    = AccessLevelPublic
                 }
             )
         ]

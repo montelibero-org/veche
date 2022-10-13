@@ -96,14 +96,17 @@ instance Yesod App where
         -- to minimize DB requests.
         case route of
             -- Routes not requiring authentication.
-            AboutR{}  -> pure Authorized
-            AuthR{}   -> pure Authorized
-            FaviconR  -> pure Authorized
-            RobotsR   -> pure Authorized
-            RootR     -> pure Authorized
-            StaticR{} -> pure Authorized
+            AboutR{}  -> authorized
+            AuthR{}   -> authorized
+            FaviconR  -> authorized
+            ForumsR{} -> authorized
+            RobotsR   -> authorized
+            RootR     -> authorized
+            StaticR{} -> authorized
             -- All other routes require authentication.
-            _         -> isAuthenticated
+            _         -> authorizedIfAuthenticated
+      where
+        authorized = pure Authorized
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -205,8 +208,8 @@ authStellarConfig App{appStellarHorizon} =
     nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
 
 -- | Access function to determine if a user is logged in.
-isAuthenticated :: Handler AuthResult
-isAuthenticated = do
+authorizedIfAuthenticated :: Handler AuthResult
+authorizedIfAuthenticated = do
     muid <- maybeAuthId
     case muid of
         Nothing -> unauthorizedI MsgMustLogin

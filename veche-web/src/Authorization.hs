@@ -25,7 +25,7 @@ type RoleProofs = (Maybe StellarSignerId, Maybe StellarHolderId)
 -- when presence in the database is required.
 data AuthzRequest
     = ListForums
-    | ListForumIssues       EntityForum RoleProofs
+    | ReadForum             EntityForum RoleProofs
     | AddForumIssue         EntityForum RoleProofs
     | ReadForumIssue        EntityForum RoleProofs
     | AddForumIssueComment  EntityForum RoleProofs
@@ -36,8 +36,7 @@ data AuthzRequest
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
     ListForums -> True
-    ListForumIssues (_proof, Forum{access}) roles ->
-        checkAccessLevel access roles
+    ReadForum (_proof, Forum{access}) roles -> checkAccessLevel access roles
     AddForumIssue (_proof, Forum{access}) roles -> checkAccessLevel access roles
     ReadForumIssue (_proof, Forum{access}) roles ->
         checkAccessLevel access roles
@@ -53,9 +52,9 @@ isAllowed = \case
 checkAccessLevel :: AccessLevel -> RoleProofs -> Bool
 checkAccessLevel level (mSigner, mHolder) =
     case level of
-        AccessLevelSigner       -> isJust mSigner
-        AccessLevelHolder       -> isJust mHolder
-        AccessLevelUninvolved   -> True
+        AccessLevelSigner   -> isJust mSigner
+        AccessLevelHolder   -> isJust mHolder
+        AccessLevelPublic   -> True
 
 checkVote :: Maybe Poll -> Maybe StellarSignerId -> Bool
 checkVote mPoll mSigner =

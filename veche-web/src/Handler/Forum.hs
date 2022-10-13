@@ -37,4 +37,12 @@ getForumR forumId = do
     defaultLayout $(widgetFile "forum")
 
 getForumsR :: Handler Html
-getForumsR = defaultLayout $(widgetFile "forums")
+getForumsR = do
+    groups <- do
+        mUser <- maybeAuth
+        case mUser of
+            Nothing -> pure (Nothing, Nothing)
+            Just (Entity _ user) ->
+                (,) <$> User.getSignerId user <*> User.getHolderId user
+    let isReadAllowed forumE = isAllowed $ ReadForum forumE groups
+    defaultLayout $(widgetFile "forums")

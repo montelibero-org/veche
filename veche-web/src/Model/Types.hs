@@ -89,7 +89,7 @@ derivePersistField "Poll"
 -- | Levels are listed here in order of increasing security to use
 -- 'Ord' instance.
 -- TODO migrate to group-based access
-data AccessLevel = AccessLevelUninvolved | AccessLevelHolder | AccessLevelSigner
+data AccessLevel = AccessLevelPublic | AccessLevelHolder | AccessLevelSigner
     deriving (Eq, Ord, Show)
 
 data Forum = Forum
