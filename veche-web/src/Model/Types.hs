@@ -16,6 +16,7 @@ module Model.Types (
     EntityForum,
     Forum (..),
     ForumId (..),
+    HtmlText, htmlFromText, htmlText,
     Poll (..),
     StellarMultiSigAddress (..),
     Role (..),
@@ -24,13 +25,14 @@ module Model.Types (
 
 import ClassyPrelude
 
+import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Database.Persist.TH (derivePersistField)
 import Stellar.Horizon.Types qualified as Stellar
-import Text.Blaze.Html (ToMarkup, toMarkup)
+import Text.Blaze.Html (Html, ToMarkup, preEscapedToHtml, toMarkup)
 import Text.Read (readEither)
 import Web.HttpApiData (FromHttpApiData, ToHttpApiData)
 import Web.HttpApiData qualified
@@ -119,3 +121,16 @@ newtype ForumId = ForumKey Text
         (Eq, Ord, PathPiece, PersistField, PersistFieldSql, Read, Show)
 
 type EntityForum = (ForumId, Forum)
+
+newtype HtmlText = HtmlTextRaw Text
+    deriving newtype (Eq, PersistField, PersistFieldSql)
+    deriving stock (Show)
+
+instance ToMarkup HtmlText where
+    toMarkup = htmlFromText
+
+htmlFromText :: HtmlText -> Html
+htmlFromText (HtmlTextRaw code) = preEscapedToHtml code
+
+htmlText :: Html -> HtmlText
+htmlText = HtmlTextRaw . toStrict . renderHtml

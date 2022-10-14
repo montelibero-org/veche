@@ -40,7 +40,7 @@ Issue
 
 IssueVersion
     author  UserId
-    body    Text
+    body    HtmlText
     created UTCTime
     issue   IssueId
 

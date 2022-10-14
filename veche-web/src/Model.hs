@@ -33,7 +33,7 @@ import Database.Persist.TH (mkMigrate, mkPersist, mpsConstraintLabelModifier,
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar
 
-import Model.Types (Choice, CommentType, ForumId, Poll, Role,
+import Model.Types (Choice, CommentType, ForumId, HtmlText, Poll, Role,
                     StellarMultiSigAddress)
 
 deriving newtype instance PersistField    Asset

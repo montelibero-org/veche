@@ -21,7 +21,7 @@ module Templates.Issue
 import Import
 
 -- global
-import Yesod.Form (radioFieldList)
+import Yesod.Form (htmlField, radioFieldList)
 import Yesod.Form.Bootstrap3 (bfs)
 
 -- component
@@ -31,6 +31,7 @@ import Model.Issue (Issue (Issue), IssueContent (IssueContent), IssueId)
 import Model.Issue qualified
 import Model.Request (RequestMaterialized (RequestMaterialized))
 import Model.Request qualified
+import Model.Types (htmlFromText, htmlText)
 import Templates.Comment (commentAnchor)
 
 closeReopenButton :: IssueId -> Bool -> Widget
@@ -64,11 +65,11 @@ issueForm (forumId, Forum{title = forumTitle}) previousContent =
                 (bfs ("Title" :: Text)){fsName = Just "title"}
                 (previousContent <&> \IssueContent{title} -> title)
         body <-
-            unTextarea <$>
+            htmlText <$>
             areq
-                textareaField
+                htmlField
                 (bfs ("Message" :: Text)){fsName = Just "body"}
-                (previousContent <&> \IssueContent{body} -> Textarea body)
+                (previousContent <&> \IssueContent{body} -> htmlFromText body)
         poll <-
             areq
                 (radioFieldList
