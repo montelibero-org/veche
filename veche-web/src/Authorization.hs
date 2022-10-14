@@ -13,10 +13,10 @@ import Yesod.Core (MonadHandler, permissionDenied)
 import Yesod.Persist (Entity (Entity))
 
 -- component
-import Model (Issue (Issue), UserId)
+import Model (Issue (Issue), UserId, UserRole (UserRole))
 import Model qualified
-import Model.Types (EntityForum, Forum (Forum), Poll (..), Role (MtlSigner),
-                    Roles)
+import Model.Types (EntityForum, Forum (Forum), Poll (..),
+                    Role (Admin, MtlSigner), Roles)
 import Model.Types qualified
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
@@ -30,6 +30,7 @@ data AuthzRequest
     | AddIssueVote      (Entity Issue)  Roles
     | EditIssue         (Entity Issue) UserId
     | CloseReopenIssue  (Entity Issue) UserId
+    | AdminOp (Entity UserRole)
 
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
@@ -41,6 +42,7 @@ isAllowed = \case
     AddIssueVote (Entity _ Issue{poll}) roles -> checkVote poll roles
     EditIssue        issue user -> authzEditIssue issue user
     CloseReopenIssue issue user -> authzEditIssue issue user
+    AdminOp (Entity _ UserRole{role}) -> role == Admin
   where
     authzEditIssue (Entity _ Issue{author}) user = author == user
 

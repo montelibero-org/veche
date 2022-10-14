@@ -37,6 +37,7 @@ library
     Model.Telegram
     Model.Types
     Model.User
+    Model.UserRole
     Model.Verifier
     Model.Vote
     Paths_veche

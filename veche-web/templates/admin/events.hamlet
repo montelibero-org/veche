@@ -1,0 +1,28 @@
+<table .table .table-striped>
+    <thead>
+        <tr>
+            <th>created (UTC)
+            <th>type
+            <th>subtype
+            <th>forum
+            <th>issue
+            <th>author
+            <th>text/requested user
+            <th>dlvd
+    <tbody>
+        $forall Event{..} <- events
+            <tr>
+                <td>#{showTimestamp created}
+                <td>#{show type_}
+                <td>#{subtype}
+                <td>#{toPathPiece forum}
+                <td>#{toPathPiece issue}
+                <td>#{userNameText $ entityVal author}
+                <td>
+                    $maybe user <- requestedUser
+                        #{toPathPiece user}
+                    $nothing
+                        #{text}
+                <td>
+                    <input type=checkbox disabled
+                        :eventDelivered:checked>

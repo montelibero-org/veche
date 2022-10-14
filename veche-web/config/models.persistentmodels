@@ -64,8 +64,9 @@ Request
 -- | This is for special roles only.
 -- Stellar-based roles are deducted from Stellar tables.
 UserRole
-    Id      Role
+    role    Role
     user    UserId
+    UniqueRole role user
 
 
 StellarHolder

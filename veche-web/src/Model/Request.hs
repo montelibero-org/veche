@@ -25,8 +25,7 @@ import Database.Esqueleto.Experimental (Value (Value), from, innerJoin, not_,
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
-import Model (Comment, Issue, IssueId, Request (Request), RequestId, User,
-              UserId)
+import Model (Comment, Issue, IssueId, Request (..), RequestId, User, UserId)
 
 -- | A request for specific user
 data RequestMaterialized = RequestMaterialized
