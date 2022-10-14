@@ -64,8 +64,7 @@ import Model.Request qualified as Request
 import Model.User (maybeAuthzRoles, requireAuthzRoles)
 import Model.Vote qualified as Vote
 
-data IssueContent = IssueContent
-    {title :: Text, body :: HtmlText, poll :: Maybe Poll}
+data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
     deriving (Show)
 
 data VoteMaterialized = VoteMaterialized
@@ -75,7 +74,7 @@ data VoteMaterialized = VoteMaterialized
 
 data IssueMaterialized = IssueMaterialized
     { comments              :: Forest CommentMaterialized
-    , body                  :: HtmlText
+    , body                  :: Text
     , forum                 :: Forum
     , isCloseReopenAllowed  :: Bool
     , isCommentAllowed      :: Bool
