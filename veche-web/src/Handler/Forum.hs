@@ -14,7 +14,7 @@ import Import
 
 import Data.Map.Strict qualified as Map
 
-import Genesis (forums)
+import Genesis qualified
 import Model.Forum qualified as Forum
 import Model.Issue qualified as Issue
 import Model.User (maybeAuthzGroups)
@@ -34,5 +34,7 @@ getForumR forumId = do
 getForumsR :: Handler Html
 getForumsR = do
     (_, groups) <- maybeAuthzGroups
-    let isReadAllowed forumE = isAllowed $ ReadForum forumE groups
+    let forums =
+            filter (\f -> isAllowed $ ReadForum f groups) $
+            Map.assocs Genesis.forums
     defaultLayout $(widgetFile "forums")

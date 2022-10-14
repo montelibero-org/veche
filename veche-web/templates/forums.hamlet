@@ -1,7 +1,12 @@
 <h1>Forums
 
 <table .table .table-striped>
-    $forall (forumId, Forum{title}) <- filter isReadAllowed $ Map.assocs forums
+    $forall (forumId, Forum{title, requireUserGroup}) <- forums
         <tr>
             <td>
                 <a href=@{ForumR forumId}>#{title}
+            <td>
+                $maybe group <- requireUserGroup
+                    Only for #{show group}
+                $nothing
+                    Public
