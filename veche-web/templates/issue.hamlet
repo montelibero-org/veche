@@ -45,4 +45,4 @@ $if isCommentAllowed
                 <button .btn .btn-primary type=submit>Add comment
 $else
     <div .alert .alert-warning role=alert>
-        _{MsgIssueSignedOutAlert}
+        _{MsgLogInToComment}

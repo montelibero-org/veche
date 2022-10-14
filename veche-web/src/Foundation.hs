@@ -220,7 +220,7 @@ authorizedIfAuthenticated :: Handler AuthResult
 authorizedIfAuthenticated = do
     muid <- maybeAuthId
     case muid of
-        Nothing -> unauthorizedI MsgMustLogin
+        Nothing -> unauthorizedI MsgUnauthorized
         Just _  -> pure Authorized
 
 instance YesodAuthPersist App

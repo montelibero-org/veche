@@ -8,7 +8,7 @@ LogIn: Log in
 LogOut: Log out
 
 # alerts
-IssueSignedOutAlert: Sign in to be able to see comments
+LogInToComment: Log in to read and add comments
 
 # other
-MustLogin: You must log in to access this page
+Unauthorized: You must log in to access this page
