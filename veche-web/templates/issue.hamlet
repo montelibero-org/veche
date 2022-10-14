@@ -43,3 +43,6 @@ $if isCommentAllowed
         <div .form-group>
             <div .col-sm-offset-2 .col-sm-10>
                 <button .btn .btn-primary type=submit>Add comment
+$else
+    <div .alert .alert-warning role=alert>
+        _{MsgIssueSignedOutAlert}
