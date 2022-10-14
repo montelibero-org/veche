@@ -61,7 +61,7 @@ import Model.Comment qualified
 import Model.Forum qualified as Forum
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
-import Model.User (maybeAuthzGroups, requireAuthzGroups)
+import Model.User (maybeAuthzRoles, requireAuthzRoles)
 import Model.Vote qualified as Vote
 
 data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
@@ -187,7 +187,7 @@ load ::
     ) =>
     IssueId -> HandlerFor app IssueMaterialized
 load issueId = do
-    (mUserId, groups) <- maybeAuthzGroups
+    (mUserId, roles) <- maybeAuthzRoles
     let authenticated = isJust mUserId
     runDB do
         issue <- get404 issueId
@@ -199,7 +199,7 @@ load issueId = do
                 issue
         forumE@(_, forum) <- Forum.getJustEntity forumId
 
-        requireAuthz $ ReadForumIssue forumE groups
+        requireAuthz $ ReadForumIssue forumE roles
 
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
@@ -223,9 +223,9 @@ load issueId = do
             isCloseReopenAllowed =
                 any (isAllowed . CloseReopenIssue issueE) mUserId
             isCommentAllowed =
-                authenticated && isAllowed (AddForumIssueComment forumE groups)
+                authenticated && isAllowed (AddForumIssueComment forumE roles)
             isVoteAllowed =
-                authenticated && isAllowed (AddIssueVote issueE groups)
+                authenticated && isAllowed (AddIssueVote issueE roles)
         pure
             IssueMaterialized
                 { body
@@ -275,8 +275,8 @@ listForumIssues ::
     ) =>
     EntityForum -> Maybe Bool -> HandlerFor app [Entity Issue]
 listForumIssues forumE@(forumId, _) mIsOpen = do
-    (_, groups) <- maybeAuthzGroups
-    requireAuthz $ ReadForum forumE groups
+    (_, roles) <- maybeAuthzRoles
+    requireAuthz $ ReadForum forumE roles
     runDB $ selectList filters []
   where
     filters =
@@ -287,7 +287,7 @@ selectWithoutVoteFromUser ::
     (PersistSql app, AuthEntity app ~ User, AuthId app ~ UserId) =>
     HandlerFor app [Entity Issue]
 selectWithoutVoteFromUser = do
-    (userId, groups) <- requireAuthzGroups
+    (userId, roles) <- requireAuthzRoles
     runDB do
         issues <-
             -- TODO(2022-10-08, cblp) filter accessible issues in the DB
@@ -305,7 +305,7 @@ selectWithoutVoteFromUser = do
         pure $
             issues
             & filter \(Entity _ Issue{forum}) ->
-                isAllowed $ ReadForum (forum, forums ! forum) groups
+                isAllowed $ ReadForum (forum, forums ! forum) roles
 
 getContentForEdit ::
     ( AuthId app ~ UserId
@@ -336,8 +336,8 @@ create ::
     ) =>
     EntityForum -> IssueContent -> HandlerFor app IssueId
 create forumE@(forumId, _) content = do
-    (userId, groups) <- requireAuthzGroups
-    requireAuthz $ AddForumIssue forumE groups
+    (userId, roles) <- requireAuthzRoles
+    requireAuthz $ AddForumIssue forumE roles
     runDB $ dbCreate forumId content userId
 
 dbCreate ::

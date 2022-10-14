@@ -61,6 +61,13 @@ Request
     deriving Show
 
 
+-- | This is for special roles only.
+-- Stellar-based roles are deducted from Stellar tables.
+UserRole
+    Id      Role
+    user    UserId
+
+
 StellarHolder
     asset   Asset
     key     Stellar.Address -- holder account address

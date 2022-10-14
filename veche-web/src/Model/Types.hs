@@ -18,18 +18,22 @@ module Model.Types (
     ForumId (..),
     Poll (..),
     StellarMultiSigAddress (..),
-    UserGroup (..),
-    UserGroups,
+    Role (..),
+    Roles,
 ) where
 
 import ClassyPrelude
 
 import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
+import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Database.Persist.TH (derivePersistField)
 import Stellar.Horizon.Types qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
+import Text.Read (readEither)
+import Web.HttpApiData (FromHttpApiData, ToHttpApiData)
+import Web.HttpApiData qualified
 import Web.PathPieces (PathPiece, readFromPathPiece, showToPathPiece)
 import Web.PathPieces qualified
 
@@ -87,14 +91,26 @@ data Poll = BySignerWeight
     deriving (Eq, Read, Show)
 derivePersistField "Poll"
 
-data UserGroup = Holders | Signers
-    deriving (Eq, Ord, Show)
+data Role = Admin | MtlHolder | MtlSigner
+    deriving (Eq, Ord, Read, Show)
+deriveJSON defaultOptions ''Role
+derivePersistField "Role"
 
-type UserGroups = Set UserGroup
+instance FromHttpApiData Role where
+    parseUrlPiece = first Text.pack . readEither . Text.unpack
+
+instance ToHttpApiData Role where
+    toUrlPiece = tshow
+
+instance PathPiece Role where
+    fromPathPiece = readFromPathPiece
+    toPathPiece = showToPathPiece
+
+type Roles = Set Role
 
 data Forum = Forum
-    { title             :: Text
-    , requireUserGroup  :: Maybe UserGroup
+    { title         :: Text
+    , requireRole   :: Maybe Role
     }
     deriving (Show)
 

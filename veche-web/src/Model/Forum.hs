@@ -51,5 +51,4 @@ getEntityByIssue404 issueId =
         getJustEntity forumId
 
 isPublic :: ForumId -> Bool
-isPublic id =
-    all (\Forum{requireUserGroup} -> null requireUserGroup) $ forums !? id
+isPublic id = all (\Forum{requireRole} -> null requireRole) $ forums !? id

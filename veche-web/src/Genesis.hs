@@ -24,18 +24,18 @@ forums :: Map ForumId Forum
 forums =
     Map.fromList
         [   ( ForumKey "MTL-SIGNERS"
-            , Forum{title = "MTL signers", requireUserGroup = Just Signers}
+            , Forum{title = "MTL signers", requireRole = Just MtlSigner}
             )
         ,   ( ForumKey "MTL-HOLDERS"
-            , Forum{title = "MTL holders", requireUserGroup = Just Holders}
+            , Forum{title = "MTL holders", requireRole = Just MtlHolder}
             )
         ,   ( ForumKey "OFFTOPIC"
-            , Forum{title = "Offtopic", requireUserGroup = Nothing}
+            , Forum{title = "Offtopic", requireRole = Nothing}
             )
         ,   ( ForumKey "FREELANCE"
             , Forum
-                { title             = "Freelance: one-time work offers"
-                , requireUserGroup  = Nothing
+                { title         = "Freelance: one-time work offers"
+                , requireRole   = Nothing
                 }
             )
         ]

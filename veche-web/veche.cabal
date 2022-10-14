@@ -63,6 +63,7 @@ library
     , fast-logger
     , file-embed
     , hjsmin             >=0.1     && <0.3
+    , http-api-data
     , http-client
     , http-client-tls    >=0.3     && <0.4
     , http-types

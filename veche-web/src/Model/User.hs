@@ -33,8 +33,8 @@ module Model.User (
     dbDeleteTelegram,
     deleteTelegram,
     -- * Authorization
-    maybeAuthzGroups,
-    requireAuthzGroups,
+    maybeAuthzRoles,
+    requireAuthzRoles,
 ) where
 
 import Import.NoFoundation
@@ -115,14 +115,14 @@ getHolderId User{stellarAddress} = do
     mEntity <- runDB $ getBy $ UniqueHolder mtlAsset stellarAddress
     pure $ entityKey <$> mEntity
 
-maybeAuthzGroups ::
+maybeAuthzRoles ::
     ( MonadHandler m
     , AuthId (HandlerSite m) ~ UserId
     , AuthEntity (HandlerSite m) ~ User
     , PersistSql (HandlerSite m)
     ) =>
-    m (Maybe UserId, UserGroups)
-maybeAuthzGroups = do
+    m (Maybe UserId, Roles)
+maybeAuthzRoles = do
     mUserE <- maybeAuth
     case mUserE of
         Nothing -> pure (Nothing, Set.empty)
@@ -139,18 +139,19 @@ maybeAuthzGroups = do
                         [#asset ==. mtlAsset, #key ==. stellarAddress]
                 pure
                     ( Just id
-                    , Set.fromList $ [Signers | signer] ++ [Holders | holder]
+                    , Set.fromList $
+                        [MtlSigner | signer] ++ [MtlHolder | holder]
                     )
 
-requireAuthzGroups ::
+requireAuthzRoles ::
     ( MonadHandler m
     , AuthId (HandlerSite m) ~ UserId
     , AuthEntity (HandlerSite m) ~ User
     , PersistSql (HandlerSite m)
     ) =>
-    m (UserId, UserGroups)
-requireAuthzGroups = do
-    (mUserId, groups) <- maybeAuthzGroups
+    m (UserId, Roles)
+requireAuthzRoles = do
+    (mUserId, roles) <- maybeAuthzRoles
     case mUserId of
         Nothing -> notAuthenticated
-        Just id -> pure (id, groups)
+        Just id -> pure (id, roles)

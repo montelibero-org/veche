@@ -1,12 +1,12 @@
 <h1>Forums
 
 <table .table .table-striped>
-    $forall (forumId, Forum{title, requireUserGroup}) <- forums
+    $forall (forumId, Forum{title, requireRole}) <- forums
         <tr>
             <td>
                 <a href=@{ForumR forumId}>#{title}
             <td>
-                $maybe group <- requireUserGroup
-                    Only for #{show group}
+                $maybe role <- requireRole
+                    Only for #{show role}
                 $nothing
                     Public
