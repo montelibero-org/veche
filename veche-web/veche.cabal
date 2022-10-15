@@ -57,6 +57,7 @@ library
     , blaze-html
     , case-insensitive
     , classy-prelude
+    , cmark-gfm
     , containers
     , data-default
     , Decimal

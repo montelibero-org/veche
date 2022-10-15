@@ -10,6 +10,8 @@ module Import.NoFoundation
 
 import ClassyPrelude as X hiding (Handler, delete, id, on, poll)
 
+import CMarkGFM (commonmarkToHtml, extAutolink, extStrikethrough, extTable,
+                 extTagfilter, optHardBreaks, optSmart)
 import Control.Arrow as X ((>>>))
 import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))
 import Data.Default as X (def)
@@ -24,6 +26,7 @@ import Database.Persist.Sql as X (SqlPersistT)
 import GHC.Stack (CallStack, callStack, prettyCallStack)
 import GHC.Stack as X (HasCallStack)
 import Network.HTTP.Types as X (internalServerError500, status400)
+import Text.Blaze.Html (preEscapedToHtml)
 import Yesod.Auth as X
 import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         MonadHandler, PathPiece, TypedContent (TypedContent),
@@ -94,3 +97,10 @@ withCallStack e = WithCallStack{stack = callStack, parent = SomeException e}
 
 throwWithCallStack :: (HasCallStack, Exception e, MonadIO m) => e -> m a
 throwWithCallStack = throwIO . withCallStack
+
+renderCommonMarkdown :: Text -> Html
+renderCommonMarkdown =
+    preEscapedToHtml
+    . commonmarkToHtml
+        [optHardBreaks, optSmart]
+        [extStrikethrough, extTable, extAutolink, extTagfilter]

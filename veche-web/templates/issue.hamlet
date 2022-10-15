@@ -18,7 +18,7 @@ $if isCloseReopenAllowed
 
 <div .clearfix style="margin-bottom: 1em;">
 
-#{body}
+#{renderCommonMarkdown body}
 
 <hr>
 
