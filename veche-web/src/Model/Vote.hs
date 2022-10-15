@@ -55,6 +55,7 @@ dbRecord user issue choice = do
                     case choice of
                         Approve -> CommentApprove
                         Reject  -> CommentReject
+                        Abstain -> CommentAbstain
                 }
     addCallStack $ dbUpdateIssueApproval issue Nothing
 

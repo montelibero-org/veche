@@ -39,7 +39,7 @@ import Web.PathPieces qualified
 
 import Database.Persist.Extra (JsonString (..))
 
-data Choice = Approve | Reject
+data Choice = Approve | Reject | Abstain
     deriving (Eq, Ord, Read, Show)
 deriveJSON
     defaultOptions{constructorTagModifier = camelTo2 '_'}
@@ -55,7 +55,8 @@ instance ToMarkup Choice where
     toMarkup = toMarkup . show
 
 data CommentType
-    = CommentApprove
+    = CommentAbstain
+    | CommentApprove
     | CommentClose
     | CommentEdit
     | CommentReject
@@ -71,6 +72,7 @@ deriving via JsonString CommentType instance PersistFieldSql CommentType
 
 instance ToMarkup CommentType where
     toMarkup = \case
+        CommentAbstain  -> "abstained"
         CommentApprove  -> "approved"
         CommentClose    -> "closed issue"
         CommentEdit     -> "edited issue"

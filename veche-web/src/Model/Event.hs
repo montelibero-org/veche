@@ -57,6 +57,7 @@ instance Event Comment where
 
     dbGetUsersToDeliver Comment{type_, issue, parent} =
         case type_ of
+            CommentAbstain  -> pure []
             CommentApprove  -> pure []
             CommentClose    -> pure []
             CommentEdit     -> pure []
@@ -70,6 +71,7 @@ instance Event Comment where
 
     makeMessage app (Entity id comment@Comment{author, type_, issue}) =
         case type_ of
+            CommentAbstain  -> dflt
             CommentApprove  -> dflt
             CommentClose    -> pure [st|Discussion is closed #{issueLink}|]
             CommentEdit     -> dflt

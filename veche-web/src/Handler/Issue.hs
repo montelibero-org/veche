@@ -85,6 +85,15 @@ makePollWidget
                     :: Double
                 share = show choiceWeight <> "/" <> show (sum weights)
             ]
+    mUserId <- maybeAuthId
+    let currentChoice =
+            do  curUser <- mUserId
+                listToMaybe
+                    [ choice
+                    | (choice, users) <- Map.assocs votes
+                    , curUser `member` users
+                    ]
+            & fromMaybe Abstain
     pure
         [whamlet|
             <div .row>
@@ -99,7 +108,7 @@ makePollWidget
                             #{intercalate ", " $ map userNameWidget voters}
             <div .row>
                 <div .col-sm-offset-2 .col-sm-10>
-                    ^{voteButtons isVoteAllowed issueId}
+                    ^{voteButtons isVoteAllowed issueId currentChoice}
             <hr>
         |]
 

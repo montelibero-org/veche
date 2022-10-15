@@ -40,11 +40,23 @@ closeReopenButton issueId issueIsOpen
     | otherwise =
         actionButton (IssueReopenR issueId) ["btn-success"] "Reopen" True
 
-voteButtons :: Bool -> IssueId -> Widget
-voteButtons isEnabled issueId = do
+voteButtons :: Bool -> IssueId -> Choice -> Widget
+voteButtons isEnabled issueId currentChoice = do
     actionButton
-        (IssueVoteR issueId Approve) ["btn-success"] "Approve" isEnabled
-    actionButton (IssueVoteR issueId Reject) ["btn-danger"] "Reject" isEnabled
+        (IssueVoteR issueId Approve)
+        ["btn-success"]
+        "Approve"
+        (isEnabled && currentChoice /= Approve)
+    actionButton
+        (IssueVoteR issueId Reject)
+        ["btn-danger"]
+        "Against"
+        (isEnabled && currentChoice /= Reject)
+    actionButton
+        (IssueVoteR issueId Abstain)
+        ["btn-default"]
+        "Abstain"
+        (isEnabled && currentChoice /= Abstain)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
 issueForm (forumId, Forum{title = forumTitle}) previousContent =
