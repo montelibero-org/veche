@@ -23,10 +23,7 @@ mtlFund =
 forums :: Map ForumId Forum
 forums =
     Map.fromList
-        [   ( ForumKey "MTL-SIGNERS"
-            , Forum{title = "MTL signers", requireRole = Just MtlSigner}
-            )
-        ,   ( ForumKey "MTL-HOLDERS"
+        [   ( ForumKey "MTL-HOLDERS"
             , Forum{title = "MTL holders", requireRole = Just MtlHolder}
             )
         ,   ( ForumKey "OFFTOPIC"
