@@ -76,7 +76,7 @@ instance ToMarkup CommentType where
         CommentApprove  -> "approved"
         CommentClose    -> "closed issue"
         CommentEdit     -> "edited issue"
-        CommentReject   -> "rejected"
+        CommentReject   -> "voted against"
         CommentReopen   -> "reopened issue"
         CommentStart    -> "started issue"
         CommentText     -> ""
