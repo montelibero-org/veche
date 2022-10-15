@@ -10,12 +10,13 @@ module Form where
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Stack (HasCallStack)
+import Text.Blaze.Html (Html)
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
-                   FormResult, addClass, areq, fsAttrs, fsName,
+                   FormRender, FormResult, addClass, areq, fsAttrs, fsName,
                    generateFormPost, renderDivsNoLabels, runFormPostNoToken,
-                   textField, FormRender)
+                   textField)
 import Yesod.Form qualified
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), renderBootstrap3)
@@ -107,15 +108,15 @@ generateCsrfField = fmap fst $ generateFormPost $ renderDivsNoLabels $ pure ()
 -- | Make button that creates and sends a POST form
 actionButton ::
     Route site ->
-    [Text] ->   -- ^ additional classes, e.g. ["btn-ganger"]
-    Text ->     -- ^ button text
+    [Text] ->   -- ^ additional classes, e.g. @["btn-ganger"]@
+    Html ->     -- ^ button label
     Bool ->     -- ^ is enabled
     WidgetFor site ()
-actionButton route classes text isEnabled =
+actionButton route classes label isEnabled =
     [whamlet|
         <button *{attrs} onclick="submitPostForm('@{route}')"
                 :not isEnabled:disabled>
-            #{text}
+            ^{label}
     |]
   where
     attrs = [("class" :: Text, Text.unwords $ "btn" : classes)]

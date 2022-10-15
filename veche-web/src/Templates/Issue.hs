@@ -21,6 +21,7 @@ module Templates.Issue
 import Import
 
 -- global
+import Text.Hamlet (shamlet)
 import Yesod.Form (radioFieldList)
 import Yesod.Form.Bootstrap3 (bfs)
 
@@ -45,17 +46,26 @@ voteButtons isEnabled issueId currentChoice = do
     actionButton
         (IssueVoteR issueId Approve)
         ["btn-success"]
-        "Approve"
+        [shamlet|
+            <span .glyphicon.glyphicon-thumbs-up aria-hidden=true>
+            Approve
+        |]
         (isEnabled && currentChoice /= Approve)
     actionButton
         (IssueVoteR issueId Reject)
         ["btn-danger"]
-        "Against"
+        [shamlet|
+            <span .glyphicon.glyphicon-thumbs-down aria-hidden=true>
+            Against
+        |]
         (isEnabled && currentChoice /= Reject)
     actionButton
         (IssueVoteR issueId Abstain)
         ["btn-default"]
-        "Abstain"
+        [shamlet|
+            <span .glyphicon.glyphicon-unchecked aria-hidden=true>
+            Abstain
+        |]
         (isEnabled && currentChoice /= Abstain)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
