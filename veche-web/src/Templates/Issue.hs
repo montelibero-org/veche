@@ -69,7 +69,7 @@ voteButtons isEnabled issueId currentChoice = do
         (isEnabled && currentChoice /= Abstain)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
-issueForm (forumId, Forum{title = forumTitle}) previousContent =
+issueForm (forumId, Forum{title = forumTitle, allowPoll}) previousContent =
     (bform aform){header}
   where
     header =
@@ -92,14 +92,18 @@ issueForm (forumId, Forum{title = forumTitle}) previousContent =
                 (bfs ("Message" :: Text)){fsName = Just "body"}
                 (previousContent <&> \IssueContent{body} -> Textarea body)
         poll <-
-            areq
-                (radioFieldList
-                    [ ("Disabled" :: Text,          Nothing             )
-                    , ("Weighted by signer weight", Just BySignerWeight )
-                    ]
-                )
-                "Poll"{fsName = Just "poll"}
-                (Just do IssueContent{poll} <- previousContent; poll)
+            if allowPoll then
+                areq
+                    (radioFieldList
+                        [ ("Disabled" :: Text, Nothing)
+                        , ("Proportionally to signer weight",
+                            Just BySignerWeight)
+                        ]
+                    )
+                    "Poll"{fsName = Just "poll"}
+                    (Just do IssueContent{poll} <- previousContent; poll)
+            else
+                pure Nothing
         pure IssueContent{body, poll, title}
 
 editIssueForm ::
@@ -121,7 +125,11 @@ newIssueForm forum@(forumId, _) =
     (issueForm forum Nothing)
         { action = Just $ ForumIssuesR forumId
         , footer =
-            [whamlet|<button type=submit .btn .btn-success>Start dicussion|]
+            [whamlet|
+                <div .form-group>
+                    <div .col-sm-offset-2.col-sm-10>
+                        <button type=submit .btn .btn-success>Start dicussion
+            |]
         }
 
 issueTable :: [Entity Issue] -> Widget

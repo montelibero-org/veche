@@ -113,6 +113,7 @@ type Roles = Set Role
 data Forum = Forum
     { title         :: Text
     , requireRole   :: Maybe Role
+    , allowPoll     :: Bool
     }
     deriving (Show)
 
