@@ -30,7 +30,7 @@ import Database.Persist (EntityField, PersistEntity, PersistEntityBackend,
                          SymbolToField, get, getJust, selectList, update, (=.),
                          (==.))
 import Database.Persist.Sql (SqlBackend)
-import Text.Shakespeare.Text (st)
+import Text.Hamlet (shamlet)
 import Yesod.Core (yesodRender)
 
 import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
@@ -50,8 +50,12 @@ class (PersistEntity e, PersistEntityBackend e ~ SqlBackend, Show e) => Event e
         Key e -> SqlPersistT m ()
     dbSetDelivered = updateSetTrue #eventDelivered
 
-    makeMessage :: MonadIO m => App -> Entity e -> SqlPersistT m Text
-    makeMessage _ = pure . tshow
+    makeMessage :: MonadIO m => App -> Entity e -> SqlPersistT m Html
+    makeMessage = defaultMessage
+
+defaultMessage ::
+    (Show e, Show (Key e), MonadIO m) => App -> Entity e -> SqlPersistT m Html
+defaultMessage _ = pure . toHtml . tshow
 
 instance Event Comment where
 
@@ -69,24 +73,39 @@ instance Event Comment where
         getParentCommentAuthor =
             maybe (getIssueAuthor issue) getCommentAuthor parent
 
-    makeMessage app (Entity id comment@Comment{author, type_, issue}) =
+    makeMessage app commentE@(Entity _ Comment{type_, issue}) =
         case type_ of
             CommentAbstain  -> dflt
             CommentApprove  -> dflt
-            CommentClose    -> pure [st|Discussion is closed #{issueLink}|]
+            CommentClose    -> pure [shamlet|Discussion is closed #{issueLink}|]
             CommentEdit     -> dflt
             CommentReject   -> dflt
-            CommentReopen   -> pure [st|Discussion is reopened #{issueLink}|]
+            CommentReopen   -> reopenMessage
             CommentStart    -> error "not a real comment"
-            CommentText     -> commentTextMessage
+            CommentText     -> commentTextMessage app commentE
       where
-        dflt = pure $ tshow comment
+        dflt = defaultMessage app commentE
         issueLink = renderUrl app (IssueR issue)
-        commentLink = issueLink <> "#" <> commentAnchor id
 
-        commentTextMessage = do
-            user <- getJust author
-            pure [st|#{userNameText user} replied to you #{commentLink}|]
+        reopenMessage = pure [shamlet|Discussion is reopened #{issueLink}|]
+
+commentTextMessage :: (MonadIO m) => App -> Entity Comment -> SqlPersistT m Html
+commentTextMessage app (Entity id Comment{author, issue, message}) = do
+    user <- getJust author
+    pure
+        [shamlet|
+            #{userNameText user} replied to you:
+            \
+            <pre>#{excerpt}
+            \
+            Read and reply: #{commentLink}
+            |]
+  where
+    issueLink = renderUrl app (IssueR issue)
+    commentLink = issueLink <> "#" <> commentAnchor id
+    excerpt
+        | length message <= 100 = message
+        | otherwise = take 100 message <> "…"
 
 -- | issueId must present
 getIssueAuthor :: MonadIO m => IssueId -> SqlPersistT m [(UserId, Telegram)]
@@ -111,7 +130,10 @@ instance Event Issue where
         unwrap (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
     makeMessage app (Entity issueId _) =
-        pure [st|A new discussion is started #{renderUrl app $ IssueR issueId}|]
+        pure
+            [shamlet|
+                A new discussion is started #{renderUrl app $ IssueR issueId}
+            |]
 
 instance Event Request where
 
@@ -122,7 +144,7 @@ instance Event Request where
     makeMessage app (Entity _ Request{issue, comment}) = do
         Comment{author} <- getJust comment
         user            <- getJust author
-        pure [st|#{userNameText user} requested you to comment on #{link}|]
+        pure [shamlet|#{userNameText user} requested you to comment on #{link}|]
       where
         link = renderUrl app (IssueR issue) <> "#" <> commentAnchor comment
 

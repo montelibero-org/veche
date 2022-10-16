@@ -12,6 +12,7 @@ import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
 import Model.Forum (ForumId (ForumKey))
 import Model.Issue (Key (IssueKey))
+import Text.Blaze.Html.Renderer.Text (renderHtml)
 
 spec :: Spec
 spec =
@@ -29,7 +30,9 @@ spec =
             msgs <- getMessages
             msgs
                 === [ "A new discussion is started /issues/1"
-                    , "*2ccb replied to you /issues/1#comment1"
+                    , "*2ccb replied to you:\n\n\
+                        \<pre>addition swimming center subject</pre>\n\n\
+                        \Read and reply: /issues/1#comment1"
                     , "*2ccb requested you to comment on /issues/1#comment1"
                     ]
   where
@@ -71,6 +74,7 @@ spec =
     getMessages = do
         events <- runDB Event.dbGetUndelivered
         app <- getTestYesod
-        let makeMessage' :: SomeEvent -> YesodExample App Text
-            makeMessage' (SomeEvent e) = runDB $ Event.makeMessage app e
+        let makeMessage' :: SomeEvent -> YesodExample App TextL
+            makeMessage' (SomeEvent e) =
+                renderHtml <$> runDB (Event.makeMessage app e)
         traverse makeMessage' events

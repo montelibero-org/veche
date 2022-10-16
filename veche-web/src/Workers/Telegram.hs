@@ -18,8 +18,10 @@ import Network.HTTP.Types (forbidden403)
 import Servant.Client (ClientError (FailureResponse), ResponseF (Response))
 import Servant.Client qualified
 import System.Random (randomRIO)
-import Web.Telegram.API.Bot (ChatId (ChatId), TelegramClient, Token (Token),
-                             sendMessageM, sendMessageRequest)
+import Text.Blaze.Html.Renderer.Text (renderHtml)
+import Web.Telegram.API.Bot (ChatId (ChatId), ParseMode (HTML), TelegramClient,
+                             Token (Token), message_parse_mode, sendMessageM,
+                             sendMessageRequest)
 import Web.Telegram.API.Bot qualified as Telegram
 
 import Model.Event (SomeEvent (SomeEvent))
@@ -56,14 +58,13 @@ telegramBot app = do
     notifyAll event users =
         for_ users \(userId, telegram) -> do
             msg <- runDB $ Event.makeMessage app event
-            result <- runTelegramClient' $ notify telegram msg
+            result <-
+                runTelegramClient' $ notify telegram $ toStrict $ renderHtml msg
             case result of
                 Left (FailureResponse _ Response{responseStatusCode})
                     | responseStatusCode == forbidden403 ->
                         runDB $ User.dbDeleteTelegram userId
-                Left e ->
-                    throwIO $
-                    userError $ show (e, event, msg)
+                Left e -> throwIO $ userError $ show (e, event, renderHtml msg)
                 Right () -> pure ()
 
     runTelegramClient' =
@@ -73,4 +74,7 @@ telegramBot app = do
 
 notify :: Telegram -> Text -> TelegramClient ()
 notify Telegram{chatid} text =
-    void $ sendMessageM $ sendMessageRequest (ChatId chatid) text
+    void $
+    sendMessageM
+        (sendMessageRequest (ChatId chatid) text)
+            {message_parse_mode = Just HTML}

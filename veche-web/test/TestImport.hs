@@ -13,6 +13,7 @@ module TestImport
 import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy)
 
 import Data.Text.Encoding qualified
+import Data.Text.Lazy qualified as TextL (Text)
 import Database.Persist as X hiding (get)
 import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
@@ -20,6 +21,7 @@ import GHC.Stack (withFrozenCallStack)
 import Hedgehog qualified
 import Stellar.Horizon.Types qualified as Stellar
 import Test.Hspec as X
+import Text.Blaze.Html as X (Html)
 import Yesod.Auth as X
 import Yesod.Core as X (RedirectUrl, Yesod, messageLoggerSource, toPathPiece)
 import Yesod.Core.Unsafe (fakeHandlerGetLogger)
@@ -38,6 +40,8 @@ import Foundation as X
 import Foundation.Base as X
 import Model.User (User (User))
 import Model.User qualified as User
+
+type TextL = TextL.Text
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do

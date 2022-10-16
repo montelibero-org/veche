@@ -3,4 +3,5 @@ database:
   database: veche.sqlite3
 database-migrate: false
 development: true
+session-key-file: config/client_session_key.aes
 telegram-bot-name: veche_test_bot
