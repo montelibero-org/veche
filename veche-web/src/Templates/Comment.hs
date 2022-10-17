@@ -65,11 +65,8 @@ commentForm mIssueId activeRequests =
 commentAForm ::
     Maybe IssueId -> [IssueRequestMaterialized] -> AForm Handler CommentInput
 commentAForm mIssueId activeRequests = do
-    issue <-
-        areq
-            hiddenField
-            (bfs ("" :: Text)){fsName = Just "issue"}
-            mIssueId
+    issue   <- areq hiddenField ""{fsName = Just "issue"} mIssueId
+    parent  <- aopt hiddenField ""{fsName = Just "parent"} Nothing
     message <-
         unTextarea <$>
         areq
@@ -77,23 +74,23 @@ commentAForm mIssueId activeRequests = do
             (bfs ("Comment" :: Text)){fsName = Just "message"}
             Nothing
     provideInfo <-
-        aopt
-            ( checkboxesFieldList'
-                [ (requestLabel r, id)
-                | r@IssueRequestMaterialized{id} <- activeRequests
-                ]
-            )
-            (if null activeRequests then "" else "Provide info for")
-                {fsName = Just "provide"}
-            Nothing
-    parent <-
-        aopt hiddenField (bfs ("" :: Text)){fsName = Just "parent"} Nothing
+        case activeRequests of
+            [] -> pure []
+            _:_ ->
+                areq
+                    ( checkboxesFieldList'
+                        [ (requestLabel r, id)
+                        | r@IssueRequestMaterialized{id} <- activeRequests
+                        ]
+                    )
+                    "Provide info for"{fsName = Just "provide"}
+                    Nothing
     pure
         CommentInput
             { issue
             , message
             , requestUsers  = Set.empty
-            , provideInfo   = maybe Set.empty Set.fromList provideInfo
+            , provideInfo   = Set.fromList provideInfo
             , parent
             }
 
