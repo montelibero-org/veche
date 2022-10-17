@@ -20,8 +20,20 @@ $if isCloseReopenAllowed
 
 #{renderCommonMarkdown body}
 
-<hr>
+$if isJust authnUser && (isJust contacts || isJust priceOffer)
+    <form .form-horizontal>
+        $maybe priceOffer <- priceOffer
+            <div .form-group>
+                <label .col-sm-2 .control-label>Price offer
+                <div .col-sm-10>
+                    <p .form-control-static>#{priceOffer}
+        $maybe contacts <- contacts
+            <div .form-group>
+                <label .col-sm-2 .control-label>Contacts
+                <div .col-sm-10>
+                    <p .form-control-static>#{contacts}
 
+<hr>
 ^{pollWidget}
 
 <div #comments>
@@ -43,6 +55,7 @@ $if isCommentAllowed
         <div .form-group>
             <div .col-sm-offset-2 .col-sm-10>
                 <button .btn .btn-primary type=submit>Add comment
-$else
-    <div .alert .alert-warning role=alert>
+
+$if isNothing authnUser
+    <div .alert .alert-info role=alert>
         _{MsgLogInToComment}

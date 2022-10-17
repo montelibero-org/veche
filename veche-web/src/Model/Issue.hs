@@ -64,7 +64,13 @@ import Model.Request qualified as Request
 import Model.User (maybeAuthzRoles, requireAuthzRoles)
 import Model.Vote qualified as Vote
 
-data IssueContent = IssueContent{title, body :: Text, poll :: Maybe Poll}
+data IssueContent = IssueContent
+    { body          :: Text
+    , contacts      :: Maybe Text
+    , poll          :: Maybe Poll
+    , priceOffer    :: Maybe Text
+    , title         :: Text
+    }
     deriving (Show)
 
 data VoteMaterialized = VoteMaterialized
@@ -316,17 +322,27 @@ getContentForEdit ::
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
-        issue@(Entity _ Issue{curVersion, forum = forumId, poll, title}) <-
-            getEntity404 issueId
+        issueE <- getEntity404 issueId
+        let Issue   { contacts
+                    , curVersion
+                    , forum = forumId
+                    , poll
+                    , priceOffer
+                    , title
+                    } =
+                entityVal issueE
         forum <- Forum.getJust forumId
-        requireAuthz $ EditIssue issue userId
+        requireAuthz $ EditIssue issueE userId
         versionId <-
             curVersion ?| constraintFail "Issue.current_version must be valid"
         IssueVersion{body} <-
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
-        pure ((forumId, forum), IssueContent{title, body, poll})
+        pure
+            ( (forumId, forum)
+            , IssueContent{title, body, poll, contacts, priceOffer}
+            )
 
 create ::
     ( AuthEntity app ~ User
@@ -343,19 +359,21 @@ create forumE@(forumId, _) content = do
 dbCreate ::
     (HasCallStack, MonadUnliftIO m) =>
     ForumId -> IssueContent -> UserId -> SqlPersistT m IssueId
-dbCreate forumId IssueContent{body, poll, title} userId = do
+dbCreate forumId issueContent userId = do
     now <- liftIO getCurrentTime
     let issue =
             Issue
                 { approval          = 0
                 , author            = userId
                 , commentNum        = 0
+                , contacts
                 , created           = now
                 , curVersion        = Nothing
                 , eventDelivered    = False
                 , forum             = forumId
                 , open              = True
                 , poll
+                , priceOffer
                 , title
                 }
     issueId <- addCallStack $ insert issue
@@ -364,6 +382,8 @@ dbCreate forumId IssueContent{body, poll, title} userId = do
     versionId <- addCallStack $ insert version
     addCallStack $ update issueId [#curVersion =. Just versionId]
     pure issueId
+  where
+    IssueContent{body, contacts, poll, priceOffer, title} = issueContent
 
 edit ::
     ( AuthId app ~ UserId
@@ -371,12 +391,18 @@ edit ::
     , YesodPersistBackend app ~ SqlBackend
     ) =>
     IssueId -> IssueContent -> HandlerFor app ()
-edit issueId IssueContent{title, body, poll} = do
+edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
-        old@Issue{title = oldTitle, poll = oldPoll, curVersion} <-
-            get404 issueId
+        old <- get404 issueId
+        let Issue   { contacts      = oldContacts
+                    , curVersion
+                    , poll          = oldPoll
+                    , priceOffer    = oldPriceOffer
+                    , title         = oldTitle
+                    } =
+                old
         version <-
             maybe
                 (throwIO $ PersistForeignConstraintUnmet "issue.version")
@@ -384,9 +410,14 @@ edit issueId IssueContent{title, body, poll} = do
                 curVersion
         requireAuthz $ EditIssue (Entity issueId old) user
         IssueVersion{body = oldBody} <- getJust version
-        unless (title == oldTitle) updateTitle
-        unless (body == oldBody) $ addVersion now user
-        unless (poll == oldPoll) updatePoll
+        when
+            (   contacts    /= oldContacts
+            ||  priceOffer  /= oldPriceOffer
+            ||  title       /= oldTitle
+            )
+            updateIssue
+        when (body /= oldBody) $ addVersion now user
+        when (poll /= oldPoll) updatePoll
         when (title /= oldTitle || body /= oldBody) $ addVersionComment now user
   where
 
@@ -411,7 +442,10 @@ edit issueId IssueContent{title, body, poll} = do
 
     updatePoll = update issueId [#poll =. poll]
 
-    updateTitle = update issueId [#title =. title]
+    updateIssue =
+        update
+            issueId
+            [#contacts =. contacts, #priceOffer =. priceOffer, #title =. title]
 
 closeReopen ::
     ( AuthId app ~ UserId

@@ -33,6 +33,8 @@ Issue
     eventDelivered  Bool
     poll            Poll Maybe
     forum           ForumId
+    contacts        Text Maybe
+    priceOffer      Text Maybe
 
     deriving Eq
     deriving Show

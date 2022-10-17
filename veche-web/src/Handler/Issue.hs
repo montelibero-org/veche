@@ -44,6 +44,7 @@ import Templates.User (userNameWidget)
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
+    authnUser <- maybeAuthId
     issueMaterialized <- Issue.load issueId
     let IssueMaterialized
                 { comments
@@ -52,7 +53,15 @@ getIssueR issueId = do
                 , isCloseReopenAllowed
                 , isCommentAllowed
                 , isEditAllowed
-                , issue = Issue{forum = forumId, open, poll, title}
+                , issue =
+                    Issue
+                        { contacts
+                        , forum = forumId
+                        , open
+                        , poll
+                        , priceOffer
+                        , title
+                        }
                 , requests
                 } =
             issueMaterialized

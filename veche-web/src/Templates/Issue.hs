@@ -69,9 +69,11 @@ voteButtons isEnabled issueId currentChoice = do
         (isEnabled && currentChoice /= Abstain)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
-issueForm (forumId, Forum{title = forumTitle, allowPoll}) previousContent =
-    (bform aform){header}
-  where
+issueForm (forumId, forum) previousContent = (bform aform){header} where
+
+    Forum{enableContacts, enablePoll, enablePriceOffer, title = forumTitle} =
+        forum
+
     header =
         [whamlet|
             <div .form-group>
@@ -79,32 +81,66 @@ issueForm (forumId, Forum{title = forumTitle, allowPoll}) previousContent =
                 <div .col-sm-10 .form-control-static>
                     <a href=@{ForumR forumId}>#{forumTitle}
         |]
+
+    (previousBody
+            , previousContacts
+            , previousPoll
+            , previousPriceOffer
+            , previousTitle
+            ) =
+        case previousContent of
+            Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
+            Just IssueContent{body, contacts, poll, priceOffer, title} ->
+                ( Just $ Textarea body
+                , Textarea <$> contacts
+                , Just poll
+                , Textarea <$> priceOffer
+                , Just title
+                )
+
     aform = do
         title <-
             areq
                 textField
                 (bfs ("Title" :: Text)){fsName = Just "title"}
-                (previousContent <&> \IssueContent{title} -> title)
+                previousTitle
         body <-
             unTextarea <$>
             areq
                 textareaField
                 (bfs ("Message" :: Text)){fsName = Just "body"}
-                (previousContent <&> \IssueContent{body} -> Textarea body)
+                previousBody
+        priceOffer <-
+            whenMay enablePriceOffer $
+                Just . unTextarea
+                <$> areq
+                        textareaField
+                        (bfs ("Price offer" :: Text))
+                            {fsName = Just "priceOffer"}
+                        previousPriceOffer
+        contacts <-
+            whenMay enableContacts $
+                Just . unTextarea
+                <$> areq
+                        textareaField
+                        (bfs ("Contacts" :: Text)){fsName = Just "contacts"}
+                        previousContacts
         poll <-
-            if allowPoll then
-                areq
-                    (radioFieldList
-                        [ ("Disabled" :: Text, Nothing)
-                        , ("Proportionally to signer weight",
-                            Just BySignerWeight)
-                        ]
-                    )
-                    "Poll"{fsName = Just "poll"}
-                    (Just do IssueContent{poll} <- previousContent; poll)
-            else
-                pure Nothing
-        pure IssueContent{body, poll, title}
+            whenMay enablePoll $
+            areq
+                (radioFieldList pollOptions)
+                "Poll"{fsName = Just "poll"}
+                previousPoll
+        pure IssueContent{body, contacts, poll, priceOffer, title}
+
+    pollOptions =
+        [ ("Disabled" :: Text               , Nothing            )
+        , ("Proportionally to signer weight", Just BySignerWeight)
+        ]
+
+    whenMay cond action
+        | cond      = action
+        | otherwise = pure Nothing
 
 editIssueForm ::
     EntityForum -> IssueId -> Maybe IssueContent -> Form IssueContent

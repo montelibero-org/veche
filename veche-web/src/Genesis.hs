@@ -25,20 +25,29 @@ forums =
     Map.fromList
         [   ( ForumKey "MTL-HOLDERS"
             , Forum
-                { title         = "MTL holders"
-                , requireRole   = Just MtlHolder
-                , allowPoll     = True
+                { enableContacts    = False
+                , enablePoll        = True
+                , enablePriceOffer  = False
+                , requireRole       = Just MtlHolder
+                , title             = "MTL holders"
                 }
             )
         ,   ( ForumKey "OFFTOPIC"
             , Forum
-                {title = "Offtopic", requireRole = Nothing, allowPoll = False}
+                { enableContacts    = False
+                , enablePoll        = False
+                , enablePriceOffer  = False
+                , requireRole       = Nothing
+                , title             = "Offtopic"
+                }
             )
         ,   ( ForumKey "FREELANCE"
             , Forum
-                { title         = "Freelance: one-time work offers"
-                , requireRole   = Nothing
-                , allowPoll     = False
+                { enableContacts    = True
+                , enablePoll        = False
+                , enablePriceOffer  = True
+                , requireRole       = Nothing
+                , title             = "Freelance: one-time work offers"
                 }
             )
         ]

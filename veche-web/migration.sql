@@ -1,0 +1,2 @@
+ALTER TABLE issue ADD COLUMN contacts    VARCHAR NULL;
+ALTER TABLE issue ADD COLUMN price_offer VARCHAR NULL;
