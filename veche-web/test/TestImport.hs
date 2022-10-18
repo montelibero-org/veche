@@ -10,7 +10,7 @@ module TestImport
     , module X
     ) where
 
-import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy)
+import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy, poll)
 
 import Data.Text.Encoding qualified
 import Data.Text.Lazy qualified as TextL (Text)

@@ -16,10 +16,11 @@ module Model.Issue (
     IssueContent (..),
     IssueId,
     IssueMaterialized (..),
-    Key (IssueKey),
+    Key (IssueKey, IssueVersionKey),
     StateAction (..),
     -- * Create
     create,
+    dbCreate,
     -- * Retrieve
     countOpenAndClosed,
     getContentForEdit,
@@ -52,7 +53,7 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (forums)
-import Model (Comment (Comment), Issue (Issue), IssueId,
+import Model (Comment (Comment), Issue (..), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               User, UserId, Vote (Vote))
 import Model qualified
@@ -417,7 +418,7 @@ edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
             )
             updateIssue
         when (body /= oldBody) $ addVersion now user
-        when (poll /= oldPoll) updatePoll
+        when (poll /= oldPoll) $ updatePoll old
         when (title /= oldTitle || body /= oldBody) $ addVersionComment now user
   where
 
@@ -440,7 +441,10 @@ edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
                 , type_             = CommentEdit
                 }
 
-    updatePoll = update issueId [#poll =. poll]
+    updatePoll old = do
+        update issueId [#poll =. poll]
+        let new = old{Model.poll = poll}
+        Vote.dbUpdateIssueApproval $ Entity issueId new
 
     updateIssue =
         update
@@ -479,5 +483,5 @@ closeReopen issueId stateAction = do
 dbUpdateAllIssueApprovals :: (HasCallStack, MonadUnliftIO m) => SqlPersistT m ()
 dbUpdateAllIssueApprovals = do
     issues <- selectList [#open Persist.==. True, #poll !=. Nothing] []
-    for_ issues \(Entity issueId issue@Issue{poll}) ->
-        when (isJust poll) $ Vote.dbUpdateIssueApproval issueId $ Just issue
+    for_ issues \issueE@(Entity _ Issue{poll}) ->
+        when (isJust poll) $ Vote.dbUpdateIssueApproval issueE

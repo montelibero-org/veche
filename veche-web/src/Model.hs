@@ -25,11 +25,12 @@ module Model where
 
 import ClassyPrelude
 
+import Data.Decimal (Decimal)
 import Database.Persist.Quasi (lowerCaseSettings)
 import Database.Persist.Sql (PersistField, PersistFieldSql)
-import Database.Persist.TH (mkMigrate, mkPersist, mpsConstraintLabelModifier,
-                            mpsFieldLabelModifier, persistFileWith, share,
-                            sqlSettings)
+import Database.Persist.TH (derivePersistField, mkMigrate, mkPersist,
+                            mpsConstraintLabelModifier, mpsFieldLabelModifier,
+                            persistFileWith, share, sqlSettings)
 import Stellar.Horizon.Types (Asset (Asset))
 import Stellar.Horizon.Types qualified as Stellar
 
@@ -38,6 +39,8 @@ import Model.Types (Choice, CommentType, ForumId, Poll, Role,
 
 deriving newtype instance PersistField    Asset
 deriving newtype instance PersistFieldSql Asset
+
+derivePersistField "Decimal"
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities

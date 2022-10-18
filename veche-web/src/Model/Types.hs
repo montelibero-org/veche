@@ -89,7 +89,7 @@ newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
     deriving stock Show
 
 -- | Type of poll
-data Poll = BySignerWeight
+data Poll = BySignerWeight | ByMtlAmount
     deriving (Eq, Read, Show)
 derivePersistField "Poll"
 

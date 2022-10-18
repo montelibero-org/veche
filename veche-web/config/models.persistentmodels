@@ -74,6 +74,7 @@ UserRole
 StellarHolder
     asset   Asset
     key     Stellar.Address -- holder account address
+    amount  Decimal
 
     UniqueHolder asset key
 

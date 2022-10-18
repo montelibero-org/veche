@@ -9,10 +9,10 @@ module Model.StellarSigner (
     StellarSigner (..),
     dbDelete,
     dbInsertMany,
-    dbSelectAll,
+    dbGetAll,
     dbSetWeight,
     getByAddress403,
-    selectAll,
+    getAll,
 ) where
 
 import Import hiding (deleteBy)
@@ -29,12 +29,12 @@ getByAddress403 ::
     StellarMultiSigAddress -> Stellar.Address -> Handler (Entity StellarSigner)
 getByAddress403 target address = runDB $ getBy403 $ UniqueSigner target address
 
-selectAll :: StellarMultiSigAddress -> Handler [Entity StellarSigner]
-selectAll = runDB . dbSelectAll
+getAll :: StellarMultiSigAddress -> Handler [Entity StellarSigner]
+getAll = runDB . dbGetAll
 
-dbSelectAll ::
+dbGetAll ::
     MonadIO m => StellarMultiSigAddress -> SqlPersistT m [Entity StellarSigner]
-dbSelectAll target = selectList [#target ==. target] []
+dbGetAll target = selectList [#target ==. target] []
 
 dbDelete ::
     MonadIO m => StellarMultiSigAddress -> Stellar.Address -> SqlPersistT m ()
@@ -51,8 +51,5 @@ dbSetWeight ::
     StellarMultiSigAddress -> Stellar.Address -> Int -> SqlPersistT m ()
 dbSetWeight target key weight =
     updateWhere
-        @_
-        @_
-        @StellarSigner
-        [#target ==. target, #key ==. key]
-        [#weight =. weight]
+        @_ @_ @StellarSigner
+        [#target ==. target, #key ==. key] [#weight =. weight]

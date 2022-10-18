@@ -14,9 +14,7 @@ import Import
 
 -- global
 import Control.Concurrent (threadDelay)
-import Data.Decimal (Decimal)
 import Data.Map.Strict qualified as Map
-import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Network.HTTP.Client (Manager)
@@ -73,7 +71,7 @@ updateSignersCache clientEnv connPool target = do
                 , weight > 0
                 ]
     (`runSqlPool` connPool) do
-        cached' <- StellarSigner.dbSelectAll target
+        cached' <- StellarSigner.dbGetAll target
         let cached =
                 Map.fromList
                     [ (key, weight)
@@ -108,28 +106,39 @@ updateHoldersCache ::
 updateHoldersCache clientEnv connPool asset = do
     holders <- runClientM' clientEnv $ getAllAccounts asset
     let actual =
-            Set.fromList
-                [ account_id
+            Map.fromList
+                [ (account_id, amount)
                 | Account{account_id, balances} <- holders
-                , amount asset balances > 0
+                , let amount = getAmount asset balances
+                , amount > 0
                 ]
     (`runSqlPool` connPool) do
-        cached' <- StellarHolder.dbSelectAll asset
-        let cached = Set.fromList [key | Entity _ StellarHolder{key} <- cached']
-        handleDeleted $ cached \\ actual
+        cached' <- StellarHolder.dbGetAll asset
+        let cached =
+                Map.fromList
+                    [ (key, amount)
+                    | Entity _ StellarHolder{key, amount} <- cached'
+                    ]
+        handleDeleted $ Map.keys $ cached \\ actual
         handleAdded $ actual \\ cached
+        handleModified
+            [ (key, shareActual)
+            | (key, (shareCached, shareActual)) <-
+                Map.assocs $ Map.intersectionWith (,) cached actual
+            , shareCached /= shareActual
+            ]
     pure $ length actual
-
   where
     handleDeleted = traverse_ $ StellarHolder.dbDelete asset
-    handleAdded = StellarHolder.dbInsertMany asset . toList
+    handleAdded = StellarHolder.dbInsertMany asset . Map.assocs
+    handleModified = traverse_ $ uncurry $ StellarHolder.dbSetShare asset
 
 runClientM' :: ClientEnv -> ClientM a -> IO a
 runClientM' clientEnv action =
     runClientM action clientEnv >>= either throwIO pure
 
-amount :: Asset -> [Balance] -> Decimal
-amount (Asset asset) balances =
+getAmount :: Asset -> [Balance] -> Decimal
+getAmount (Asset asset) balances =
     fromMaybe 0 $
     asum
         [ readMaybe @Decimal $ Text.unpack balance

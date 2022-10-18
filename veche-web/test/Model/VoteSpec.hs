@@ -12,13 +12,13 @@ import TestImport
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Yesod.Persist (get404)
 
-import Genesis (mtlFund)
+import Genesis (mtlAsset)
 import Model.Forum (ForumId (ForumKey))
 import Model.Issue (Issue (Issue), Key (IssueKey))
 import Model.Issue qualified as Issue
-import Model.StellarSigner (StellarSigner (StellarSigner))
-import Model.StellarSigner qualified
-import Model.Types (Choice (Approve, Reject))
+import Model.StellarHolder (StellarHolder (StellarHolder))
+import Model.StellarHolder qualified
+import Model.Types (Choice (Approve, Reject), Poll (ByMtlAmount))
 import Model.User (User (User))
 import Model.User qualified
 import Model.Vote qualified as Vote
@@ -30,24 +30,25 @@ spec =
             userApprover <- createUser "approver" Nothing
             userRejector <- createUser "rejector" Nothing
 
-            prepare $ userApprover :| [userRejector]
+            prepare $ (userApprover, 42) :| [(userRejector, 8)]
             recordVote userApprover Approve
             recordVote userRejector Reject
 
-            Issue{approval} <- runDB $ get404 issueId
-            approval === 0.5
+            Issue{approval, poll} <- runDB $ get404 issueId
+            poll === Just ByMtlAmount
+            approval === 0.84
   where
-    forumId = ForumKey "OFFTOPIC"
+    forumId = ForumKey "MTL-HOLDERS"
     issueId = IssueKey 1
 
-    prepare users@(user :| _) = do
+    prepare users@((user, _) :| _) = do
         authenticateAs user
 
         runDB $
-            for_ users \(Entity _ User{stellarAddress}) ->
+            for_ users \(Entity _ User{stellarAddress}, amount) ->
                 insert_
-                    StellarSigner
-                        {target = mtlFund, key = stellarAddress, weight = 1}
+                    StellarHolder
+                        {asset = mtlAsset, key = stellarAddress, amount}
 
         get $ ForumIssueNewR forumId -- get CSRF token
         statusIs 200
@@ -59,7 +60,7 @@ spec =
             addTokenFromCookie
             addPostParam "title" "Flight ate"
             addPostParam "body" "Slide weight graph. Such bowl baby."
-            addPostParam "poll" "1"
+            addPostParam "poll" "2"
         statusIs 303
 
     recordVote (Entity userId _) choice =

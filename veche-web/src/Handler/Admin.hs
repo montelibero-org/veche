@@ -156,9 +156,9 @@ getAdminUpdateDatabaseR = do
         sendChunkText $
             "Updating issues "
             <> intercalate ", " (map (toPathPiece . entityKey) issues) <> "\n"
-        for_ issues \(Entity issueId issueVal) -> do
+        for_ issues \issueE@(Entity issueId issueVal) -> do
             sendChunkText $ "Updating issue " <> toPathPiece issueId <> "\n"
             lift do
                 Comment.updateIssueCommentNum issueId $ Just issueVal
-                Vote.updateIssueApproval      issueId $ Just issueVal
+                Vote.updateIssueApproval issueE
         sendChunkText "✅ Updated all issues\n"

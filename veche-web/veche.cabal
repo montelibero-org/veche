@@ -119,6 +119,7 @@ test-suite veche-test
   other-modules:
     Auth.StellarSpec
     Handler.CommonSpec
+    Handler.IssueSpec
     Handler.UserSpec
     Model.EventSpec
     Model.VoteSpec

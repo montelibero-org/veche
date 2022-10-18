@@ -134,8 +134,9 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
         pure IssueContent{body, contacts, poll, priceOffer, title}
 
     pollOptions =
-        [ ("Disabled" :: Text               , Nothing            )
-        , ("Proportionally to signer weight", Just BySignerWeight)
+        [ ("Disabled" :: Text                       , Nothing            )
+        , ("Proportionally to MTL share"            , Just ByMtlAmount   )
+        , ("Proportionally to Stellar signer weight", Just BySignerWeight)
         ]
 
     whenMay cond action

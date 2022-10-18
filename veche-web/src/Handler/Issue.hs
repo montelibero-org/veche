@@ -24,14 +24,17 @@ import Import
 -- global
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
+import Text.Printf (printf)
 
 -- component
-import Genesis (mtlFund)
+import Genesis (mtlAsset, mtlFund)
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
                     StateAction (Close, Reopen))
 import Model.Issue qualified as Issue
+import Model.StellarHolder (StellarHolder (StellarHolder))
+import Model.StellarHolder qualified as StellarHolder
 import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
 import Model.User (User (User))
@@ -71,31 +74,52 @@ getIssueR issueId = do
     defaultLayout $(widgetFile "issue")
 
 makePollWidget :: Maybe Poll -> IssueId -> IssueMaterialized -> Handler Widget
-makePollWidget Nothing _ _ = pure mempty
-makePollWidget
-        (Just BySignerWeight)
-        issueId
-        IssueMaterialized{isVoteAllowed, votes} = do
-    signers <- StellarSigner.selectAll mtlFund
-    let weights =
-            Map.fromList
-                [(key, weight) | Entity _ StellarSigner{key, weight} <- signers]
-        voteResults =
-            [ (choice, percentage, share, toList users)
-            | (choice, users) <- Map.assocs votes
-            , let
-                choiceWeight =
-                    sum
-                        [ Map.findWithDefault 0 key weights
-                        | User{stellarAddress = key} <- toList users
-                        ]
-                percentage =
-                    fromIntegral choiceWeight / fromIntegral (sum weights) * 100
-                    :: Double
-                share = show choiceWeight <> "/" <> show (sum weights)
-            ]
-    mUserId <- maybeAuthId
-    let currentChoice =
+makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =
+    case mPoll of
+        Nothing -> pure mempty
+        Just poll -> do
+            weights <- getWeights poll
+            let voteResults = getVoteResults weights
+            currentChoice <- getCurrentChoice
+            pure $(widgetFile "poll")
+  where
+
+    getWeights = \case
+        BySignerWeight -> do
+            accounts <- StellarSigner.getAll mtlFund
+            pure $
+                Map.fromList
+                    [ (key, fromIntegral weight)
+                    | Entity _ StellarSigner{key, weight} <- accounts
+                    ]
+        ByMtlAmount -> do
+            accounts <- StellarHolder.getAll mtlAsset
+            pure $
+                Map.fromList
+                    [ (key, amount)
+                    | Entity _ StellarHolder{key, amount} <- accounts
+                    ]
+
+    getVoteResults weights =
+        [ (choice, percentage, share, toList users :: [User])
+        | (choice, users) <- Map.assocs votes
+        , let
+            choiceWeight =
+                sum [ Map.findWithDefault 0 key weights
+                    | User{stellarAddress = key} <- toList users
+                    ]
+            percentage = realToFrac (choiceWeight / sum weights * 100) :: Double
+            share =
+                printf
+                    "%d/%d"
+                    (round choiceWeight :: Int)
+                    (round $ sum weights :: Int)
+                :: String
+        ]
+
+    getCurrentChoice = do
+        mUserId <- maybeAuthId
+        pure $
             do  curUser <- mUserId
                 listToMaybe
                     [ choice
@@ -103,23 +127,6 @@ makePollWidget
                     , curUser `member` users
                     ]
             & fromMaybe Abstain
-    pure
-        [whamlet|
-            <div .row>
-                $forall (choice, percentage, share, voters) <- voteResults
-                    <label .col-sm-2>#{choice}
-                    <div .col-sm-10>
-                        <div .progress style="margin-bottom: 3px;">
-                            <div .progress-bar role=progressbar
-                                style="width: #{percentage}%;">
-                                    #{share}
-                        <p .help-block>
-                            #{intercalate ", " $ map userNameWidget voters}
-            <div .row>
-                <div .col-sm-offset-2 .col-sm-10>
-                    ^{voteButtons isVoteAllowed issueId currentChoice}
-            <hr>
-        |]
 
 getForumIssueNewR :: ForumId -> Handler Html
 getForumIssueNewR forumId = do

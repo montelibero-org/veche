@@ -1,0 +1,1 @@
+ALTER TABLE stellar_holder ADD COLUMN amount VARCHAR NOT NULL DEFAULT '1';
