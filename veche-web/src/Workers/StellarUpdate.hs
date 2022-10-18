@@ -85,7 +85,7 @@ updateSignersCache clientEnv connPool target = do
                 Map.assocs $ Map.intersectionWith (,) cached actual
             , weightCached /= weightActual
             ]
-        unless (cached == actual) Issue.dbUpdateAllIssueApprovals
+        when (cached /= actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
 
@@ -127,6 +127,7 @@ updateHoldersCache clientEnv connPool asset = do
                 Map.assocs $ Map.intersectionWith (,) cached actual
             , shareCached /= shareActual
             ]
+        when (cached /= actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
     handleDeleted = traverse_ $ StellarHolder.dbDelete asset
