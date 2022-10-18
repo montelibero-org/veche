@@ -1,6 +1,6 @@
 cabal-version: 1.12
 name:          veche
-version:       2022.10.17
+version:       2022.10.18
 build-type:    Simple
 
 library
