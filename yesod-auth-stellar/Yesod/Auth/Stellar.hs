@@ -54,8 +54,9 @@ import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
                    Route (PluginR), setCredsRedirect)
 import Yesod.Auth qualified
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage,
-                   TypedContent, WidgetFor, invalidArgs, liftHandler, liftIO,
-                   logErrorS, lookupGetParam, notAuthenticated, whamlet)
+                   TypedContent, WidgetFor, invalidArgs, julius, liftHandler,
+                   liftIO, logErrorS, lookupGetParam, notAuthenticated,
+                   toWidget, whamlet)
 import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
                    fsName, textField, textareaField, unTextarea)
 import Yesod.Form qualified as Yesod
@@ -173,21 +174,37 @@ makeResponseForm routeToMaster challenge = do
     [whamlet|
         $newline never
         Sign this transaction, but do not submit it:
+        <div .panel.panel-default style="background: #eee;">
+            <div .panel-body>
+                <tt .stellar_challenge #stellar_challenge style="overflow-wrap: break-word;">
+                    #{challenge}
         <div>
-            <code .stellar_challenge style="overflow-wrap: break-word;">
-                #{challenge}
-        <div>
-            [
-                <a href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public" target="_blank">
-                    View in Lab
-            ] [
-                <a href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}" target="_blank">
-                    Sign in Lab
-            ]
+            <button .btn.btn-primary onclick="copy_tx()">
+                <strong>1.
+                \ Copy transaction
+            \
+            <a .btn.btn-default
+                    href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
+                    role=button target=_blank>
+                View in Lab
+            \
+            <a .btn.btn-primary
+                    href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}"
+                    role=button target=_blank>
+                <strong>2.
+                \ Sign in Lab
         <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
             ^{widget}
-            <button type=submit .btn .btn-primary>Log in
+            <button type=submit .btn .btn-primary>
+                <strong>3.
+                \ Log in
     |]
+    toWidget
+        [julius|
+            function copy_tx() {
+                navigator.clipboard.writeText($('#stellar_challenge').text());
+            }
+        |]
   where
     challengeE = escapeURIString (not . isReserved) $ Text.unpack challenge
 
