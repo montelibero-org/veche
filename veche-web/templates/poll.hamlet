@@ -1,6 +1,6 @@
 <div .row>
     $forall (choice, percentage, share, voters) <- voteResults
-        <label .col-sm-2>#{choice}
+        <label .col-sm-2>#{showChoice choice}
         <div .col-sm-10>
             <div .progress style="margin-bottom: 3px;">
                 <div .progress-bar role=progressbar

@@ -128,6 +128,12 @@ makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =
                     ]
             & fromMaybe Abstain
 
+showChoice :: Choice -> Text
+showChoice = \case
+    Approve -> "👍 Approve"
+    Reject  -> "👎 Against"
+    Abstain -> "◯ Abstain"
+
 getForumIssueNewR :: ForumId -> Handler Html
 getForumIssueNewR forumId = do
     {-  No sense in checking permissions here:

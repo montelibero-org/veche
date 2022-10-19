@@ -42,20 +42,38 @@ closeReopenButton issueId issueIsOpen
         actionButton (IssueReopenR issueId) ["btn-success"] "Reopen" True
 
 voteButtons :: Bool -> IssueId -> Choice -> Widget
-voteButtons isEnabled issueId currentChoice = do
-    actionButton
-        (IssueVoteR issueId Approve)
-        ["btn-success"]
-        "👍 Approve"
-        (isEnabled && currentChoice /= Approve)
-    actionButton
-        (IssueVoteR issueId Reject)
-        ["btn-danger"]
-        "👎 Against"
-        (isEnabled && currentChoice /= Reject)
-    when (currentChoice /= Abstain) $
+voteButtons isEnabled issueId currentChoice =
+    [whamlet|
+        <div .btn-group role=group>
+            ^{buttonApprove}
+            ^{buttonAgainst}
+            $if currentChoice /= Abstain
+                <div .btn-group role=group>
+                    <button type=button .btn.btn-default.dropdown-toggle
+                            data-toggle=dropdown
+                            aria-haspopup=true aria-expanded=false>
+                        <span .caret>
+                    <ul .dropdown-menu>
+                        <li>
+                            <a onclick="submitPostForm('@{IssueVoteR issueId Abstain}')"
+                                    href="#">
+                                ◯ Abstain
+    |]
+  where
+
+    buttonApprove =
         actionButton
-            (IssueVoteR issueId Abstain) ["btn-default"] "◯ Abstain" isEnabled
+            (IssueVoteR issueId Approve)
+            ["btn-success"]
+            "👍 Approve"
+            (isEnabled && currentChoice /= Approve)
+
+    buttonAgainst =
+        actionButton
+            (IssueVoteR issueId Reject)
+            ["btn-danger"]
+            "👎 Against"
+            (isEnabled && currentChoice /= Reject)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
 issueForm (forumId, forum) previousContent = (bform aform){header} where
