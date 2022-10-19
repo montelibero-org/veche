@@ -46,26 +46,17 @@ voteButtons isEnabled issueId currentChoice = do
     actionButton
         (IssueVoteR issueId Approve)
         ["btn-success"]
-        [shamlet|
-            <span .glyphicon.glyphicon-thumbs-up aria-hidden=true>
-            Approve
-        |]
+        "👍 Approve"
         (isEnabled && currentChoice /= Approve)
     actionButton
         (IssueVoteR issueId Reject)
         ["btn-danger"]
-        [shamlet|
-            <span .glyphicon.glyphicon-thumbs-down aria-hidden=true>
-            Against
-        |]
+        "👎 Against"
         (isEnabled && currentChoice /= Reject)
     actionButton
         (IssueVoteR issueId Abstain)
         ["btn-default"]
-        [shamlet|
-            <span .glyphicon.glyphicon-unchecked aria-hidden=true>
-            Abstain
-        |]
+        "◯ Abstain"
         (isEnabled && currentChoice /= Abstain)
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
