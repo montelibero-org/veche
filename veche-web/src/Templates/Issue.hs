@@ -53,11 +53,9 @@ voteButtons isEnabled issueId currentChoice = do
         ["btn-danger"]
         "👎 Against"
         (isEnabled && currentChoice /= Reject)
-    actionButton
-        (IssueVoteR issueId Abstain)
-        ["btn-default"]
-        "◯ Abstain"
-        (isEnabled && currentChoice /= Abstain)
+    when (currentChoice /= Abstain) $
+        actionButton
+            (IssueVoteR issueId Abstain) ["btn-default"] "◯ Abstain" isEnabled
 
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
 issueForm (forumId, forum) previousContent = (bform aform){header} where
