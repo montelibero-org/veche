@@ -8,7 +8,7 @@ module Import.NoFoundation
     , module Import.NoFoundation
     ) where
 
-import ClassyPrelude as X hiding (Handler, delete, id, on, poll)
+import ClassyPrelude as X hiding (Handler, delete, id, link, link2, on, poll)
 
 import CMarkGFM (commonmarkToHtml, extAutolink, extStrikethrough, extTable,
                  extTagfilter, optHardBreaks, optSmart)
@@ -28,6 +28,7 @@ import GHC.Stack (CallStack, callStack, prettyCallStack)
 import GHC.Stack as X (HasCallStack)
 import Network.HTTP.Types as X (internalServerError500, status400)
 import Text.Blaze.Html (preEscapedToHtml)
+import UnliftIO (link)
 import Yesod.Auth as X
 import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         MonadHandler, PathPiece, TypedContent (TypedContent),

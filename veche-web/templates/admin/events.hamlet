@@ -12,11 +12,13 @@
     <tbody>
         $forall Event{..} <- events
             <tr>
-                <td>#{showTimestamp created}
+                <td>
+                    <a href="@{linkRoute}##{linkFragment}">
+                        #{showTimestamp created}
                 <td>#{show type_}
                 <td>#{subtype}
                 <td>#{toPathPiece forum}
-                <td>#{toPathPiece issue}
+                <td>#{toPathPiece issue}: #{issueTitle}
                 <td>#{userNameText $ entityVal author}
                 <td>
                     $maybe user <- requestedUser

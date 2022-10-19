@@ -35,18 +35,22 @@ import Model.Request qualified
 import Model.User (User, UserId)
 import Model.UserRole qualified as UserRole
 import Model.Vote qualified as Vote
+import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
 
 data Event = Event
-    { created           :: UTCTime
-    , type_             :: TypeRep
-    , subtype           :: Text
+    { author            :: Entity User
+    , created           :: UTCTime
+    , eventDelivered    :: Bool
     , forum             :: ForumId
     , issue             :: IssueId
-    , author            :: Entity User
-    , text              :: Text
-    , eventDelivered    :: Bool
+    , issueTitle        :: Text
+    , linkRoute         :: Route App
+    , linkFragment      :: Text
     , requestedUser     :: Maybe UserId
+    , subtype           :: Text
+    , text              :: Text
+    , type_             :: TypeRep
     }
 
 pure [] -- hack to put Event type to the TH environment
@@ -55,7 +59,7 @@ loadComments ::
     SqlQuery
         ( SqlExpr (Entity Comment)
         , SqlExpr (Entity User)
-        , SqlExpr (Value ForumId)
+        , SqlExpr (Entity Issue)
         )
 loadComments = do
     comment :& userAuthor :& issue <- from $
@@ -65,12 +69,19 @@ loadComments = do
         `innerJoin` table @Issue `on` \(comment :& _ :& issue) ->
             comment ^. #issue ==. issue ^. #id
     orderBy [desc $ comment ^. #created]
-    pure (comment, userAuthor, issue ^. #forum)
+    pure (comment, userAuthor, issue)
 
-commentToEvent :: (Entity Comment, Entity User, Value ForumId) -> Event
-commentToEvent (Entity _ c@Comment{..}, userAuthor, Value forum) =
+commentToEvent :: (Entity Comment, Entity User, Entity Issue) -> Event
+commentToEvent
+        ( Entity commentId c@Comment{..}
+        , userAuthor
+        , Entity _ Issue{title, forum}
+        ) =
     Event
         { author        = userAuthor
+        , issueTitle    = title
+        , linkRoute     = IssueR issue
+        , linkFragment  = commentAnchor commentId
         , requestedUser = Nothing
         , subtype       = Text.pack $ drop 7 $ show type_
         , text          = message
@@ -91,6 +102,9 @@ issueToEvent (Entity id i@Issue{..}, userAuthor) =
     Event
         { author        = userAuthor
         , issue         = id
+        , issueTitle    = title
+        , linkRoute     = IssueR id
+        , linkFragment  = ""
         , requestedUser = Nothing
         , subtype       = ""
         , text          = title
@@ -101,11 +115,12 @@ issueToEvent (Entity id i@Issue{..}, userAuthor) =
 loadRequests ::
     SqlQuery
         ( SqlExpr (Entity Request)
+        , SqlExpr (Value Text)
         , SqlExpr (Entity User)
-        , SqlExpr (Value ForumId)
+        , SqlExpr (Entity Issue)
         )
 loadRequests = do
-    request :& _ :& userAuthor :& issue <- from $
+    request :& comment :& userAuthor :& issue <- from $
         table @Request
         `innerJoin` table @Comment `on` (\(request :& comment) ->
             request ^. #comment ==. comment ^. #id)
@@ -114,14 +129,23 @@ loadRequests = do
         `innerJoin` table @Issue `on` \(request :& _ :& _ :& issue) ->
             request ^. #issue ==. issue ^. #id
     orderBy [desc $ request ^. #created]
-    pure (request, userAuthor, issue ^. #forum)
+    pure (request, comment ^. #message, userAuthor, issue)
 
-requestToEvent :: (Entity Request, Entity User, Value ForumId) -> Event
-requestToEvent (Entity _ r@Request{..}, author, Value forum) =
+requestToEvent ::
+    (Entity Request, Value Text, Entity User, Entity Issue) -> Event
+requestToEvent
+        ( Entity _ r@Request{..}
+        , Value commentMessage
+        , author
+        , Entity _ Issue{title, forum}
+        ) =
     Event
-        { requestedUser = Just user
+        { issueTitle    = title
+        , linkRoute     = IssueR issue
+        , linkFragment  = commentAnchor comment
+        , requestedUser = Just user
         , subtype       = ""
-        , text          = ""
+        , text          = commentMessage
         , type_         = typeOf r
         , ..
         }

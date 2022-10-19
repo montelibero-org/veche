@@ -102,7 +102,6 @@ defaultLayout widget = do
             addStylesheet $ StaticR css_bootstrap_css
             addStylesheet $ StaticR css_bootstrap_theme_css
             addStylesheet $ StaticR css_common_css
-            addStylesheet $ StaticR css_fontawesome_all_css
             $(widgetFile "default-layout")
     withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 

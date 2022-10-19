@@ -80,6 +80,7 @@ library
     , template-haskell
     , text               >=0.11    && <2.0
     , time
+    , unliftio
     , wai
     , wai-extra
     , warp               >=3.0     && <3.4

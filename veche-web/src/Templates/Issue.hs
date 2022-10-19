@@ -21,7 +21,6 @@ module Templates.Issue
 import Import
 
 -- global
-import Text.Hamlet (shamlet)
 import Yesod.Form (radioFieldList)
 import Yesod.Form.Bootstrap3 (bfs)
 

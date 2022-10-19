@@ -9,7 +9,7 @@
 
 module Workers.Telegram (telegramBot) where
 
-import Import hiding (for_, link)
+import Import hiding (for_)
 
 import Control.Concurrent (threadDelay)
 import Data.Foldable (for_)
