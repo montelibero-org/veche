@@ -171,7 +171,7 @@ newIssueForm forum@(forumId, _) =
             [whamlet|
                 <div .form-group>
                     <div .col-sm-offset-2.col-sm-10>
-                        <button type=submit .btn .btn-success>Start dicussion
+                        <button type=submit .btn .btn-success>Publish
             |]
         }
 
