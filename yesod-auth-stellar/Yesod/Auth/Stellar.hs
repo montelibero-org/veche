@@ -109,7 +109,8 @@ responseForm =
     unTextarea <$>
     areq
         textareaField
-        (bfs ("Paste the signed piece here:" :: Text)){fsName = Just "response"}
+        (bfs ("3. Paste the signed piece here:" :: Text))
+            {fsName = Just "response"}
         Nothing
 
 data VerificationData = VerificationData
@@ -173,11 +174,21 @@ makeResponseForm routeToMaster challenge = do
     (widget, enctype) <- generateFormPost responseForm
     [whamlet|
         $newline never
-        Sign this transaction, but do not submit it:
+        <p>
+            For the purpose of authentications in Veche,
+            \ a special "request" transaction is made.
+            \ Sign this transaction, but do not submit it, instead,
+            \ paste the code below:
         <div .panel.panel-default style="background: #eee;">
             <div .panel-body>
-                <tt .stellar_challenge #stellar_challenge style="overflow-wrap: break-word;">
+                <tt .stellar_challenge #stellar_challenge
+                        style="overflow-wrap: break-word;">
                     #{challenge}
+        <p>
+            This is an almost empty, intentionally invalid transaction.
+            \ It is costructed for the test network,
+            \ has zero fee and zero sequence number,
+            \ specifically to make sure it cannot be sent to the real network.
         <div>
             <button .btn.btn-primary onclick="copy_tx()">
                 <strong>1.
@@ -196,7 +207,7 @@ makeResponseForm routeToMaster challenge = do
         <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
             ^{widget}
             <button type=submit .btn .btn-primary>
-                <strong>3.
+                <strong>4.
                 \ Log in
     |]
     toWidget
