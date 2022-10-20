@@ -22,7 +22,7 @@ module Model.Event (
     dbGetUndelivered,
 ) where
 
-import Import hiding (Value, link)
+import Import hiding (Value)
 
 import Database.Esqueleto.Experimental (asc, from, not_, orderBy, select, table,
                                         unValue, where_, (^.))
@@ -59,7 +59,7 @@ defaultMessage _ = pure . toHtml . tshow
 
 instance Event Comment where
 
-    dbGetUsersToDeliver Comment{type_, issue, parent} =
+    dbGetUsersToDeliver Comment{author, type_, issue, parent} =
         case type_ of
             CommentAbstain  -> pure []
             CommentApprove  -> pure []
@@ -72,6 +72,7 @@ instance Event Comment where
       where
         getParentCommentAuthor =
             maybe (getIssueAuthor issue) getCommentAuthor parent
+            <&> filter (\(user, _) -> user /= author)
 
     makeMessage app commentE@(Entity _ Comment{type_, issue}) =
         case type_ of
