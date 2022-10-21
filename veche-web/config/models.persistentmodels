@@ -99,6 +99,7 @@ User
     deriving Show
 
 
+-- | Telegram binding
 Telegram
     Id                  UserId
     chatid              Int64   -- unique, but we don't want to enforce it

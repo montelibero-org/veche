@@ -1,26 +1,31 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 
-module Handler.Telegram (getAuthTelegramR, postAuthTelegramUnlinkR) where
+module Handler.Telegram (getTelegramBindR, postTelegramUnbindR) where
 
+-- prelude
 import Import
 
-import Yesod.Form (intField, ireq, runInputGet)
+-- global
+import Yesod.Form (runInputGet)
 
+-- component
 import Model.User qualified as User
+import Telegram.AuthWidget (AuthWidgetResponse (AuthWidgetResponse),
+                            authWidgetResponse)
+import Telegram.AuthWidget qualified
 
-getAuthTelegramR :: Handler Void
-getAuthTelegramR = do
+getTelegramBindR :: Handler Void
+getTelegramBindR = do
     uid <- requireAuthId
-    (id, username) <-
-        runInputGet $ (,) <$> ireq intField "id" <*> ireq textField "username"
+    AuthWidgetResponse{id, username} <- runInputGet authWidgetResponse
     User.setTelegram uid id username
     redirect UserR
 
-postAuthTelegramUnlinkR :: Handler Void
-postAuthTelegramUnlinkR = do
+postTelegramUnbindR :: Handler Void
+postTelegramUnbindR = do
     uid <- requireAuthId
     User.deleteTelegram uid
     redirect UserR

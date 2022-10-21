@@ -7,8 +7,6 @@
 /admin/update-database          AdminUpdateDatabaseR    GET
 /api/complete-user              ApiCompleteUserR        GET
 /auth                           AuthR                   Auth getAuth
-/auth-telegram                  AuthTelegramR           GET
-/auth-telegram/unlink           AuthTelegramUnlinkR     POST
 /comments                       CommentsR               POST
 /dashboard                      DashboardR              GET
 /favicon.ico                    FaviconR                GET
@@ -23,4 +21,6 @@
 /issues/#IssueId/vote/#Choice   IssueVoteR              POST
 /robots.txt                     RobotsR                 GET
 /static                         StaticR                 Static appStatic
+/telegram/bind                  TelegramBindR           GET
+/telegram/unbind                TelegramUnbindR         POST
 /user                           UserR                   GET PUT

@@ -32,8 +32,11 @@
     $#                 <a href="@{fst bc}">#{snd bc}
     $#         <li .active>#{title}
 
-    $maybe msg <- mmsg
-        <div .alert.alert-info #message>#{msg}
+    $forall (status, msg) <- sessionMessages
+        $if status == "danger"
+            <div .alert.alert-danger>#{msg}
+        $else
+            <div .alert.alert-info>#{msg}
 
     $# $if (Just HomeR == mcurrentRoute)
     $#     ^{widget}

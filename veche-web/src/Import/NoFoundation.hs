@@ -37,14 +37,15 @@ import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         lookupGetParam, lookupPostParams, notFound,
                         permissionDenied, redirect, requireCheckJsonBody,
                         respondSource, returnJson, sendChunkText,
-                        sendResponseStatus, setTitle, toContent, toHtml,
-                        toPathPiece, toWidget, typePlain, whamlet,
+                        sendResponseStatus, setTitle, setTitleI, toContent,
+                        toHtml, toPathPiece, toWidget, typePlain, whamlet,
                         withUrlRenderer)
 import Yesod.Core.Types as X (loggerSet)
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
                         FieldSettings (..), FormResult (FormSuccess), MForm,
                         Textarea (..), aopt, areq, generateFormPost,
-                        hiddenField, runFormPost, textField, textareaField)
+                        hiddenField, intField, ireq, runFormPost, textField,
+                        textareaField)
 
 import Authorization as X
 import Database.Persist.Extra as X

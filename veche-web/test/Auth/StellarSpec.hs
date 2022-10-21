@@ -46,23 +46,23 @@ spec =
         describe "initial public key form" $
 
             it "shows public key form" do
-                get $ AuthR LoginR
+                get stellarR
                 statusIs 200
                 htmlCount "input[name=stellar_address]" 1
 
         describe "challenge/response form" do
 
             it "shows challenge for address" do
-                get (AuthR LoginR, [("stellar_address", testGoodPublicKey)])
+                get (stellarR, [("stellar_address", testGoodPublicKey)])
                 statusIs 200
                 htmlCount ".stellar_challenge" 1
 
             it "shows error for bad address" do
-                get (AuthR LoginR, [("stellar_address", "")])
+                get (stellarR, [("stellar_address", "")])
                 statusIs 400
 
             it "shows error for invalid address" do
-                get (AuthR LoginR, [("stellar_address", "foo")])
+                get (stellarR, [("stellar_address", "foo")])
                 statusIs 400
 
         describe "authentication with tx-response" do
@@ -76,14 +76,17 @@ spec =
             it "doesn't authenticate when incorrect tx-response" do
                 request do
                     setMethod "POST"
-                    setUrl $ AuthR $ PluginR "stellar" []
+                    setUrl stellarR
                     addPostParam "response" testGoodTxUnsinged
                 statusIs 400
+
+stellarR :: Route App
+stellarR = AuthR $ PluginR "stellar" []
 
 testAuthenticationOk ::
     Stellar.KeyPair -> Stellar.Network -> YesodExample App ()
 testAuthenticationOk keyPair network = do
-    get (AuthR LoginR, [("stellar_address", address)])
+    get (stellarR, [("stellar_address", address)])
     statusIs 200
 
     envelopeXdrBase64 <-
@@ -97,7 +100,7 @@ testAuthenticationOk keyPair network = do
 
     request do
         setMethod "POST"
-        setUrl $ AuthR $ PluginR "stellar" []
+        setUrl stellarR
         addPostParam "response" envelopeSignedXdrBase64
         addToken_ "#auth_stellar_response_form"
     printBody

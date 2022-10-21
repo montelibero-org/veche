@@ -19,6 +19,7 @@ module Model.User (
     -- * Retrieve
     dbSelectAll,
     getByStellarAddress,
+    getByTelegramId,
     getHolderId,
     getSignerId,
     getTelegram,
@@ -29,6 +30,7 @@ module Model.User (
     setName,
     dbSetTelegram,
     setTelegram,
+    setTelegramUsername,
     -- * Delete
     dbDeleteTelegram,
     deleteTelegram,
@@ -37,15 +39,18 @@ module Model.User (
     requireAuthzRoles,
 ) where
 
+-- prelude
 import Import.NoFoundation
 
+-- global
 import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
-                         selectList, update, (=.), (==.))
+                         selectFirst, selectList, update, (=.), (==.))
 import Stellar.Horizon.Types qualified as Stellar
 import Yesod.Core (HandlerSite, liftHandler, notAuthenticated)
 import Yesod.Persist (runDB)
 
+-- component
 import Genesis (mtlAsset, mtlFund)
 import Model (Key (TelegramKey), StellarHolder, StellarHolderId, StellarSigner,
               StellarSignerId, Telegram (Telegram),
@@ -56,6 +61,12 @@ import Model qualified
 getByStellarAddress ::
     PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))
 getByStellarAddress = runDB . getBy . UniqueUser
+
+getByTelegramId ::
+    (MonadHandler m, PersistSql (HandlerSite m)) =>
+    Int64 -> m (Maybe (Entity Telegram))
+getByTelegramId chatid =
+    liftHandler . runDB $ selectFirst [#chatid ==. chatid] []
 
 getOrCreate :: PersistSql app => Stellar.Address -> HandlerFor app UserId
 getOrCreate stellarAddress =
@@ -88,6 +99,11 @@ dbSetTelegram uid chatid username =
 
 setTelegram :: PersistSql app => UserId -> Int64 -> Text -> HandlerFor app ()
 setTelegram uid chatid username = runDB $ dbSetTelegram uid chatid username
+
+setTelegramUsername ::
+    (MonadHandler m, PersistSql (HandlerSite m)) => UserId -> Text -> m ()
+setTelegramUsername id username =
+    liftHandler . runDB $ update (TelegramKey id) [#username =. username]
 
 deleteTelegram :: PersistSql app => UserId -> HandlerFor app ()
 deleteTelegram = runDB . dbDeleteTelegram

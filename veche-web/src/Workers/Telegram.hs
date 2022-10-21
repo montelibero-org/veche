@@ -9,8 +9,12 @@
 
 module Workers.Telegram (telegramBot) where
 
-import Import hiding (for_)
+-- prelude
+import Import hiding (filter, for_)
+import Prelude (filter)
+import Prelude qualified
 
+-- global
 import Control.Concurrent (threadDelay)
 import Data.Foldable (for_)
 import Database.Persist.Sql (runSqlPool)
@@ -24,6 +28,7 @@ import Web.Telegram.API.Bot (ChatId (ChatId), ParseMode (HTML), TelegramClient,
                              sendMessageRequest)
 import Web.Telegram.API.Bot qualified as Telegram
 
+-- component
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
 import Model.Telegram (Telegram (Telegram))
@@ -43,11 +48,19 @@ telegramBot app = do
     deliver :: SomeEvent -> IO ()
     deliver (SomeEvent eventE@(Entity id event)) = do
         users <- runDB $ Event.dbGetUsersToDeliver event
-        notifyAll eventE users
+        notifyAll eventE $ filterWhitelist users
         runDB $ Event.dbSetDelivered id
 
+    filterWhitelist
+        | [] <- whitelist   = Prelude.id
+        | otherwise         =
+            filter \(_, Telegram{username}) -> username `elem` whitelist
+
     App{appConnPool, appSettings, appHttpManager} = app
-    AppSettings{appTelegramBotToken} = appSettings
+
+    AppSettings
+            {appTelegramBotToken, appTelegramBotNotifyWhitelist = whitelist} =
+        appSettings
 
     randomDelay = do
         delaySeconds <- randomRIO (1, 10)

@@ -51,12 +51,13 @@ import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        runClientM)
 import System.IO.Unsafe (unsafePerformIO)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
-                   Route (PluginR), setCredsRedirect)
+                   Route (PluginR), authLayout, setCredsRedirect)
 import Yesod.Auth qualified
-import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage,
-                   TypedContent, WidgetFor, invalidArgs, julius, liftHandler,
-                   liftIO, logErrorS, lookupGetParam, notAuthenticated,
-                   toWidget, whamlet)
+import Yesod.Core (HandlerFor, HandlerSite, Html, MonadHandler, RenderMessage,
+                   TypedContent, WidgetFor, badMethod, getRouteToParent,
+                   invalidArgs, julius, liftHandler, liftIO, logErrorS,
+                   lookupGetParam, notAuthenticated, toTypedContent, toWidget,
+                   whamlet)
 import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
                    fsName, textField, textareaField, unTextarea)
 import Yesod.Form qualified as Yesod
@@ -87,11 +88,11 @@ data Config app = Config
 --    based on address.
 -- 4. User signs the transaction and enters signed envelope to the form.
 -- 5. 'dispatch' verifies the signature and assigns credentials.
-authStellar :: RenderMessage app FormMessage => Config app -> AuthPlugin app
+authStellar :: Config app -> AuthPlugin app
 authStellar config =
     AuthPlugin
         { apName     = pluginName
-        , apLogin    = login config
+        , apLogin    = login
         , apDispatch = dispatch config
         }
 
@@ -117,7 +118,28 @@ data VerificationData = VerificationData
     {address :: Stellar.Address, nonce :: Text}
 
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
-dispatch config@Config{checkAndRemoveVerifyKey} _method _path = do
+dispatch config method _path =
+    case method of
+        "GET"   -> toTypedContent <$> makeChallengeForm config
+        "POST"  -> receiveChallengeResponse config
+        _       -> badMethod
+
+makeChallengeForm :: Config app -> AuthHandler app Html
+makeChallengeForm Config{setVerifyKey} = do
+    routeToMaster <- getRouteToParent
+    mAddress <- lookupGetParam addressField
+    authLayout
+        case mAddress of
+            Nothing -> makeAddressForm
+            Just address0 -> do
+                let address = strip address0
+                nonce <- nonce128urlT nonceGenerator
+                setVerifyKey (Stellar.Address address) nonce
+                challenge <- makeChallenge address nonce
+                makeResponseForm routeToMaster challenge
+
+receiveChallengeResponse :: Config app -> AuthHandler app TypedContent
+receiveChallengeResponse config@Config{checkAndRemoveVerifyKey} = do
     ((result, _formWidget), _formEnctype) <- runFormPost responseForm
     case result of
         FormSuccess response -> do
@@ -134,19 +156,14 @@ makeCreds :: Stellar.Address -> Creds app
 makeCreds (Stellar.Address credsIdent) =
     Creds{credsPlugin = pluginName, credsIdent, credsExtra = []}
 
-login ::
-    RenderMessage app FormMessage =>
-    Config app -> (Route Auth -> Route app) -> WidgetFor app ()
-login Config{setVerifyKey} routeToMaster = do
-    mAddress <- lookupGetParam addressField
-    case mAddress of
-        Nothing -> makeAddressForm
-        Just address0 -> do
-            let address = strip address0
-            nonce <- nonce128urlT nonceGenerator
-            setVerifyKey (Stellar.Address address) nonce
-            challenge <- makeChallenge address nonce
-            makeResponseForm routeToMaster challenge
+login :: (Route Auth -> Route app) -> WidgetFor app ()
+login routeToMaster =
+    [whamlet|
+        <a href=@{start} role=button .btn.btn-primary>
+            Create account or log in
+    |]
+  where
+    start = routeToMaster pluginRoute
 
 makeAddressForm :: RenderMessage app FormMessage => WidgetFor app ()
 makeAddressForm = do

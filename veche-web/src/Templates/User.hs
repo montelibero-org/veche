@@ -38,10 +38,9 @@ userNameText User{name = mName, stellarAddress = Stellar.Address address} =
 telegramUsernameWidget :: Telegram -> Widget
 telegramUsernameWidget Telegram{username} = [whamlet|<samp>@#{username}|]
 
-unlinkTeleram :: Widget
-unlinkTeleram =
-    actionButton
-        AuthTelegramUnlinkR ["btn-danger"] "Unlink Telegram account" True
+unbindTeleram :: Widget
+unbindTeleram =
+    actionButton TelegramUnbindR ["btn-danger"] "Unbind Telegram account" True
 
 userPage :: Handler Html
 userPage = do

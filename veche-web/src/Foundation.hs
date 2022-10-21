@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
@@ -6,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -13,21 +15,25 @@
 
 module Foundation where
 
+-- prelude
 import Foundation.Base
 import Import.NoFoundation
 import Prelude qualified
 
 -- global
 import Control.Monad.Logger (LogLevel (LevelWarn), LogSource)
+import Data.Text qualified as Text
 import Data.Time (secondsToNominalDiffTime)
 import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
+import Text.Read (readEither)
 import Yesod.Auth.Dummy (authDummy)
+import Yesod.Auth.Message (AuthMessage (LoginTitle))
 import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
-                   HandlerSite, SessionBackend, Yesod,
+                   HandlerSite, SessionBackend, Yesod, addMessage,
                    defaultClientSessionBackend, defaultCsrfMiddleware,
-                   defaultYesodMiddleware, getApprootText, getYesod,
-                   guessApproot, liftHandler, unauthorizedI)
+                   defaultYesodMiddleware, getApprootText, getRouteToParent,
+                   getYesod, guessApproot, liftHandler, unauthorizedI)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -40,7 +46,10 @@ import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 
 -- component
+import Authentication.Telegram (authTelegram)
 import Model.Forum qualified as Forum
+import Model.Telegram (Key (TelegramKey), Telegram (Telegram))
+import Model.Telegram qualified
 import Model.User (UserId)
 import Model.User qualified as User
 import Model.Verifier qualified as Verifier
@@ -162,24 +171,77 @@ instance YesodAuth App where
     redirectToReferer :: App -> Bool
     redirectToReferer _ = True
 
-    -- Perform authentication based on the given credentials
+    -- Record authentication based on the given verified credentials
     authenticate
         :: (MonadHandler m, HandlerSite m ~ App)
         => Creds App -> m (AuthenticationResult App)
-    authenticate Creds{credsIdent} =
-        fmap Authenticated $
-        liftHandler $ User.getOrCreate $ Stellar.Address credsIdent
+    authenticate Creds{credsPlugin, credsIdent, credsExtra} =
+        case credsPlugin of
+            "dummy"     -> authenticateStellar credsIdent
+            "stellar"   -> authenticateStellar credsIdent
+            "telegram"  -> authenticateTelegram credsIdent credsExtra
+            _           -> pure $ ServerError "Unknown auth plugin"
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins app@App{appSettings} =
-        authStellar (authStellarConfig app) : extraAuthPlugins
+        authStellar (authStellarConfig app)
+        : authTelegram
+        : [authDummy | appAuthDummyLogin]
       where
-
-        -- Enable authDummy login if allowed.
-        extraAuthPlugins = [authDummy | appAuthDummyLogin]
-
         AppSettings{appAuthDummyLogin} = appSettings
+
+    loginHandler = do
+        routeToParent <- getRouteToParent
+        authLayout do
+            setTitleI LoginTitle
+            master <- getYesod
+            let plugins =
+                    [   ( lookup apName labels & fromMaybe apName
+                        , apLogin routeToParent
+                        )
+                    | AuthPlugin{apName, apLogin} <- authPlugins master
+                    ]
+            [whamlet|
+                <form .form-horizontal>
+                    $forall (label, login) <- plugins
+                        <div .form-group>
+                            <label .col-sm-4 .control-label>#{label}
+                            <div .col-sm-8>
+                                ^{login}
+            |]
+      where
+        labels =
+            [ ("stellar", "Via Stellar")
+            , ("telegram", "Via Telegram (only for existing accounts)")
+            ]
+
+authenticateStellar ::
+    (MonadHandler m, HandlerSite m ~ App) =>
+    Text -> m (AuthenticationResult App)
+authenticateStellar credsIdent =
+    Authenticated
+    <$> liftHandler (User.getOrCreate $ Stellar.Address credsIdent)
+
+authenticateTelegram ::
+    (MonadHandler m, HandlerSite m ~ App) =>
+    Text -> [(Text, Text)] -> m (AuthenticationResult App)
+authenticateTelegram credsIdent credsExtra = do
+    mUserTelegram <- User.getByTelegramId telegramId
+    case mUserTelegram of
+        Nothing -> do
+            addMessage
+                "danger"
+                "This telegram account is not bound to any registered user.\
+                    \ Please register via Stellar first."
+            redirect $ AuthR LoginR
+        Just (Entity (TelegramKey userId) Telegram{username}) -> do
+            when (username /= authenticatedUsername) $
+                User.setTelegramUsername userId authenticatedUsername
+            pure $ Authenticated userId
+  where
+    telegramId = either error Prelude.id $ readEither $ Text.unpack credsIdent
+    authenticatedUsername = lookup "username" credsExtra & fromMaybe (error "")
 
 authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
 authStellarConfig App{appStellarHorizon} =

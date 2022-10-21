@@ -20,7 +20,7 @@ import Data.Text.Encoding qualified as TE
 import Data.Version (showVersion)
 import Text.Hamlet (hamletFile)
 import Yesod.Core (addScript, addStylesheet, defaultCsrfCookieName,
-                   defaultCsrfHeaderName, getMessage, getYesod, languages,
+                   defaultCsrfHeaderName, getMessages, getYesod, languages,
                    pageBody, pageHead, pageTitle, widgetToPageContent)
 
 -- package
@@ -79,7 +79,7 @@ defaultLayout ::
     (YesodAuthPersist App, AuthEntity App ~ User) => Widget -> Handler Html
 defaultLayout widget = do
     master <- getYesod
-    mmsg <- getMessage
+    sessionMessages <- getMessages
 
     muser <- maybeAuthPair
     mcurrentRoute <- getCurrentRoute
