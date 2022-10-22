@@ -68,9 +68,10 @@ getByTelegramId ::
 getByTelegramId chatid =
     liftHandler . runDB $ selectFirst [#chatid ==. chatid] []
 
-getOrCreate :: PersistSql app => Stellar.Address -> HandlerFor app UserId
+getOrCreate ::
+    (MonadHandler m, PersistSql (HandlerSite m)) => Stellar.Address -> m UserId
 getOrCreate stellarAddress =
-    runDB do
+    liftHandler . runDB $ do
         mExisted <- getBy $ UniqueUser stellarAddress
         case mExisted of
             Just (Entity id _)  -> pure id

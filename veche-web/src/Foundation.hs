@@ -203,7 +203,7 @@ instance YesodAuth App where
                     | AuthPlugin{apName, apLogin} <- authPlugins master
                     ]
             [whamlet|
-                <form .form-horizontal>
+                <div .form-horizontal>
                     $forall (label, login) <- plugins
                         <div .form-group>
                             <label .col-sm-4 .control-label>#{label}
@@ -220,8 +220,7 @@ authenticateStellar ::
     (MonadHandler m, HandlerSite m ~ App) =>
     Text -> m (AuthenticationResult App)
 authenticateStellar credsIdent =
-    Authenticated
-    <$> liftHandler (User.getOrCreate $ Stellar.Address credsIdent)
+    Authenticated <$> User.getOrCreate (Stellar.Address credsIdent)
 
 authenticateTelegram ::
     (MonadHandler m, HandlerSite m ~ App) =>
