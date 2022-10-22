@@ -67,12 +67,17 @@ commentAForm ::
     AForm Handler CommentInput
 commentAForm mParams = do
     issue   <- areq hiddenField ""{fsName = Just "issue"} mIssueId
-    parent  <- aopt hiddenField ""{fsName = Just "parent"} Nothing
+    parent  <-
+        aopt
+            hiddenField
+            ""{fsId = Just "comment_parent", fsName = Just "parent"}
+            Nothing
     message <-
         unTextarea <$>
         areq
             textareaField
-            (bfs ("Comment" :: Text)){fsName = Just "message"}
+            (bfs ("Comment" :: Text))
+                {fsId = Just "comment_message", fsName = Just "message"}
             Nothing
     provideInfo <-
         case mActiveRequests of

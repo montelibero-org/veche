@@ -36,7 +36,8 @@ $(() => {
     $('a.comment-reply').click(event => {
       const widget = $(event.target).closest('.comment_widget');
       commentForm.appendTo(widget);
-      commentForm.find('input[name=parent]').val(widget.data('comment-id'));
+      $('#comment_parent').val(widget.data('comment-id'));
+      $('#comment_message').focus();
     });
   } else {
     $('a.comment-reply').attr('disabled', true);
