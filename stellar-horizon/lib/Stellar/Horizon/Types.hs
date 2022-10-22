@@ -18,6 +18,7 @@ module Stellar.Horizon.Types
     , Signer (..)
     , SignerType (..)
     , Transaction (..)
+    , TxId (..)
     ) where
 
 import Data.Aeson (FromJSON, ToJSON, camelTo2, constructorTagModifier,
@@ -62,7 +63,7 @@ data Balance = Balance
 newtype Asset =
     Asset
         Text -- ^ asset code in format "{code}:{issuer}"
-    deriving newtype (FromHttpApiData, ToHttpApiData)
+    deriving newtype (FromHttpApiData, Show, ToHttpApiData)
 
 data Record a = Record
     { paging_token  :: Text
@@ -131,7 +132,7 @@ data SignerType
     deriving (Show)
 
 data Transaction = Transaction
-    { id :: Text -- ^ A unique identifier for this transaction.
+    { id :: TxId -- ^ A unique identifier for this transaction.
     , successful :: Bool
         -- ^ Indicates if this transaction was successful or not.
     , created_at :: UTCTime -- ^ The date this transaction was created.
@@ -142,6 +143,11 @@ data Transaction = Transaction
         -- MEMO_HASH, MEMO_RETURN.
     }
     deriving Show
+
+-- | Transaction identifier
+newtype TxId = TxId Text
+    deriving newtype (FromJSON, ToJSON)
+    deriving stock Show
 
 concat
     <$> traverse

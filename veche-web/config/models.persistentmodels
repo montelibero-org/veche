@@ -15,6 +15,17 @@ Comment
     deriving Show
 
 
+Escrow
+    amount      Decimal
+    asset       Asset
+    issue       IssueId
+    sponsor     Stellar.Address
+    sponsorTx   TxId
+    paidTx      TxId Maybe
+
+    deriving Show
+
+
 Issue
     author      UserId
     open        Bool

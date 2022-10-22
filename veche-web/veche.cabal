@@ -30,6 +30,7 @@ library
     Import.NoFoundation
     Model
     Model.Comment
+    Model.Escrow
     Model.Event
     Model.Forum
     Model.Issue

@@ -20,12 +20,16 @@ $if isCloseReopenAllowed
 
 #{renderMarkdown body}
 
-$if isJust authnUser && (isJust contacts || isJust priceOffer)
+$if isJust authnUser && enablePriceOffer
     <div .form-horizontal>
         <div .form-group>
             <label .col-sm-2 .control-label>Escrow
-            <div .col-sm-10>
-                <p .form-control-static>
+            <div .col-sm-10 .form-control-static>
+                $if not $ null escrows
+                    <ul>
+                        $forall escrow <- escrows
+                            <li>#{show escrow}
+                <p>
                     Offer a compensation to a performer
                     by sending any amount of EURMTL to address
                     <tt>GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW#

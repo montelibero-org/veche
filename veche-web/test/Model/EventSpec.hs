@@ -58,7 +58,11 @@ spec =
         statusIs 303
 
     addComment = do
-        get $ IssueR issueId
+        request do
+            setMethod "GET"
+            setUrl $ IssueR issueId
+            addRequestHeader ("Accept", "text/plain")
+        printBody
         statusIs 200
 
         request do
@@ -68,7 +72,6 @@ spec =
             addPostParam "issue" $ toPathPiece issueId
             addPostParam "message" "addition swimming center subject"
             addPostParam "request_user" "1"
-        printBody
         statusIs 303
 
     getMessages = do

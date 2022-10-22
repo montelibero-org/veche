@@ -103,7 +103,6 @@ testAuthenticationOk keyPair network = do
         setUrl stellarR
         addPostParam "response" envelopeSignedXdrBase64
         addToken_ "#auth_stellar_response_form"
-    printBody
     statusIs 303 -- okay redirect
 
     get UserR

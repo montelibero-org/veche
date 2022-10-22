@@ -50,9 +50,10 @@ getIssueR issueId = do
     authnUser <- maybeAuthId
     issueMaterialized <- Issue.load issueId
     let IssueMaterialized
-                { comments
-                , body
-                , forum = Forum{title = forumTitle}
+                { body
+                , comments
+                , escrows
+                , forum = Forum{enablePriceOffer, title = forumTitle}
                 , isCloseReopenAllowed
                 , isCommentAllowed
                 , isEditAllowed
