@@ -137,23 +137,23 @@ withMockHorizon =
     bracket (forkIO $ Warp.run 9999 horizonTestApp) killThread . const
 
 horizonTestApp :: Wai.Application
-horizonTestApp = serve api horizonTestServer
-  where
+horizonTestApp = serve api horizonTestServer where
 
     horizonTestServer :: Server API
-    horizonTestServer = getAccount :<|> getAccounts
+    horizonTestServer = getAccounts :<|> getAccount :<|> getAccountTransactions
+
+    getAccounts _ _ _ = throwError err404
 
     getAccount :: Stellar.Address -> Servant.Handler Account
     getAccount account_id
         | account_id == Stellar.Address testGoodPublicKey =
-            pure Account{account_id, balances, paging_token, signers}
+            pure Account{account_id, balances, signers}
         | otherwise = throwError err404
       where
         balances = []
-        Stellar.Address paging_token = account_id
         signers = [signer account_id]
 
-    getAccounts _ _ _ = throwError err404
+    getAccountTransactions _ _ _ = throwError err404
 
     signer (Stellar.Address key) =
         Signer{key, type_ = Ed25519PublicKey, weight = 1}

@@ -1,7 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -11,18 +13,24 @@ module Stellar.Horizon.Types
     , Address (..)
     , Asset (..)
     , Balance (..)
+    , Record (..)
     , Records (..)
     , Signer (..)
     , SignerType (..)
+    , Transaction (..)
     ) where
 
 import Data.Aeson (FromJSON, ToJSON, camelTo2, constructorTagModifier,
-                   defaultOptions, fieldLabelModifier, object, withObject, (.:),
-                   (.=))
-import Data.Aeson qualified
+                   defaultOptions, fieldLabelModifier, object, parseJSON,
+                   toJSON, withObject, (.:), (.=))
+import Data.Aeson qualified as Aeson
+import Data.Aeson.KeyMap qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
+import Data.Aeson.Types qualified as Aeson
 import Data.List (dropWhileEnd)
 import Data.Text (Text)
+import Data.Time (UTCTime)
+import Data.Traversable (for)
 import Servant.API (FromHttpApiData, ToHttpApiData)
 
 data Account = Account
@@ -30,7 +38,6 @@ data Account = Account
         -- ^ This account’s public key encoded in a base32 string
         -- representation.
     , balances :: [Balance] -- ^ The assets this account holds.
-    , paging_token :: Text
     , signers :: [Signer]
         -- ^ The public keys and associated weights that can be used to
         -- authorize transactions for this account.
@@ -57,18 +64,46 @@ newtype Asset =
         Text -- ^ asset code in format "{code}:{issuer}"
     deriving newtype (FromHttpApiData, ToHttpApiData)
 
+data Record a = Record
+    { paging_token  :: Text
+    , value         :: a
+    }
+    deriving (Show)
+
+instance FromJSON a => FromJSON (Record a) where
+    parseJSON =
+        withObject "Record" \obj -> do
+            paging_token <- obj .: "paging_token"
+            let valueObj = Aeson.delete "paging_token" obj
+            value <- parseJSON $ Aeson.Object valueObj
+            pure Record{paging_token, value}
+
+instance ToJSON a => ToJSON (Record a) where
+    toJSON Record{paging_token, value} =
+        Aeson.Object $
+        Aeson.insert "paging_token" (Aeson.String paging_token) $
+        assertObject $ toJSON value
+
+assertObject :: Aeson.Value -> Aeson.Object
+assertObject = \case
+    Aeson.Object obj -> obj
+    v -> either error error $ Aeson.parseEither (Aeson.typeMismatch "Object") v
+
 newtype Records a =
     Records
-        [a] -- ^ _embedded.records
+        [Record a] -- ^ _embedded.records
     deriving (Show)
 
 instance FromJSON a => FromJSON (Records a) where
     parseJSON =
         withObject "Horizon response with _embedded.records" \obj -> do
             _embedded <- obj .: "_embedded"
-            parse1 _embedded
+            parseEmbedded _embedded
       where
-        parse1 = withObject "Records" \obj -> Records <$> obj .: "records"
+        parseEmbedded =
+            withObject "Records" \obj -> do
+                records <- obj .: "records"
+                Records <$> for records parseJSON
 
 instance ToJSON a => ToJSON (Records a) where
     toJSON (Records records) =
@@ -95,6 +130,19 @@ data SignerType
     | PreauthTx
     deriving (Show)
 
+data Transaction = Transaction
+    { id :: Text -- ^ A unique identifier for this transaction.
+    , successful :: Bool
+        -- ^ Indicates if this transaction was successful or not.
+    , created_at :: UTCTime -- ^ The date this transaction was created.
+    , source_account :: Text -- ^ The account that originates the transaction.
+    , memo :: Text -- ^ The optional memo attached to a transaction.
+    , memo_type :: Text
+        -- ^ The type of memo. Potential values include MEMO_TEXT, MEMO_ID,
+        -- MEMO_HASH, MEMO_RETURN.
+    }
+    deriving Show
+
 concat
     <$> traverse
             (deriveJSON
@@ -102,4 +150,4 @@ concat
                     { constructorTagModifier    = camelTo2 '_'
                     , fieldLabelModifier        = dropWhileEnd (== '_')
                     })
-            [''Account, ''Balance, ''Signer, ''SignerType]
+            [''Account, ''Balance, ''Signer, ''SignerType, ''Transaction]

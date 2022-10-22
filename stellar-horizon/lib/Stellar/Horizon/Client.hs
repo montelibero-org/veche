@@ -1,4 +1,7 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 -- |
@@ -15,21 +18,26 @@ module Stellar.Horizon.Client
     -- * Methods
     , getAccount
     , getAccounts
-    , getAllAccounts
+    , getAccountTransactions
+    , getAccountsList
+    , getAccountTransactionsList
     ) where
 
 import Prelude hiding (last)
 
+-- global
+import Data.List.NonEmpty (last, nonEmpty)
 import Data.Text (Text)
 import Numeric.Natural (Natural)
+import Servant.API ((:<|>) ((:<|>)))
 import Servant.Client (BaseUrl, ClientM, client, parseBaseUrl)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Data.List.NonEmpty (last, nonEmpty)
-import Servant.API ((:<|>) ((:<|>)))
+-- component
 import Stellar.Horizon.API (api)
-import Stellar.Horizon.Types (Account (Account, paging_token), Address, Asset,
-                              Records (Records))
+import Stellar.Horizon.Types (Account, Address, Asset, Record (Record),
+                              Records (Records), Transaction)
+import Stellar.Horizon.Types qualified
 
 publicServerBase :: BaseUrl
 publicServerBase = unsafePerformIO $ parseBaseUrl "https://horizon.stellar.org/"
@@ -40,18 +48,28 @@ testServerBase =
     unsafePerformIO $ parseBaseUrl "https://horizon-testnet.stellar.org/"
 {-# NOINLINE testServerBase #-}
 
-getAccount :: Address -> ClientM Account
 getAccounts ::
     Maybe Asset -> Maybe Text -> Maybe Natural -> ClientM (Records Account)
-getAccount :<|> getAccounts = client api
+getAccount :: Address -> ClientM Account
+getAccountTransactions ::
+    Address -> Maybe Text -> Maybe Natural -> ClientM (Records Transaction)
+getAccounts :<|> getAccount :<|> getAccountTransactions = client api
 
-getAllAccounts :: Asset -> ClientM [Account]
-getAllAccounts asset = go Nothing where
+getAccountsList :: Asset -> ClientM [Account]
+getAccountsList = recordsToList . getAccounts . Just
+
+getAccountTransactionsList :: Address -> ClientM [Transaction]
+getAccountTransactionsList = recordsToList . getAccountTransactions
+
+recordsToList ::
+    (Maybe Text -> Maybe Natural -> ClientM (Records a)) -> ClientM [a]
+recordsToList endpoint = go Nothing where
     limit = 200
     go cursor = do
-        Records records <- getAccounts (Just asset) cursor (Just limit)
+        Records records <- endpoint cursor (Just limit)
+        let values = map (\Record{value} -> value) records
         case nonEmpty records of
             Just neRecords | length records == fromIntegral limit ->
-                let Account{paging_token} = last neRecords
-                in (records <>) <$> go (Just paging_token)
-            _ -> pure records
+                let Record{paging_token} = last neRecords
+                in (values <>) <$> go (Just paging_token)
+            _ -> pure values

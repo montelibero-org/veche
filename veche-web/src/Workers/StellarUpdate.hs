@@ -23,7 +23,7 @@ import System.Random (randomRIO)
 import Text.Read (readMaybe)
 
 -- project
-import Stellar.Horizon.Client (getAccount, getAllAccounts)
+import Stellar.Horizon.Client (getAccount, getAccountsList)
 import Stellar.Horizon.Types (Account (Account), Asset (Asset),
                               Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.Types qualified as Stellar
@@ -104,7 +104,7 @@ updateHoldersCache ::
     -- | Actual number of holders
     IO Int
 updateHoldersCache clientEnv connPool asset = do
-    holders <- runClientM' clientEnv $ getAllAccounts asset
+    holders <- runClientM' clientEnv $ getAccountsList asset
     let actual =
             Map.fromList
                 [ (account_id, amount)
