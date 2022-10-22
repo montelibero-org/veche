@@ -222,7 +222,8 @@ load issueId = do
         votes <- collectChoices <$> loadVotes issueId
         requests <-
             case mUserId of
-                Just userId -> Request.selectActiveByIssueAndUser issueId userId
+                Just userId ->
+                    Request.selectActiveByIssueAndRequestedUser issueId userId
                 Nothing     -> pure []
 
         let issueE = Entity issueId issue

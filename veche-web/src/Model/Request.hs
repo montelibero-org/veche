@@ -10,7 +10,7 @@ module Model.Request (
     IssueRequestMaterialized (..),
     Request (..),
     RequestMaterialized (..),
-    selectActiveByIssueAndUser,
+    selectActiveByIssueAndRequestedUser,
     selectActiveByUser,
 ) where
 
@@ -67,18 +67,18 @@ selectActiveByUser userId = do
         | (Value id, issue, comment, requestor) <- requests
         ]
 
-selectActiveByIssueAndUser ::
+selectActiveByIssueAndRequestedUser ::
     MonadIO m => IssueId -> UserId -> SqlPersistT m [IssueRequestMaterialized]
-selectActiveByIssueAndUser issueId userId = do
+selectActiveByIssueAndRequestedUser issueId requestedUserId = do
     requests <-
         select do
             request :& comment :& user <- from $
                 table @Request
                 `innerJoin` table @Comment `on` (\(request :& comment) ->
                     request ^. #comment ==. comment ^. #id)
-                `innerJoin` table @User `on` \(request :& _ :& user) ->
-                    request ^. #user ==. user ^. #id
-                    &&. request ^. #user ==. val userId
+                `innerJoin` table @User `on` \(request :& comment :& user) ->
+                    comment ^. #author ==. user ^. #id
+                    &&. request ^. #user ==. val requestedUserId
             where_ $
                 not_ (request ^. #fulfilled)
                 &&. request ^. #issue ==. val issueId
