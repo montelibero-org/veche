@@ -1,21 +1,22 @@
 <li>
-    <div .comment ##{commentAnchor id} data-comment-id=#{toPathPiece id}>
-        <div .comment_header>
-            <span .comment_author>#{userNameWidget commentAuthor}
-            <span .comment_action .text-muted>
-                $if null requestedUsers
-                    #{type_}
-                $else
-                    requested information from #
-                    $forall user <- requestedUsers
-                        <span .requested_user>#{userNameWidget user}
-            <span .comment_timestamp .pull-right .text-muted>#{createdTime}
-        $if message /= ""
-            <div .comment_message>#{renderCommonMarkdown message}
+    <div .comment_widget data-comment-id=#{toPathPiece id}>
+        <div .comment ##{commentAnchor id}>
+            <div .comment_header>
+                <span .comment_author>#{userNameWidget commentAuthor}
+                <span .comment_action .text-muted>
+                    $if null requestedUsers
+                        #{type_}
+                    $else
+                        requested information from #
+                        $forall user <- requestedUsers
+                            <span .requested_user>#{userNameWidget user}
+                <span .comment_timestamp .pull-right .text-muted>#{createdTime}
+            $if message /= ""
+                <div .comment_message>#{renderCommonMarkdown message}
 
-    <div>
-        $if type_ /= CommentStart
-            <a .btn .btn-default .btn-xs .comment-reply>Reply
-        <a .btn .btn-default .btn-xs disabled>Request Info
+        <div>
+            $if type_ /= CommentStart
+                <a .btn.btn-default.btn-xs .comment-reply role=button>Reply
+            <a .btn.btn-default.btn-xs disabled role=button>Request Info
 
     ^{commentForestWidget subComments}
