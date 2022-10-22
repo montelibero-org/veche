@@ -76,7 +76,8 @@ addText commentInput = do
             | user <- toList requestUsers
             ]
         unsafeUpdateIssueCommentNum issue Nothing
-        updateWhere @_ @_ @Request
+        updateWhere
+            @_ @_ @Request
             [ #id <-. toList provideInfo
             -- following filters present only for security
             , #user  ==. author

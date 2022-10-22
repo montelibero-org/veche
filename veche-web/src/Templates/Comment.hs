@@ -56,15 +56,16 @@ commentAnchor :: CommentId -> Text
 commentAnchor id = "comment" <> toPathPiece id
 
 commentForm ::
-    Maybe IssueId ->
-    [IssueRequestMaterialized] ->
+    -- | Just if known (for rendering), Nothing if unknown (for reading)
+    Maybe (IssueId, [IssueRequestMaterialized]) ->
     (Html -> MForm Handler (FormResult CommentInput, Widget))
-commentForm mIssueId activeRequests =
-    renderForm $ commentAForm mIssueId activeRequests
+commentForm = renderForm . commentAForm
 
 commentAForm ::
-    Maybe IssueId -> [IssueRequestMaterialized] -> AForm Handler CommentInput
-commentAForm mIssueId activeRequests = do
+    -- | Just if known (for rendering), Nothing if unknown (for reading)
+    Maybe (IssueId, [IssueRequestMaterialized]) ->
+    AForm Handler CommentInput
+commentAForm mParams = do
     issue   <- areq hiddenField ""{fsName = Just "issue"} mIssueId
     parent  <- aopt hiddenField ""{fsName = Just "parent"} Nothing
     message <-
@@ -74,13 +75,14 @@ commentAForm mIssueId activeRequests = do
             (bfs ("Comment" :: Text)){fsName = Just "message"}
             Nothing
     provideInfo <-
-        case activeRequests of
-            [] -> pure []
-            _:_ ->
+        case mActiveRequests of
+            Just [] -> pure []
+            _ ->
                 areq
                     ( checkboxesFieldList'
                         [ (requestLabel r, id)
-                        | r@IssueRequestMaterialized{id} <- activeRequests
+                        | r@IssueRequestMaterialized{id} <-
+                            fromMaybe [] mActiveRequests
                         ]
                     )
                     "Provide info for"{fsName = Just "provide"}
@@ -93,6 +95,9 @@ commentAForm mIssueId activeRequests = do
             , provideInfo   = Set.fromList provideInfo
             , parent
             }
+  where
+    mIssueId        = fst <$> mParams
+    mActiveRequests = snd <$> mParams
 
 requestLabel :: IssueRequestMaterialized -> Text
 requestLabel IssueRequestMaterialized{requestor, comment} =
