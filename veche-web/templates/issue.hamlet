@@ -21,7 +21,7 @@ $if isCloseReopenAllowed
 #{renderCommonMarkdown body}
 
 $if isJust authnUser && (isJust contacts || isJust priceOffer)
-    <form .form-horizontal>
+    <div .form-horizontal>
         $maybe priceOffer <- priceOffer
             <div .form-group>
                 <label .col-sm-2 .control-label>Price offer

@@ -1,15 +1,18 @@
-<li ##{commentAnchor id} .comment data-comment-id=#{toPathPiece id}>
-    <span .comment_author>#{userNameWidget commentAuthor}
-    <span .comment_action .text-muted>
-        $if null requestedUsers
-            #{type_}
-        $else
-            requested information from #
-            $forall user <- requestedUsers
-                <span .requested_user>#{userNameWidget user}
-    <span .comment_timestamp .pull-right .text-muted>#{createdTime}
-    $if message /= ""
-        <div>#{renderCommonMarkdown message}
+<li>
+    <div .comment ##{commentAnchor id} data-comment-id=#{toPathPiece id}>
+        <div .comment_header>
+            <span .comment_author>#{userNameWidget commentAuthor}
+            <span .comment_action .text-muted>
+                $if null requestedUsers
+                    #{type_}
+                $else
+                    requested information from #
+                    $forall user <- requestedUsers
+                        <span .requested_user>#{userNameWidget user}
+            <span .comment_timestamp .pull-right .text-muted>#{createdTime}
+        $if message /= ""
+            <div .comment_message>#{renderCommonMarkdown message}
+
     <div>
         $if type_ /= CommentStart
             <a .btn .btn-default .btn-xs .comment-reply>Reply
