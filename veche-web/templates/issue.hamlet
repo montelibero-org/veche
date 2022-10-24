@@ -21,29 +21,25 @@ $if isCloseReopenAllowed
 #{renderMarkdown body}
 
 $if isJust authnUser && enablePriceOffer
-    <div .form-horizontal>
-        <div .form-group>
-            <label .col-sm-2 .control-label>Escrow
-            <div .col-sm-10 .form-control-static>
-                <div .alert.alert-info>
-                    ℹ️ Offer compensation to performers
-                    by sending any amount of EURMTL to address
-                    <kbd>#{issueEscrowAddress issueId}</kbd>.
-                    See
-                    <a href=@{PagesEscrowR} .alert-link>escrow terms.
-                $if not $ null escrows
-                    $forall Escrow{amount, asset, sponsor} <- escrows
-                        <p>#{show amount} #{show asset} from #{show sponsor}
+    <dl .dl-horizontal>
+        <dt>Escrow
+        <dd>
+            <p .text-info>
+                ℹ️ Offer compensation to performers
+                by sending any amount of EURMTL to address
+                <kbd>#{issueEscrowAddress issueId}</kbd>.
+                See
+                <a href=@{PagesEscrowR} style="text-decoration: underline;">
+                    escrow terms</a>.
+            $if not $ null escrows
+                $forall Escrow{amount, asset, sponsor} <- escrows
+                    <p>#{show amount} #{show asset} from #{show sponsor}
         $maybe priceOffer <- priceOffer
-            <div .form-group>
-                <label .col-sm-2 .control-label>Price offer
-                <div .col-sm-10 .form-control-static>
-                    #{renderMarkdown priceOffer}
+            <dt>Price offer
+            <dd>#{renderMarkdown priceOffer}
         $maybe contacts <- contacts
-            <div .form-group>
-                <label .col-sm-2 .control-label>Contacts
-                <div .col-sm-10 .form-control-static>
-                    #{renderMarkdown contacts}
+            <dt>Contacts
+            <dd>#{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}
