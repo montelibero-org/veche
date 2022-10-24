@@ -35,13 +35,13 @@ $if isJust authnUser && (isJust contacts || isJust priceOffer)
         $maybe priceOffer <- priceOffer
             <div .form-group>
                 <label .col-sm-2 .control-label>Price offer
-                <div .col-sm-10>
-                    <p .form-control-static>#{renderMarkdown priceOffer}
+                <div .col-sm-10 .form-control-static>
+                    #{renderMarkdown priceOffer}
         $maybe contacts <- contacts
             <div .form-group>
                 <label .col-sm-2 .control-label>Contacts
-                <div .col-sm-10>
-                    <p .form-control-static>#{renderMarkdown contacts}
+                <div .col-sm-10 .form-control-static>
+                    #{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}
