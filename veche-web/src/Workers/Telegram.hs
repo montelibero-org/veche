@@ -12,7 +12,6 @@ module Workers.Telegram (telegramBot) where
 -- prelude
 import Import hiding (filter, for_)
 import Prelude (filter)
-import Prelude qualified
 
 -- global
 import Control.Concurrent (threadDelay)
@@ -52,7 +51,7 @@ telegramBot app = do
         runDB $ Event.dbSetDelivered id
 
     filterWhitelist
-        | [] <- whitelist   = Prelude.id
+        | [] <- whitelist   = identity
         | otherwise         =
             filter \(_, Telegram{username}) -> username `elem` whitelist
 
