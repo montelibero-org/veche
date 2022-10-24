@@ -22,8 +22,6 @@ module Yesod.Auth.Stellar
 
 import Control.Exception (Exception, throwIO)
 import Control.Monad (unless)
-import Crypto.Nonce (nonce128urlT)
-import Crypto.Nonce qualified
 import Data.ByteString.Base64 (decodeBase64, encodeBase64)
 import Data.Foldable (toList)
 import Data.Function ((&))
@@ -49,7 +47,6 @@ import Network.URI (escapeURIString, isReserved)
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
-import System.IO.Unsafe (unsafePerformIO)
 import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
                    Route (PluginR), authLayout, setCredsRedirect)
 import Yesod.Auth qualified
@@ -77,17 +74,10 @@ pluginRoute = PluginR pluginName []
 
 data Config app = Config
     { horizon :: BaseUrl
-    , setVerifyKey :: Stellar.Address -> Text -> WidgetFor app ()
+    , getVerifyKey :: Stellar.Address -> HandlerFor app Text
     , checkAndRemoveVerifyKey :: Stellar.Address -> Text -> HandlerFor app Bool
     }
 
--- | Flow:
--- 1. 'login' shows 'addressForm'.
--- 2. User enters address (public key).
--- 3. 'login' shows 'responseForm' with challenge (dummy transaction)
---    based on address.
--- 4. User signs the transaction and enters signed envelope to the form.
--- 5. 'dispatch' verifies the signature and assigns credentials.
 authStellar :: Config app -> AuthPlugin app
 authStellar config =
     AuthPlugin
@@ -115,7 +105,9 @@ responseForm =
         Nothing
 
 data VerificationData = VerificationData
-    {address :: Stellar.Address, nonce :: Text}
+    { address   :: Stellar.Address
+    , nonce     :: Text
+    }
 
 dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
 dispatch config method _path =
@@ -125,18 +117,16 @@ dispatch config method _path =
         _       -> badMethod
 
 makeChallengeForm :: Config app -> AuthHandler app Html
-makeChallengeForm Config{setVerifyKey} = do
+makeChallengeForm Config{getVerifyKey} = do
     routeToMaster <- getRouteToParent
     mAddress <- lookupGetParam addressField
-    authLayout
-        case mAddress of
-            Nothing -> makeAddressForm
-            Just address0 -> do
-                let address = strip address0
-                nonce <- nonce128urlT nonceGenerator
-                setVerifyKey (Stellar.Address address) nonce
-                challenge <- makeChallenge address nonce
-                makeResponseForm routeToMaster challenge
+    case mAddress of
+        Nothing -> authLayout makeAddressForm
+        Just address0 -> do
+            let address = strip address0
+            nonce <- liftHandler $ getVerifyKey $ Stellar.Address address
+            challenge <- makeChallenge address nonce
+            authLayout $ makeResponseForm routeToMaster challenge
 
 receiveChallengeResponse :: Config app -> AuthHandler app TypedContent
 receiveChallengeResponse config@Config{checkAndRemoveVerifyKey} = do
@@ -364,7 +354,3 @@ generateFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
 generateFormPost = Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
-
-nonceGenerator :: Crypto.Nonce.Generator
-nonceGenerator = unsafePerformIO Crypto.Nonce.new
-{-# NOINLINE nonceGenerator #-}

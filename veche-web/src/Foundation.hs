@@ -18,12 +18,10 @@ module Foundation where
 -- prelude
 import Foundation.Base
 import Import.NoFoundation
-import Prelude qualified
 
 -- global
 import Control.Monad.Logger (LogLevel (LevelWarn), LogSource)
 import Data.Text qualified as Text
-import Data.Time (secondsToNominalDiffTime)
 import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
 import Text.Read (readEither)
@@ -33,7 +31,7 @@ import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
                    HandlerSite, SessionBackend, Yesod, addMessage,
                    defaultClientSessionBackend, defaultCsrfMiddleware,
                    defaultYesodMiddleware, getApprootText, getRouteToParent,
-                   getYesod, guessApproot, liftHandler, unauthorizedI)
+                   getYesod, guessApproot, unauthorizedI)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -138,7 +136,7 @@ instance Yesod App where
 csrfMiddleware :: Handler a -> Handler a
 csrfMiddleware h = do
     route <- getCurrentRoute
-    let mw  | isAuthRMay route  = Prelude.id
+    let mw  | isAuthRMay route  = identity
             | otherwise         = defaultCsrfMiddleware
     mw h
 
@@ -239,19 +237,16 @@ authenticateTelegram credsIdent credsExtra = do
                 User.setTelegramUsername userId authenticatedUsername
             pure $ Authenticated userId
   where
-    telegramId = either error Prelude.id $ readEither $ Text.unpack credsIdent
+    telegramId = either error identity $ readEither $ Text.unpack credsIdent
     authenticatedUsername = lookup "username" credsExtra & fromMaybe (error "")
 
 authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
 authStellarConfig App{appStellarHorizon} =
     Yesod.Auth.Stellar.Config
         { horizon = appStellarHorizon
-        , setVerifyKey = \verifierUserIdent ->
-            liftHandler . Verifier.setKey nonceTtl verifierUserIdent
-        , checkAndRemoveVerifyKey = Verifier.checkAndRemoveVerifyKey
+        , getVerifyKey = Verifier.getKey
+        , checkAndRemoveVerifyKey = Verifier.checkAndRemoveKey
         }
-  where
-    nonceTtl = secondsToNominalDiffTime $ 60 * 15 -- 15 minutes
 
 -- Actually, we check only authentication here.
 -- Authorization requires data from the database,

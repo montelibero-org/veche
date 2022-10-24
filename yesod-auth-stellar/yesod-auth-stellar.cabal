@@ -10,7 +10,6 @@ library
     , http-client-tls
     , http-types
     , network-uri
-    , nonce
     , servant-client
     , stellar-sdk
     , text
