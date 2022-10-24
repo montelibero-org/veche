@@ -16,11 +16,11 @@ Comment
 
 
 Escrow
+    Id          TxId    sql=sponsorTx
     amount      Decimal
     asset       Asset
     issue       IssueId
     sponsor     Stellar.Address
-    sponsorTx   TxId
     paidTx      TxId Maybe
 
     deriving Show

@@ -28,6 +28,8 @@ import Text.Printf (printf)
 
 -- component
 import Genesis (mtlAsset, mtlFund)
+import Model.Escrow (Escrow (Escrow))
+import Model.Escrow qualified
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),

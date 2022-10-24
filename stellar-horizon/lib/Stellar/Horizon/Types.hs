@@ -33,6 +33,7 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Traversable (for)
 import Servant.API (FromHttpApiData, ToHttpApiData)
+import Web.PathPieces (PathPiece)
 
 data Account = Account
     { account_id :: Address
@@ -146,8 +147,17 @@ data Transaction = Transaction
 
 -- | Transaction identifier
 newtype TxId = TxId Text
-    deriving newtype (FromJSON, ToJSON)
-    deriving stock Show
+    deriving newtype
+        ( Eq
+        , FromHttpApiData
+        , FromJSON
+        , Ord
+        , PathPiece
+        , Read
+        , Show
+        , ToHttpApiData
+        , ToJSON
+        )
 
 concat
     <$> traverse

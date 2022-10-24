@@ -8,6 +8,7 @@ library
       aeson
     , base
     , http-media
+    , path-pieces
     , servant
     , servant-client
     , servant-docs

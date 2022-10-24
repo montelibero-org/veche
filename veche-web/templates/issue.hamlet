@@ -25,17 +25,16 @@ $if isJust authnUser && enablePriceOffer
         <div .form-group>
             <label .col-sm-2 .control-label>Escrow
             <div .col-sm-10 .form-control-static>
-                $if not $ null escrows
-                    <ul>
-                        $forall escrow <- escrows
-                            <li>#{show escrow}
-                <p>
-                    Offer a compensation to a performer
+                <div .alert.alert-info>
+                    ℹ️ Offer compensation to performers
                     by sending any amount of EURMTL to address
-                    <tt>GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW#
-                    .
+                    <kbd>
+                        GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW</kbd>.
                     See
-                    <a href=@{PagesEscrowR}>escrow terms.
+                    <a href=@{PagesEscrowR} .alert-link>escrow terms.
+                $if not $ null escrows
+                    $forall Escrow{amount, asset, sponsor} <- escrows
+                        <p>#{show amount} #{show asset} from #{show sponsor}
         $maybe priceOffer <- priceOffer
             <div .form-group>
                 <label .col-sm-2 .control-label>Price offer

@@ -1,7 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
 
-module Model.Escrow (getActive, dbGetActive) where
+module Model.Escrow (
+    Escrow (..),
+    dbGetActive,
+    getActive,
+) where
 
 -- prelude
 import Import
@@ -11,7 +15,7 @@ import Database.Persist (selectList, (==.))
 import Yesod.Persist (runDB)
 
 -- component
-import Model (Escrow, IssueId)
+import Model (Escrow (..), IssueId)
 
 -- | Get active (unspent) escrows for the issue
 getActive :: IssueId -> Handler [Escrow]
