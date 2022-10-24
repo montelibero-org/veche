@@ -34,7 +34,8 @@ import Model (IssueId)
 -- access to the data present here.
 data App = App
     { appSettings       :: AppSettings
-    , appStatic         :: Static -- ^ Settings for static file serving.
+    , appStatic         :: Static
+    , appWellKnown      :: Static
     , appConnPool       :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager    :: Manager
     , appLogger         :: Logger

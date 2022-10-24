@@ -51,3 +51,9 @@ forums =
                 }
             )
         ]
+
+escrowAddress :: Text
+escrowAddress = "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
+
+escrowFederatedHost :: Text
+escrowFederatedHost = "veche.montelibero.org"

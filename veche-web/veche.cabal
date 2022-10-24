@@ -4,7 +4,10 @@ version:       2022.10.24
 build-type:    Simple
 
 library
-  default-extensions: EmptyCase
+  default-extensions:
+    EmptyCase
+    NamedFieldPuns
+
   exposed-modules:
     Application
     Authentication.Telegram
@@ -24,6 +27,7 @@ library
     Handler.Issue
     Handler.Pages
     Handler.Root
+    Handler.Stellar
     Handler.Telegram
     Handler.User
     Import

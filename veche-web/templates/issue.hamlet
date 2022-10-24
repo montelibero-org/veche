@@ -28,8 +28,7 @@ $if isJust authnUser && enablePriceOffer
                 <div .alert.alert-info>
                     ℹ️ Offer compensation to performers
                     by sending any amount of EURMTL to address
-                    <kbd>
-                        GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW</kbd>.
+                    <kbd>#{issueEscrowAddress issueId}</kbd>.
                     See
                     <a href=@{PagesEscrowR} .alert-link>escrow terms.
                 $if not $ null escrows
