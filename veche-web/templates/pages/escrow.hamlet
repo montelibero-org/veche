@@ -1,0 +1,27 @@
+<h1>Escrow terms
+
+<ol>
+    <li>
+        When both the customer and the performer are agreed to send
+        the performer the compensation,
+        the assets associated with the task are moved to the performer.
+    <li>
+        A sponsors can request their escrow back.
+    <li>
+        Disputes between performers and customers/sponsors are resolved
+        by the administration of Veche.
+    <li>
+        Disputes between users and the administration of Veche are resolved
+        by the
+        <a href="https://montelibero.org/2021/12/10/sud-montelibero/">
+            Montelibero public court</a>.
+    <li>
+        The amount of assets available to send to the performer
+        or return to sponsors is the amount of assets sent to the escrow
+        minus the service fee.
+    <li>
+        The service fee is 2%.
+    <li>
+        The escrow address is
+        <tt>GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW#
+        .

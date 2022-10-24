@@ -18,20 +18,30 @@ $if isCloseReopenAllowed
 
 <div .clearfix style="margin-bottom: 1em;">
 
-#{renderCommonMarkdown body}
+#{renderMarkdown body}
 
 $if isJust authnUser && (isJust contacts || isJust priceOffer)
     <div .form-horizontal>
+        <div .form-group>
+            <label .col-sm-2 .control-label>Escrow
+            <div .col-sm-10>
+                <p .form-control-static>
+                    Offer a compensation to a performer
+                    by sending any amount of EURMTL to address
+                    <tt>GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW#
+                    .
+                    See
+                    <a href=@{PagesEscrowR}>escrow terms.
         $maybe priceOffer <- priceOffer
             <div .form-group>
                 <label .col-sm-2 .control-label>Price offer
                 <div .col-sm-10>
-                    <p .form-control-static>#{priceOffer}
+                    <p .form-control-static>#{renderMarkdown priceOffer}
         $maybe contacts <- contacts
             <div .form-group>
                 <label .col-sm-2 .control-label>Contacts
                 <div .col-sm-10>
-                    <p .form-control-static>#{contacts}
+                    <p .form-control-static>#{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}

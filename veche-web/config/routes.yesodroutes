@@ -19,6 +19,7 @@
 /issues/#IssueId/edit           IssueEditR              GET
 /issues/#IssueId/reopen         IssueReopenR            POST
 /issues/#IssueId/vote/#Choice   IssueVoteR              POST
+/pages/escrow                   PagesEscrowR            GET
 /robots.txt                     RobotsR                 GET
 /static                         StaticR                 Static appStatic
 /telegram/bind                  TelegramBindR           GET
