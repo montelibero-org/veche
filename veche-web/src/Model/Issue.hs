@@ -213,8 +213,12 @@ load issueId = do
         author <-
             getEntity authorId
             ?|> constraintFail "Issue.author must exist in User table"
-        comments' <- if authenticated then loadComments issueId else pure []
-        let comments = startingPseudoComment authorId author created : comments'
+        comments <-
+            if authenticated then
+                (startingPseudoComment authorId author created :)
+                <$> loadComments issueId
+            else
+                pure []
         IssueVersion{body} <-
             get versionId
             ?|> constraintFail
