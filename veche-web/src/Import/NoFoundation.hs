@@ -107,3 +107,6 @@ renderCommonMarkdown =
     . commonmarkToHtml
         [optHardBreaks, optSmart]
         [extStrikethrough, extTable, extAutolink, extTagfilter]
+
+identity :: a -> a
+identity x = x
