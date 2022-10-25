@@ -26,7 +26,8 @@ $if isJust authnUser && enablePriceOffer
         <dt>Escrow
         <dd>
             <p .text-primary>
-                ℹ️ Offer compensation to performers
+                <i .bi.bi-info-square-fill>
+                Offer compensation to performers
                 by sending any amount of EURMTL to address
                 <kbd>#{issueEscrowAddress issueId}</kbd>.
                 See
