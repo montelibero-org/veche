@@ -23,8 +23,8 @@ getStellarFederationR = do
             Nothing -> invalidArgs ["q expected"]
 
     resolveFederatedAddress addr
-        | (name, rest) <- break (== '*') addr
-        , host <- drop 1 rest
+        | let (name, rest) = break (== '*') addr
+        , let host = drop 1 rest
         , host == escrowFederatedHost =
             respondName name
         | otherwise =
