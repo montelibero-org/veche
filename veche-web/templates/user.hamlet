@@ -4,15 +4,15 @@
     <div .row>
         <label .col-sm-2 .col-form-label>Name
         <div .col-sm-10 #nameView>
-            <span #nameViewText>#{fromMaybe "" name}
-            <button type=button .btn .btn-outline-primary>Edit
+            <span #nameViewText .me-2>#{fromMaybe "" name}
+            <button type=button .btn .btn-primary>Edit
         <div .col-sm-10 #nameEdit style="display: none">
             <form #nameEditForm .input-group>
                 <input type=text .form-control #nameEditText>
                 <div .btn-group .ms-2>
                     <button type=submit .btn .btn-success>
                         Save
-                    <button type=button .btn .btn-outline-primary #nameEditCancel>
+                    <button type=button .btn .btn-primary #nameEditCancel>
                         Cancel
             <div .help-block #nameEditError>
     <div .row>

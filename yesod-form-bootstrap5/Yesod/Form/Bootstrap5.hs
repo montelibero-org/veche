@@ -151,7 +151,7 @@ renderBootstrap5 formLayout aform fragment = do
             $newline never
             #{fragment}
             $forall view <- views
-              <div .row :has $ fvErrors view:.has-error>
+              <div .d-sm-flex d-grid :has $ fvErrors view:.has-error>
                 $case formLayout
                   $of BootstrapBasicForm
                     $if fvId view /= bootstrapSubmitId

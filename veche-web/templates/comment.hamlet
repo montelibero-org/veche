@@ -14,9 +14,9 @@
             $if message /= ""
                 <div .comment_message>#{renderMarkdown message}
 
-        <div>
+        <div .d-lg-flex.align-items-lg-end>
             $if type_ /= CommentStart
-                <a .btn.btn-outline-primary .comment-reply role=button>Reply
-            <a .btn.btn-outline-primary.disabled disabled role=button aria-disabled=true>Request Info
+                <a .btn .btn-primary .btn-sm .comment-reply .me-2 role=button>Reply
+            <a .btn .btn-primary .btn-sm .disabled disabled role=button aria-disabled=true>Request Info
 
     ^{commentForestWidget subComments}

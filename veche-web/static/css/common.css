@@ -6,6 +6,10 @@ td a {
     display: block; 
 }
 
+kbd {
+    cursor: pointer;
+}
+
 .topic-link {
     width: 50%;
 }

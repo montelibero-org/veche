@@ -2,49 +2,51 @@
     <small>
         <a href=@{ForumR forumId}>#{forumTitle}
         /
-    <br>
-    #{title}
-    $if open
-        <span .badge .badge-success>Open
-    $else
-        <span .badge .badge-danger>Closed
+<div .d-md-flex>
+    <h1>
+        #{title}
+    <h3 .d-flex .align-items-center .ms-2>
+        $if open
+            <span .badge .rounded-pill .text-bg-success>Open
+        $else
+            <span .badge .rounded-pill .text-bg-danger>Closed
 
-<div .d-flex>
-    $if isEditAllowed
-        <div .me-auto>
-            <a .btn .btn-outline-primary href=@{IssueEditR issueId}>Edit
-    $if isCloseReopenAllowed
-        <div>
+    <div .ms-auto>
+        $if isEditAllowed
+            <a .btn .btn-primary href=@{IssueEditR issueId}>Edit
+        $if isCloseReopenAllowed
             ^{closeReopenButton issueId open}
 
-<div .clearfix style="margin-bottom: 2em;">
+<div .clearfix style="margin-bottom: 1.5em;">
 
 #{renderMarkdown body}
 
 $if isJust authnUser && enablePriceOffer
-    <dl>
+    <div .row>
+        <p .col-md-2 .fw-bold>Escrow
+        <div .col-md>
+            <p .text-primary>
+                <i .bi.bi-info-square-fill>
+                Offer compensation to performers
+                by sending any amount of EURMTL to address
+                <kbd id="addr" data-bs-toggle="popover" data-bs-trigger="focus" 
+                    data-bs-placement="top" 
+                    data-bs-content="Address copied!">
+                    #{issueEscrowAddress issueId}</kbd>.
+                See
+                <a href=@{PagesEscrowR} style="text-decoration: underline;">
+                    escrow terms</a>.
+            $if not $ null escrows
+                $forall Escrow{amount, asset, sponsor} <- escrows
+                        <p>#{show amount} #{show asset} from #{show sponsor}
+    $maybe priceOffer <- priceOffer
         <div .row>
-            <div .col-md>
-                <dt>Escrow
-                <dd>
-                    <p .text-primary>
-                        <i .bi.bi-info-square-fill>
-                        Offer compensation to performers
-                        by sending any amount of EURMTL to address
-                        <kbd>#{issueEscrowAddress issueId}</kbd>.
-                        See
-                        <a href=@{PagesEscrowR} style="text-decoration: underline;">
-                            escrow terms</a>.
-                    $if not $ null escrows
-                        $forall Escrow{amount, asset, sponsor} <- escrows
-                            <p>#{show amount} #{show asset} from #{show sponsor}
-            <div .col-md-4.ms-md-auto>
-                $maybe priceOffer <- priceOffer
-                        <dt>Price offer
-                        <dd>#{renderMarkdown priceOffer}
-                $maybe contacts <- contacts
-                        <dt>Contacts
-                        <dd>#{renderMarkdown contacts}
+            <p .col-md-2 .fw-bold>Price offer
+            <div .col-md>#{renderMarkdown priceOffer}
+    $maybe contacts <- contacts
+        <div .row>
+            <p .col-md-2 .fw-bold>Contacts
+            <div .col-md>#{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}
@@ -71,3 +73,22 @@ $if isCommentAllowed
 $if isNothing authnUser
     <div .alert .alert-info role=alert>
         _{MsgLogInToComment}
+
+<script>
+    const kbd = document.getElementById("addr");
+
+    kbd.onclick = function() {
+        document.execCommand("copy");
+    }
+
+    kbd.addEventListener("copy", function(event) {
+        event.preventDefault();
+        if (event.clipboardData) {
+            event.clipboardData.setData("text/plain", kbd.textContent);
+            const popover = bootstrap.Popover.getOrCreateInstance("#addr");
+            popover.show();
+            setTimeout(function () {
+                popover.hide()
+            }, 3000);
+        }
+    });
