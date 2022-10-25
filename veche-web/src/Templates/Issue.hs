@@ -22,7 +22,7 @@ import Import
 
 -- global
 import Yesod.Form (radioFieldList)
-import Yesod.Form.Bootstrap3 (bfs)
+import Yesod.Form.Bootstrap5 (bfs)
 
 -- component
 import Model.Comment (Comment (Comment))
@@ -48,13 +48,13 @@ voteButtons isEnabled issueId currentChoice =
             ^{buttonAgainst}
             $if currentChoice /= Abstain
                 <div .btn-group role=group>
-                    <button type=button .btn.btn-default.dropdown-toggle
-                            data-toggle=dropdown
+                    <button type=button .btn.btn-outline-primary.dropdown-toggle
+                            data-bs-toggle=dropdown
                             aria-haspopup=true aria-expanded=false>
                         <span .caret>
                     <ul .dropdown-menu>
                         <li>
-                            <a onclick="submitPostForm('@{IssueVoteR issueId Abstain}')"
+                            <a .dropdown-item onclick="submitPostForm('@{IssueVoteR issueId Abstain}')"
                                     href="#">
                                 ◯ Abstain
     |]
@@ -82,8 +82,8 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
 
     header =
         [whamlet|
-            <div .form-group>
-                <label .col-sm-2 .control-label>Forum
+            <div .row .mb-3>
+                <label .col-sm-2 .col-form-label .fw-bold>Forum
                 <div .col-sm-10 .form-control-static>
                     <a href=@{ForumR forumId}>#{forumTitle}
         |]
@@ -156,10 +156,11 @@ editIssueForm forumE issueId previousContent =
         { action = Just $ IssueR issueId
         , footer =
             [whamlet|
-                <div .pull-left>
-                    <a .btn .btn-default href=@{IssueR issueId}>Cancel
-                <div .pull-right>
-                    <button .btn .btn-success type=submit>Save
+                <div .d-flex>
+                    <div .me-auto>
+                        <a .btn .btn-outline-primary href=@{IssueR issueId}>Cancel
+                    <div>
+                        <button .btn .btn-success type=submit>Save
             |]
         }
 
@@ -169,8 +170,8 @@ newIssueForm forum@(forumId, _) =
         { action = Just $ ForumIssuesR forumId
         , footer =
             [whamlet|
-                <div .form-group>
-                    <div .col-sm-offset-2.col-sm-10>
+                <div .row>
+                    <div .offset-sm-2.col-sm-10>
                         <button type=submit .btn .btn-success>Publish
             |]
         }

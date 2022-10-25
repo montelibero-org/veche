@@ -16,7 +16,7 @@
 
         <div>
             $if type_ /= CommentStart
-                <a .btn.btn-default.btn-xs .comment-reply role=button>Reply
-            <a .btn.btn-default.btn-xs disabled role=button>Request Info
+                <a .btn.btn-outline-primary .comment-reply role=button>Reply
+            <a .btn.btn-outline-primary disabled role=button>Request Info
 
     ^{commentForestWidget subComments}

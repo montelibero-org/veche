@@ -9,6 +9,6 @@
             <p .help-block>
                 #{intercalate ", " $ map userNameWidget voters}
 <div .row>
-    <div .col-sm-offset-2 .col-sm-10>
+    <div .offset-sm-2 .col-sm-10>
         ^{voteButtons isVoteAllowed issueId currentChoice}
 <hr>

@@ -5,55 +5,55 @@
 
 packages:
 - completed:
+    name: servant-cli
+    pantry-tree:
+      sha256: aa8102fb0f3ed5c91990e21b5796301dc6242e37c0ebd4fde145e38729165323
+      size: 910
+    sha256: a0c14b987ded19b6f486e795c5e2127f26cc47d21972382a0150053eeec702c2
     size: 18608
     url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
-    name: servant-cli
     version: 0.1.0.2
-    sha256: a0c14b987ded19b6f486e795c5e2127f26cc47d21972382a0150053eeec702c2
-    pantry-tree:
-      size: 910
-      sha256: aa8102fb0f3ed5c91990e21b5796301dc6242e37c0ebd4fde145e38729165323
   original:
     url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
 - completed:
     hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
     pantry-tree:
-      size: 896
       sha256: 586ee2257b255cb7f2a3663711199f9de9e70445ce7cb192f5af07dd66eadac2
+      size: 896
   original:
     hackage: DRBG-0.5.5
 - completed:
     hackage: yesod-form-1.7.3@sha256:e3b0dd75253ceb3b5a0d6683fad959cefb8ac996f1611d67c4dcddff549f6282,3388
     pantry-tree:
-      size: 1729
       sha256: 175436a59f09a6ea86fdef973255c855616020a0034d760db36946a575b3d9ed
+      size: 1729
   original:
     hackage: yesod-form-1.7.3
 - completed:
+    name: telegram-api
+    pantry-tree:
+      sha256: 9962b8e14b3d58f5413a882f208ca0b48f9068d5acf4e537e3e9f309d0cb90e2
+      size: 2903
+    sha256: 33f85c8d0ecefeb4906eebb62c16ad342dec0502cd3b3b29a3fa48adb47cc30f
     size: 1349719
     url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
-    name: telegram-api
     version: 0.7.1.0
-    sha256: 33f85c8d0ecefeb4906eebb62c16ad342dec0502cd3b3b29a3fa48adb47cc30f
-    pantry-tree:
-      size: 2903
-      sha256: 9962b8e14b3d58f5413a882f208ca0b48f9068d5acf4e537e3e9f309d0cb90e2
   original:
     url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
 - completed:
+    name: stellar-sdk
+    pantry-tree:
+      sha256: e7ccb7cf30de3adee806c361f9ba97274adf8740d0506dbc4b8d3c7e3b6bf758
+      size: 1983
+    sha256: f06bd56e187510f0c0102df91f5e2f731a75c7bad03829f51aae8b6ea6638fd3
     size: 41162
     url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
-    name: stellar-sdk
     version: 0.1.0
-    sha256: f06bd56e187510f0c0102df91f5e2f731a75c7bad03829f51aae8b6ea6638fd3
-    pantry-tree:
-      size: 1983
-      sha256: e7ccb7cf30de3adee806c361f9ba97274adf8740d0506dbc4b8d3c7e3b6bf758
   original:
     url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
 snapshots:
 - completed:
+    sha256: 1ecad1f0bd2c27de88dbff6572446cfdf647c615d58a7e2e2085c6b7dfc04176
     size: 619403
     url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/25.yaml
-    sha256: 1ecad1f0bd2c27de88dbff6572446cfdf647c615d58a7e2e2085c6b7dfc04176
   original: lts-19.25

@@ -99,8 +99,6 @@ defaultLayout widget = do
     pc <-
         widgetToPageContent do
             addScript     $ StaticR js_common_js
-            addStylesheet $ StaticR css_bootstrap_css
-            addStylesheet $ StaticR css_bootstrap_theme_css
             addStylesheet $ StaticR css_common_css
             $(widgetFile "default-layout")
     withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")

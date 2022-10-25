@@ -9,29 +9,30 @@
     $else
         <span .badge .badge-danger>Closed
 
-$if isEditAllowed
-    <div .pull-left>
-        <a .btn .btn-default href=@{IssueEditR issueId}>Edit
-$if isCloseReopenAllowed
-    <div .pull-right>
-        ^{closeReopenButton issueId open}
+<div .d-flex>
+    $if isEditAllowed
+        <div .me-auto>
+            <a .btn .btn-outline-primary href=@{IssueEditR issueId}>Edit
+    $if isCloseReopenAllowed
+        <div>
+            ^{closeReopenButton issueId open}
 
 <div .clearfix style="margin-bottom: 1em;">
 
 #{renderCommonMarkdown body}
 
 $if isJust authnUser && (isJust contacts || isJust priceOffer)
-    <div .form-horizontal>
+    <div .d-grid.gap-2>
         $maybe priceOffer <- priceOffer
-            <div .form-group>
-                <label .col-sm-2 .control-label>Price offer
+            <div .row>
+                <label .col-sm-2 .col-form-label>Price offer
                 <div .col-sm-10>
-                    <p .form-control-static>#{priceOffer}
+                    <p .col-form-label>#{priceOffer}
         $maybe contacts <- contacts
-            <div .form-group>
-                <label .col-sm-2 .control-label>Contacts
+            <div .row>
+                <label .col-sm-2 .col-form-label>Contacts
                 <div .col-sm-10>
-                    <p .form-control-static>#{contacts}
+                    <p .col-form-label>#{contacts}
 
 <hr>
 ^{pollWidget}
@@ -42,17 +43,17 @@ $if isJust authnUser && (isJust contacts || isJust priceOffer)
 <hr>
 
 $if isCommentAllowed
-    <form #commentForm .form-horizontal
+    <form #commentForm .row
             action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
         ^{commentFormFields}
-        <div .form-group>
-            <label .col-sm-2 .control-label>Request info from
+        <div .d-flex>
+            <label .col-sm-2 .col-form-label>Request info from
             <div .col-sm-10>
                 <span #commentRequestUsers>
                 <input .form-control #commentRequestUserInput
                     placeholder="Start typing a user name or an address">
-        <div .form-group>
-            <div .col-sm-offset-2 .col-sm-10>
+        <div .d-flex .mt-3>
+            <div .offset-sm-2 .col-sm-10>
                 <button .btn .btn-primary type=submit>Add comment
 
 $if isNothing authnUser

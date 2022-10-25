@@ -1,0 +1,16 @@
+cabal-version: >=1.10
+name:          yesod-form-bootstrap5
+version:       0
+build-type:    Simple
+
+library
+  build-depends:
+    base
+    , blaze-markup
+    , text
+    , yesod-core
+    , yesod-form
+
+  -- project
+  default-language: Haskell2010
+  exposed-modules:  Yesod.Form.Bootstrap5
