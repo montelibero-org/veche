@@ -67,7 +67,9 @@ import Handler.Forum (getForumR, getForumsR)
 import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
                       postForumIssuesR, postIssueCloseR, postIssueR,
                       postIssueReopenR, postIssueVoteR)
+import Handler.Pages (getPagesEscrowR)
 import Handler.Root (getRootR)
+import Handler.Stellar (getStellarFederationR)
 import Handler.Telegram (getTelegramBindR, postTelegramUnbindR)
 import Handler.User (getUserR, putUserR)
 import Model (migrateAll)
@@ -89,7 +91,11 @@ makeFoundation appSettings = do
     -- subsite.
     appHttpManager <- getGlobalManager
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
-    appStatic <- (if appMutableStatic then staticDevel else static) appStaticDir
+    let makeStaticSubsite
+            | appMutableStatic  = staticDevel
+            | otherwise         = static
+    appStatic       <- makeStaticSubsite    appStaticDir
+    appWellKnown    <- makeStaticSubsite $  appStaticDir </> ".well-known"
 
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
@@ -99,12 +105,13 @@ makeFoundation appSettings = do
     -- temporary foundation without a real connection pool, get a log function
     -- from there, and then create the real foundation.
     let mkFoundation appConnPool =
-            App { appSettings
-                , appStatic
-                , appConnPool
+            App { appConnPool
                 , appHttpManager
                 , appLogger
+                , appSettings
+                , appStatic
                 , appStellarHorizon
+                , appWellKnown
                 }
         tempFoundation =
             mkFoundation $ error "connPool forced in tempFoundation"

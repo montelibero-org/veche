@@ -53,12 +53,13 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
 -- component
 import Genesis (forums)
-import Model (Comment (Comment), Issue (..), IssueId,
+import Model (Comment (Comment), Escrow, Issue (..), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               User, UserId, Vote (Vote))
 import Model qualified
 import Model.Comment (CommentMaterialized (CommentMaterialized))
 import Model.Comment qualified
+import Model.Escrow qualified as Escrow
 import Model.Forum qualified as Forum
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
@@ -80,8 +81,9 @@ data VoteMaterialized = VoteMaterialized
     }
 
 data IssueMaterialized = IssueMaterialized
-    { comments              :: Forest CommentMaterialized
-    , body                  :: Text
+    { body                  :: Text
+    , comments              :: Forest CommentMaterialized
+    , escrows               :: [Escrow]
     , forum                 :: Forum
     , isCloseReopenAllowed  :: Bool
     , isCommentAllowed      :: Bool
@@ -230,6 +232,8 @@ load issueId = do
                     Request.selectActiveByIssueAndRequestedUser issueId userId
                 Nothing     -> pure []
 
+        escrows <- Escrow.dbGetActive issueId
+
         let issueE = Entity issueId issue
             isEditAllowed = any (isAllowed . EditIssue issueE) mUserId
             isCloseReopenAllowed =
@@ -242,6 +246,7 @@ load issueId = do
             IssueMaterialized
                 { body
                 , comments
+                , escrows
                 , forum
                 , isCloseReopenAllowed
                 , isCommentAllowed

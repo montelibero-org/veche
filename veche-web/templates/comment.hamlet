@@ -12,7 +12,7 @@
                             <span .requested_user>#{userNameWidget user}
                 <span .comment_timestamp .pull-right .text-muted>#{createdTime}
             $if message /= ""
-                <div .comment_message>#{renderCommonMarkdown message}
+                <div .comment_message>#{renderMarkdown message}
 
         <div>
             $if type_ /= CommentStart

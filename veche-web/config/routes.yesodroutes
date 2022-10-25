@@ -2,6 +2,7 @@
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
 /                               RootR                   GET
+/.well-known                    WellKnownR              Static appWellKnown
 /about                          AboutR                  GET
 /admin/events                   AdminEventsR            GET
 /admin/update-database          AdminUpdateDatabaseR    GET
@@ -19,8 +20,10 @@
 /issues/#IssueId/edit           IssueEditR              GET
 /issues/#IssueId/reopen         IssueReopenR            POST
 /issues/#IssueId/vote/#Choice   IssueVoteR              POST
+/pages/escrow                   PagesEscrowR            GET
 /robots.txt                     RobotsR                 GET
 /static                         StaticR                 Static appStatic
+/stellar-federation             StellarFederationR      GET
 /telegram/bind                  TelegramBindR           GET
 /telegram/unbind                TelegramUnbindR         POST
 /user                           UserR                   GET PUT

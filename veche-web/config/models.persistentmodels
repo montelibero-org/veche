@@ -15,6 +15,17 @@ Comment
     deriving Show
 
 
+Escrow
+    Id          TxId    sql=sponsorTx
+    amount      Decimal
+    asset       Asset
+    issue       IssueId
+    sponsor     Stellar.Address
+    paidTx      TxId Maybe
+
+    deriving Show
+
+
 Issue
     author      UserId
     open        Bool

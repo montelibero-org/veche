@@ -27,7 +27,9 @@ import Network.HTTP.Types (badRequest400)
 import Text.Printf (printf)
 
 -- component
-import Genesis (mtlAsset, mtlFund)
+import Genesis (escrowFederatedHost, mtlAsset, mtlFund)
+import Model.Escrow (Escrow (Escrow))
+import Model.Escrow qualified
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
@@ -45,14 +47,20 @@ import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
                         voteButtons)
 import Templates.User (userNameWidget)
 
+-- | Stellar federated address for the issue
+issueEscrowAddress :: IssueId -> Text
+issueEscrowAddress issueId =
+    "E" <> toPathPiece issueId <> "*" <> escrowFederatedHost
+
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
     authnUser <- maybeAuthId
     issueMaterialized <- Issue.load issueId
     let IssueMaterialized
-                { comments
-                , body
-                , forum = Forum{title = forumTitle}
+                { body
+                , comments
+                , escrows
+                , forum = Forum{enablePriceOffer, title = forumTitle}
                 , isCloseReopenAllowed
                 , isCommentAllowed
                 , isEditAllowed

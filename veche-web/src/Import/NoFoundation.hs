@@ -101,8 +101,8 @@ withCallStack e = WithCallStack{stack = callStack, parent = SomeException e}
 throwWithCallStack :: (HasCallStack, Exception e, MonadIO m) => e -> m a
 throwWithCallStack = throwIO . withCallStack
 
-renderCommonMarkdown :: Text -> Html
-renderCommonMarkdown =
+renderMarkdown :: Text -> Html
+renderMarkdown =
     preEscapedToHtml
     . commonmarkToHtml
         [optHardBreaks, optSmart]

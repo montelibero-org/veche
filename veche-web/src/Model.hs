@@ -1,4 +1,4 @@
-{-# OPTIONS -Wno-orphans #-}
+{-# OPTIONS -Wno-orphans #-} -- Persist instances for external types
 {-# OPTIONS -Wno-name-shadowing #-}
 
 {-# LANGUAGE DataKinds #-}
@@ -31,7 +31,7 @@ import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Database.Persist.TH (derivePersistField, mkMigrate, mkPersist,
                             mpsConstraintLabelModifier, mpsFieldLabelModifier,
                             persistFileWith, share, sqlSettings)
-import Stellar.Horizon.Types (Asset (Asset))
+import Stellar.Horizon.Types (Asset (Asset), TxId)
 import Stellar.Horizon.Types qualified as Stellar
 
 import Model.Types (Choice, CommentType, ForumId, Poll, Role,
@@ -39,6 +39,9 @@ import Model.Types (Choice, CommentType, ForumId, Poll, Role,
 
 deriving newtype instance PersistField    Asset
 deriving newtype instance PersistFieldSql Asset
+
+deriving newtype instance PersistField    TxId
+deriving newtype instance PersistFieldSql TxId
 
 derivePersistField "Decimal"
 
