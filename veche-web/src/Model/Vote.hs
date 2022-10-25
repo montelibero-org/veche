@@ -87,11 +87,11 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
     let approval
             | 0 <- sumWeight    = 0
             | otherwise         = approveWeight / sumWeight
-    when (realToFrac approval /= oldApproval) $
-        addCallStack $ update issueId [#approval =. realToFrac approval]
+    when (approval /= oldApproval) $
+        addCallStack $ update issueId [#approval =. approval]
   where
 
-    getWeights :: MonadUnliftIO m => SqlPersistT m [(Decimal, Maybe UserId)]
+    getWeights :: MonadUnliftIO m => SqlPersistT m [(Double, Maybe UserId)]
     getWeights =
         case poll of
             Nothing -> pure []
@@ -116,4 +116,4 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
                                 ==. user ?. #stellarAddress
                         where_ $ holder ^. #asset ==. val mtlAsset
                         pure (holder ^. #amount, user ?. #id)
-                    <&> map (bimap unValue unValue)
+                    <&> map (bimap (realToFrac . unValue) unValue)

@@ -1,9 +1,9 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedLabels #-}
 
 module Model.Escrow (
     Escrow (..),
-    dbGetActive,
+    buildIndex,
     getActive,
 ) where
 
@@ -11,17 +11,18 @@ module Model.Escrow (
 import Import
 
 -- global
-import Database.Persist (selectList, (==.))
-import Yesod.Persist (runDB)
+import Data.Map.Strict qualified as Map
+import Yesod.Core (getYesod)
 
 -- component
 import Model (Escrow (..), IssueId)
 
--- | Get active (unspent) escrows for the issue
-getActive :: IssueId -> Handler [Escrow]
-getActive = runDB . dbGetActive
+buildIndex :: [Escrow] -> Map IssueId [Escrow]
+buildIndex escrows =
+    Map.fromListWith (++) [(issueId, [e]) | e@Escrow{issueId} <- escrows]
 
 -- | Get active (unspent) escrows for the issue
-dbGetActive :: MonadIO m => IssueId -> SqlPersistT m [Escrow]
-dbGetActive issue =
-    map entityVal <$> selectList [#issue ==. issue, #paidTx ==. Nothing] []
+getActive :: IssueId -> Handler [Escrow]
+getActive issue = do
+    App{appEscrowsActive} <- getYesod
+    fromMaybe [] . lookup issue <$> readIORef appEscrowsActive

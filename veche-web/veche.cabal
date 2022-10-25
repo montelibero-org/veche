@@ -68,7 +68,6 @@ library
     , cmark-gfm
     , containers
     , data-default
-    , Decimal
     , esqueleto
     , fast-logger
     , file-embed
@@ -83,6 +82,7 @@ library
     , persistent
     , persistent-sqlite
     , random
+    , scientific
     , servant-client
     , shakespeare        >=2.0     && <2.1
     , telegram-api

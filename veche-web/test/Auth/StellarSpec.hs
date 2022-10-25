@@ -29,9 +29,9 @@ import Text.XML.Cursor (content, descendant)
 
 -- project
 import Stellar.Horizon.API (API, api)
-import Stellar.Horizon.Types (Account (Account), Signer (Signer),
-                              SignerType (Ed25519PublicKey))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client (Account (Account), Signer (Signer))
+import Stellar.Horizon.Client qualified as Stellar
+import Stellar.Horizon.DTO (SignerType (Ed25519PublicKey))
 
 -- package
 import Model.User (User (User))
@@ -41,7 +41,7 @@ spec :: Spec
 spec =
     around_ withMockHorizon $
     withApp $
-    describe "Auth.Stellar" do
+    describe "" do
 
         describe "initial public key form" $
 
@@ -103,6 +103,7 @@ testAuthenticationOk keyPair network = do
         setUrl stellarR
         addPostParam "response" envelopeSignedXdrBase64
         addToken_ "#auth_stellar_response_form"
+        addRequestHeader ("Accept", "text/plain")
     statusIs 303 -- okay redirect
 
     get UserR

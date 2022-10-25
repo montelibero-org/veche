@@ -39,7 +39,7 @@ import Yesod.Default.Util (addStaticContentExternal)
 import Yesod.Static (Route (StaticRoute), base64md5)
 
 -- project
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Yesod.Auth.Stellar (authStellar)
 import Yesod.Auth.Stellar qualified
 

@@ -19,7 +19,7 @@ import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
 import GHC.Stack (withFrozenCallStack)
 import Hedgehog qualified
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Test.Hspec as X
 import Text.Blaze.Html as X (Html)
 import Yesod.Auth as X

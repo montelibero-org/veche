@@ -16,7 +16,7 @@ module Templates.User (
 import Import
 
 import Data.Text qualified as Text
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Yesod (getsYesod)
 
 import Model.Telegram (Telegram (Telegram))

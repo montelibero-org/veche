@@ -14,43 +14,54 @@ import Import
 
 -- global
 import Control.Concurrent (threadDelay)
+import Data.Aeson qualified as Aeson
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Network.HTTP.Client (Manager)
-import Servant.Client (BaseUrl, ClientEnv, ClientM, mkClientEnv, runClientM)
+import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 
 -- project
-import Stellar.Horizon.Client (getAccount, getAccountsList)
-import Stellar.Horizon.Types (Account (Account), Asset (Asset),
-                              Balance (Balance), SignerType (Ed25519PublicKey))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client (Account (Account), Asset (Asset),
+                               Memo (MemoText), Operation (OperationPayment),
+                               Transaction (Transaction), getAccount,
+                               getAccountTransactionsList, getAccountsList)
+import Stellar.Horizon.Client qualified as Stellar
+import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
+import Stellar.Horizon.DTO qualified
 
 -- component
-import Genesis (mtlAsset, mtlFund)
+import Genesis (escrowAddress, mtlAsset, mtlFund)
+import Model.Escrow (Escrow (Escrow))
+import Model.Escrow qualified as Escrow
+import Model.Issue (IssueId)
 import Model.Issue qualified as Issue
 import Model.StellarHolder (StellarHolder (StellarHolder))
 import Model.StellarHolder qualified as StellarHolder
 import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
 
-stellarDataUpdater :: BaseUrl -> ConnectionPool -> Manager -> IO ()
-stellarDataUpdater baseUrl connPool manager = do
-    let clientEnv = mkClientEnv manager baseUrl
+stellarDataUpdater :: App -> IO ()
+stellarDataUpdater app = do
+    let clientEnv = mkClientEnv appHttpManager appStellarHorizon
     forever do
+        do  putStrLn "stellarDataUpdater: Updating Escrow"
+            updateEscrow app clientEnv
+            putStrLn "stellarDataUpdater: Updated Escrow"
+        randomDelay
         do  putStrLn "stellarDataUpdater: Updating MTL signers"
-            n <- updateSignersCache clientEnv connPool mtlFund
+            n <- updateSignersCache clientEnv appConnPool mtlFund
             putStrLn $
                 "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
         randomDelay
         do  putStrLn "stellarDataUpdater: Updating MTL holders"
-            n <- updateHoldersCache clientEnv connPool mtlAsset
+            n <- updateHoldersCache clientEnv appConnPool mtlAsset
             putStrLn $
                 "stellarDataUpdater: Updated " <> tshow n <> " MTL holders"
         randomDelay
   where
+    App{appConnPool, appHttpManager, appStellarHorizon} = app
     randomDelay = do
         delayMinutes <- randomRIO (1, 10)
         threadDelay $ delayMinutes * 60 * 1_000_000
@@ -107,7 +118,7 @@ updateHoldersCache clientEnv connPool asset = do
     holders <- runClientM' clientEnv $ getAccountsList asset
     let actual =
             Map.fromList
-                [ (account_id, amount)
+                [ (account_id, realToFrac amount)
                 | Account{account_id, balances} <- holders
                 , let amount = getAmount asset balances
                 , amount > 0
@@ -138,16 +149,45 @@ runClientM' :: ClientEnv -> ClientM a -> IO a
 runClientM' clientEnv action =
     runClientM action clientEnv >>= either throwIO pure
 
-getAmount :: Asset -> [Balance] -> Decimal
-getAmount (Asset asset) balances =
+getAmount :: Asset -> [Balance] -> Scientific
+getAmount Asset{code, issuer} balances =
     fromMaybe 0 $
     asum
-        [ readMaybe @Decimal $ Text.unpack balance
+        [ readMaybe @Scientific $ Text.unpack balance
         | Balance
                 { balance
-                , asset_code = Just code
-                , asset_issuer = Just (Stellar.Address issuer)
+                , asset_code
+                , asset_issuer
                 } <-
             balances
-        , asset == code <> ":" <> issuer
+        , maybe isNative (== code) asset_code
+        , asset_issuer == (Stellar.Address <$> issuer)
         ]
+  where
+    isNative = isNothing issuer
+
+updateEscrow :: App -> ClientEnv -> IO ()
+updateEscrow app clientEnv = do
+    txs <- runClientM' clientEnv $ getAccountTransactionsList escrowAddress
+    let escrows = concatMap makeEscrow txs
+    atomicWriteIORef appEscrowsActive $ Escrow.buildIndex escrows
+    Aeson.encodeFile appEscrowsActiveFile escrows
+  where
+    App{appEscrowsActive, appSettings} = app
+    AppSettings{appEscrowsActiveFile} = appSettings
+
+parseEscrowIssueIdFromMemo :: Text -> Maybe IssueId
+parseEscrowIssueIdFromMemo memo = do
+    issueIdText <- stripPrefix "E" memo
+    fromPathPiece issueIdText
+
+makeEscrow :: Transaction -> [Escrow]
+makeEscrow Transaction{memo, operations, source = txSource} =
+    [ Escrow{amount, asset, issueId, sponsor}
+    | MemoText memoText <- [memo]
+    , issueId <- toList $ parseEscrowIssueIdFromMemo memoText
+    , OperationPayment{amount, asset, destination, source = opSource} <-
+        operations
+    , destination == escrowAddress
+    , let sponsor = fromMaybe txSource opSource
+    ]

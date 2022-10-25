@@ -7,13 +7,20 @@ import Import.NoFoundation
 
 -- global
 import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 
 -- project
-import Stellar.Horizon.Types (Asset (Asset))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Simple (Asset, mkAsset)
+import Stellar.Simple qualified as Stellar
+
+mtlIssuer :: Text
+mtlIssuer = "GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
 
 mtlAsset :: Asset
-mtlAsset = Asset "MTL:GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
+mtlAsset = mkAsset "MTL" mtlIssuer
+
+eurmtl :: Asset
+eurmtl = mkAsset "EURMTL" mtlIssuer
 
 mtlFund :: StellarMultiSigAddress
 mtlFund =
@@ -52,8 +59,12 @@ forums =
             )
         ]
 
-escrowAddress :: Text
-escrowAddress = "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
+escrowAddress :: Stellar.Address
+escrowAddress =
+    Stellar.Address "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
 
 escrowFederatedHost :: Text
 escrowFederatedHost = "veche.montelibero.org"
+
+knownAssets :: Set Asset
+knownAssets = Set.fromList [mtlAsset, eurmtl]

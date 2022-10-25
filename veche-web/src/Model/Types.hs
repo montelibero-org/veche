@@ -29,7 +29,7 @@ import Data.Aeson.TH (deriveJSON)
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Database.Persist.TH (derivePersistField)
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Text.Blaze.Html (ToMarkup, toMarkup)
 import Text.Read (readEither)
 import Web.HttpApiData (FromHttpApiData, ToHttpApiData)

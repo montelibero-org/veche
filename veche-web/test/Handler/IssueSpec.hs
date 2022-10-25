@@ -10,7 +10,7 @@ module Handler.IssueSpec (spec) where
 import TestImport
 
 -- project
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 
 -- package
 import Genesis (mtlAsset)
@@ -27,7 +27,13 @@ spec =
     withApp $
         it "posts an issue" do
             user <- createUser userKey Nothing
-            runDB $ insert_ StellarHolder{asset = mtlAsset, key = Stellar.Address userKey, amount = 7457.92517}
+            runDB $
+                insert_
+                    StellarHolder
+                        { amount    = 7457.92517
+                        , asset     = mtlAsset
+                        , key       = Stellar.Address userKey
+                        }
             authenticateAs user
 
             get $ ForumIssueNewR forumId -- get CSRF token

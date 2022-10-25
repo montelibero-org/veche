@@ -24,10 +24,12 @@ import Import
 -- global
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
+import Stellar.Simple (Asset (Asset), assetToText)
+import Stellar.Simple qualified
 import Text.Printf (printf)
 
 -- component
-import Genesis (escrowFederatedHost, mtlAsset, mtlFund)
+import Genesis (escrowFederatedHost, knownAssets, mtlAsset, mtlFund)
 import Model.Escrow (Escrow (Escrow))
 import Model.Escrow qualified
 import Model.Forum qualified as Forum
@@ -51,6 +53,11 @@ import Templates.User (userNameWidget)
 issueEscrowAddress :: IssueId -> Text
 issueEscrowAddress issueId =
     "E" <> toPathPiece issueId <> "*" <> escrowFederatedHost
+
+showAsset :: Asset -> Text
+showAsset a@Asset{code}
+    | a `elem` knownAssets  = code
+    | otherwise             = assetToText a
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do
@@ -97,14 +104,14 @@ makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =
             accounts <- StellarSigner.getAll mtlFund
             pure $
                 Map.fromList
-                    [ (key, fromIntegral weight)
+                    [ (key, fromIntegral weight :: Double)
                     | Entity _ StellarSigner{key, weight} <- accounts
                     ]
         ByMtlAmount -> do
             accounts <- StellarHolder.getAll mtlAsset
             pure $
                 Map.fromList
-                    [ (key, amount)
+                    [ (key, realToFrac amount :: Double)
                     | Entity _ StellarHolder{key, amount} <- accounts
                     ]
 

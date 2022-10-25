@@ -9,7 +9,7 @@ module Handler.UserSpec (spec) where
 import TestImport
 
 import Data.Text qualified as Text
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 
 import Model.User (User (User))
 import Model.User qualified

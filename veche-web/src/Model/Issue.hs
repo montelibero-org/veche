@@ -34,6 +34,7 @@ module Model.Issue (
     dbUpdateAllIssueApprovals,
 ) where
 
+import Foundation.Base
 import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global
@@ -188,16 +189,11 @@ loadVotes issueId = do
         | (Entity _ Vote{choice}, voter) <- votes
         ]
 
-load ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    IssueId -> HandlerFor app IssueMaterialized
+load :: IssueId -> Handler IssueMaterialized
 load issueId = do
     (mUserId, roles) <- maybeAuthzRoles
     let authenticated = isJust mUserId
+    escrows <- Escrow.getActive issueId
     runDB do
         issue <- get404 issueId
         let Issue   { author    = authorId
@@ -231,8 +227,6 @@ load issueId = do
                 Just userId ->
                     Request.selectActiveByIssueAndRequestedUser issueId userId
                 Nothing     -> pure []
-
-        escrows <- Escrow.dbGetActive issueId
 
         let issueE = Entity issueId issue
             isEditAllowed = any (isAllowed . EditIssue issueE) mUserId

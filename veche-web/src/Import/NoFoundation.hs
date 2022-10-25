@@ -14,7 +14,7 @@ import CMarkGFM (commonmarkToHtml, extAutolink, extStrikethrough, extTable,
                  extTagfilter, optHardBreaks, optSmart)
 import Control.Arrow as X ((>>>))
 import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))
-import Data.Decimal as X (Decimal)
+import Data.Scientific as X (Scientific)
 import Data.Default as X (def)
 import Data.Function as X ((&))
 import Data.Kind as X (Type)

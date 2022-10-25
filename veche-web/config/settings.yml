@@ -38,3 +38,5 @@ copyright: © 2022 MTL Foundation
 stellar-horizon-url: https://horizon.stellar.org
 telegram-bot-name: mtl_veche_bot
 telegram-bot-token: "_env:VECHE_TELEGRAM_TOKEN:bot123:pass"
+
+escrows-active-file: /var/www/escrows-active.json

@@ -18,4 +18,4 @@ extra-deps:
       commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
-      commit: 370f67c59b3102fadd3772217c7e9681d4c4404c
+      commit: d275b4407ce51525439638852aaa4141a235e94a

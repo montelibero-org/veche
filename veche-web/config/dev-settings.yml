@@ -3,6 +3,7 @@ database:
   database: veche.sqlite3
 database-migrate: false
 development: true
+escrows-active-file: escrows-active.json
 session-key-file: config/client_session_key.aes
 telegram-bot-name: veche_test_bot
 telegram-bot-notify-whitelist: [cblp_su]
