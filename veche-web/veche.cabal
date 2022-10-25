@@ -1,6 +1,6 @@
 cabal-version: 1.12
 name:          veche
-version:       2022.10.25
+version:       2022.10.25.1
 build-type:    Simple
 
 library
@@ -130,6 +130,7 @@ test-suite veche-test
     Auth.StellarSpec
     Handler.CommonSpec
     Handler.IssueSpec
+    Handler.StellarSpec
     Handler.UserSpec
     Model.EventSpec
     Model.VoteSpec
@@ -138,7 +139,8 @@ test-suite veche-test
   hs-source-dirs:   test
   ghc-options:      -Wall
   build-depends:
-      base               >=4.9.1.0 && <5
+      aeson
+    , base               >=4.9.1.0 && <5
     , base64-bytestring
     , blaze-html
     , classy-prelude     >=1.5     && <1.6
@@ -161,6 +163,7 @@ test-suite veche-test
     , yesod-auth         >=1.6     && <1.7
     , yesod-core         >=1.6     && <1.7
     , yesod-persistent
+    , yesod-static
     , yesod-test
 
   -- project

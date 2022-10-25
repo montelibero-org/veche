@@ -23,7 +23,7 @@
 /pages/escrow                   PagesEscrowR            GET
 /robots.txt                     RobotsR                 GET
 /static                         StaticR                 Static appStatic
-/stellar-federation             StellarFederation       GET
+/stellar-federation             StellarFederationR      GET
 /telegram/bind                  TelegramBindR           GET
 /telegram/unbind                TelegramUnbindR         POST
 /user                           UserR                   GET PUT

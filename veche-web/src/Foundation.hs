@@ -254,15 +254,16 @@ authStellarConfig App{appStellarHorizon} =
 isAuthorized :: Route App -> HandlerFor App AuthResult
 isAuthorized = \case
     -- Routes not requiring authentication.
-    AboutR{}        -> authorized
-    AuthR{}         -> authorized
-    FaviconR        -> authorized
-    ForumsR{}       -> authorized
-    IssueR{}        -> authorized
-    RobotsR         -> authorized
-    RootR           -> authorized
-    StaticR{}       -> authorized
-    WellKnownR{}    -> authorized
+    AboutR{}                -> authorized
+    AuthR{}                 -> authorized
+    FaviconR                -> authorized
+    ForumsR{}               -> authorized
+    IssueR{}                -> authorized
+    RobotsR                 -> authorized
+    RootR                   -> authorized
+    StaticR{}               -> authorized
+    StellarFederationR{}    -> authorized
+    WellKnownR{}            -> authorized
     -- Some forums are public
     ForumR id
         | Forum.isPublic id -> authorized

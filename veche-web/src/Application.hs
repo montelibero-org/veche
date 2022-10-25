@@ -69,7 +69,7 @@ import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
                       postIssueReopenR, postIssueVoteR)
 import Handler.Pages (getPagesEscrowR)
 import Handler.Root (getRootR)
-import Handler.Stellar (getStellarFederation)
+import Handler.Stellar (getStellarFederationR)
 import Handler.Telegram (getTelegramBindR, postTelegramUnbindR)
 import Handler.User (getUserR, putUserR)
 import Model (migrateAll)

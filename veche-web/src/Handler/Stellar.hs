@@ -1,13 +1,14 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Handler.Stellar (getStellarFederation) where
+module Handler.Stellar (getStellarFederationR) where
 
 import Import
 
 import Genesis (escrowAddress, escrowFederatedHost)
 
-getStellarFederation :: Handler Value
-getStellarFederation = do
+getStellarFederationR :: Handler Value
+getStellarFederationR = do
     queryType <- lookupGetParam "type"
     case queryType of
         Just "name" -> getName
@@ -18,8 +19,16 @@ getStellarFederation = do
     getName = do
         q <- lookupGetParam "q"
         case q of
-            Just name -> respondName name
+            Just addr -> resolveFederatedAddress addr
             Nothing -> invalidArgs ["q expected"]
+
+    resolveFederatedAddress addr
+        | (name, rest) <- break (== '*') addr
+        , host <- drop 1 rest
+        , host == escrowFederatedHost =
+            respondName name
+        | otherwise =
+            notFound
 
     respondName name = do
         addHeader "Access-Control-Allow-Origin" "*"
