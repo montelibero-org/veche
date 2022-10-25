@@ -29,7 +29,7 @@ $if isJust authnUser && enablePriceOffer
                 <i .bi.bi-info-square-fill>
                 Offer compensation to performers
                 by sending any amount of EURMTL to address
-                <kbd id="addr" data-bs-toggle="popover" data-bs-trigger="focus" 
+                <kbd .bg-primary id="addr" data-bs-toggle="popover" data-bs-trigger="focus" 
                     data-bs-placement="top" 
                     data-bs-content="Address copied!">
                     #{issueEscrowAddress issueId}</kbd>.
