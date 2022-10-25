@@ -55,7 +55,7 @@ $if isCommentAllowed
     <form #commentForm .row
             action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
         ^{commentFormFields}
-        <div .d-flex>
+        <div .d-sm-flex .d-grid>
             <label .col-sm-2 .col-form-label>Request info from
             <div .col-sm-10>
                 <span #commentRequestUsers>
