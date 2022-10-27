@@ -4,7 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -25,25 +25,29 @@ module Model where
 
 import ClassyPrelude
 
-import Data.Decimal (Decimal)
+import Data.Aeson (FromJSON, ToJSON)
+import Data.Scientific (Scientific)
+import Database.Persist (PersistField)
+import Database.Persist.Extra (JsonString (JsonString))
 import Database.Persist.Quasi (lowerCaseSettings)
-import Database.Persist.Sql (PersistField, PersistFieldSql)
-import Database.Persist.TH (derivePersistField, mkMigrate, mkPersist,
+import Database.Persist.Sql (PersistFieldSql)
+import Database.Persist.Sql qualified
+import Database.Persist.TH (derivePersistFieldJSON, mkMigrate, mkPersist,
                             mpsConstraintLabelModifier, mpsFieldLabelModifier,
                             persistFileWith, share, sqlSettings)
-import Stellar.Horizon.Types (Asset (Asset), TxId)
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client (Asset, TxId)
+import Stellar.Horizon.Client qualified as Stellar
 
 import Model.Types (Choice, CommentType, ForumId, Poll, Role,
                     StellarMultiSigAddress)
 
-deriving newtype instance PersistField    Asset
-deriving newtype instance PersistFieldSql Asset
+deriving via JsonString Asset instance PersistField    Asset
+deriving via JsonString Asset instance PersistFieldSql Asset
+
+derivePersistFieldJSON "Scientific"
 
 deriving newtype instance PersistField    TxId
 deriving newtype instance PersistFieldSql TxId
-
-derivePersistField "Decimal"
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities
@@ -63,8 +67,14 @@ $(  let lowerFirst t =
             sqlSettings{mpsConstraintLabelModifier, mpsFieldLabelModifier}
     in
     share
-        [ mkPersist settings
-        , mkMigrate "migrateAll"
-        ]
+        [mkPersist settings, mkMigrate "migrateAll"]
         $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
     )
+
+data Escrow = Escrow
+    { amount    :: Scientific
+    , asset     :: Asset
+    , issueId   :: IssueId
+    , sponsor   :: Stellar.Address
+    }
+    deriving (FromJSON, Generic, Show, ToJSON)

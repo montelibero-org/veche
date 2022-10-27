@@ -76,6 +76,8 @@ data AppSettings = AppSettings
     , appTelegramBotNotifyWhitelist :: [Text]
     -- ^ Allowed logins to deliver. For testing.
     -- When empty (default), everybody is allowed.
+
+    , appEscrowsActiveFile :: FilePath
     }
 
 instance FromJSON AppSettings where
@@ -105,6 +107,8 @@ instance FromJSON AppSettings where
             appTelegramBotToken       <- o .:  "telegram-bot-token"
             appTelegramBotNotifyWhitelist <-
                 o .:? "telegram-bot-notify-whitelist" .!= []
+
+            appEscrowsActiveFile <- o .: "escrows-active-file"
 
             return AppSettings{..}
 

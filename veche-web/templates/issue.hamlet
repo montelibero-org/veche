@@ -37,8 +37,8 @@ $if isJust authnUser && enablePriceOffer
                 <a href=@{PagesEscrowR} style="text-decoration: underline;">
                     escrow terms</a>.
             $if not $ null escrows
-                $forall Escrow{amount, asset, sponsor} <- escrows
-                        <p>#{show amount} #{show asset} from #{show sponsor}
+                $forall Escrow{amount, asset} <- escrows
+                        <p>#{show amount} #{showAsset asset}
     $maybe priceOffer <- priceOffer
         <div .row>
             <p .col-md-2 .fw-bold>Price offer

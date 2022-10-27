@@ -28,8 +28,10 @@ module Application
 import Import
 
 -- global
+import Control.Monad.Fail (fail)
 import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
                              toLogStr)
+import Data.Aeson qualified as Aeson
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),
                              Single, SqlBackend, parseMigration', rawSql,
@@ -73,6 +75,7 @@ import Handler.Stellar (getStellarFederationR)
 import Handler.Telegram (getTelegramBindR, postTelegramUnbindR)
 import Handler.User (getUserR, putUserR)
 import Model (migrateAll)
+import Model.Escrow qualified as Escrow
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
 
@@ -99,6 +102,16 @@ makeFoundation appSettings = do
 
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
+    appEscrowsActive <- do
+        escrows <-
+            catchJust
+                (guard . isDoesNotExistError)
+                (Aeson.eitherDecodeFileStrict' appEscrowsActiveFile
+                    >>= either fail pure
+                )
+                (\() -> pure [])
+        newIORef $ Escrow.buildIndex escrows
+
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
     -- logging function. To get out of this loop, we initially create a
@@ -106,6 +119,7 @@ makeFoundation appSettings = do
     -- from there, and then create the real foundation.
     let mkFoundation appConnPool =
             App { appConnPool
+                , appEscrowsActive
                 , appHttpManager
                 , appLogger
                 , appSettings
@@ -145,6 +159,7 @@ makeFoundation appSettings = do
   where
     AppSettings
         { appDatabaseConf
+        , appEscrowsActiveFile
         , appMutableStatic
         , appStaticDir
         , appStellarHorizonUrl
@@ -233,15 +248,13 @@ appMain = do
             useEnv
 
     -- Generate the foundation from the settings
-    foundation@App{appConnPool, appHttpManager, appStellarHorizon} <-
-        makeFoundation settings
+    foundation <- makeFoundation settings
 
     -- Generate a WAI Application from the foundation
     app <- makeApplication foundation
 
     -- Backend workers
-    asyncLinked $
-        stellarDataUpdater appStellarHorizon appConnPool appHttpManager
+    asyncLinked $ stellarDataUpdater foundation
     asyncLinked $ telegramBot foundation
 
     -- Run the application with Warp

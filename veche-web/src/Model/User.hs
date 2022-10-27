@@ -46,7 +46,7 @@ import Import.NoFoundation
 import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
                          selectFirst, selectList, update, (=.), (==.))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Yesod.Core (HandlerSite, liftHandler, notAuthenticated)
 import Yesod.Persist (runDB)
 

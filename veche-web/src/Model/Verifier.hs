@@ -18,7 +18,7 @@ import Crypto.Nonce (nonce128urlT)
 import Crypto.Nonce qualified
 import Data.Time (addUTCTime, secondsToNominalDiffTime)
 import Database.Persist (delete, getBy, insert_)
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import System.IO.Unsafe (unsafePerformIO)
 import Yesod.Core (deleteSession, liftHandler, lookupSession, setSession)
 import Yesod.Persist (runDB)

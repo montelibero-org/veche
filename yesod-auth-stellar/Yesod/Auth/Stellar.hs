@@ -20,29 +20,37 @@ module Yesod.Auth.Stellar
     , Config (..)
     ) where
 
+import Debug.Trace
+
 import Control.Exception (Exception, throwIO)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Data.ByteString.Base64 (decodeBase64, encodeBase64)
-import Data.Foldable (toList)
 import Data.Function ((&))
+import Data.String (IsString)
 import Data.Text (Text, strip)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (notFound404)
-import Network.ONCRPC.XDR (emptyBoundedLengthArray, lengthArray, unLengthArray,
-                           xdrDeserialize, xdrSerialize)
+import Network.ONCRPC.XDR (lengthArray, unLengthArray, xdrDeserialize,
+                           xdrSerialize)
 import Network.Stellar.Builder (buildWithFee, tbMemo, tbOperations,
-                                transactionBuilder, verify, viewAccount)
-import Network.Stellar.Keypair (decodePublicKey, encodePublicKey)
+                                transactionBuilder)
+import Network.Stellar.Builder qualified as Stellar
+import Network.Stellar.Keypair (decodePublicKey)
 import Network.Stellar.Network (publicNetwork, testNetwork)
-import Network.Stellar.TransactionXdr (DataValue, ManageDataOp (ManageDataOp),
+import Network.Stellar.Network qualified as Stellar
+import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Memo (Memo'MEMO_TEXT),
+                                       MuxedAccount (MuxedAccount'KEY_TYPE_ED25519, MuxedAccount'KEY_TYPE_MUXED_ED25519),
                                        Operation (Operation),
                                        OperationBody (OperationBody'MANAGE_DATA),
-                                       Transaction (Transaction),
-                                       TransactionEnvelope (TransactionEnvelope))
-import Network.Stellar.TransactionXdr qualified
+                                       PublicKey (PublicKey'PUBLIC_KEY_TYPE_ED25519),
+                                       TransactionEnvelope (TransactionEnvelope'ENVELOPE_TYPE_TX, TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP, TransactionEnvelope'ENVELOPE_TYPE_TX_V0),
+                                       TransactionV0 (TransactionV0),
+                                       TransactionV0Envelope (TransactionV0Envelope),
+                                       TransactionV1Envelope (TransactionV1Envelope))
+import Network.Stellar.TransactionXdr qualified as XDR
 import Network.URI (escapeURIString, isReserved)
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
@@ -62,9 +70,11 @@ import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm), bfs,
                               renderBootstrap5)
 
 -- project
-import Stellar.Horizon.Client (getAccount)
-import Stellar.Horizon.Types (Account (Account), Signer (Signer))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client (Account (Account),
+                               Operation (OperationManageData), Signer (Signer),
+                               Transaction (Transaction), getAccount)
+import Stellar.Horizon.Client qualified as Stellar
+import Stellar.Simple (Memo (MemoText))
 
 pluginName :: Text
 pluginName = "stellar"
@@ -242,41 +252,33 @@ makeChallenge address nonce0 = do
 
     makeChallenge' publicKey nonce =
         (transactionBuilder publicKey 0)
-            {tbMemo = Just loggingIntoVeche, tbOperations = [NonceOp nonce]}
+            { tbMemo = Just $ Memo'MEMO_TEXT loggingIntoVeche
+            , tbOperations = [nonceOp nonce]
+            }
         & buildWithFee 0
-        & toEnvelope
+        & Stellar.toEnvelope
         & xdrSerialize
         & encodeBase64
 
-    toEnvelope tx = TransactionEnvelope tx emptyBoundedLengthArray
+    nonceOp value =
+        Operation
+            { operation'sourceAccount = Nothing
+            , operation'body =
+                OperationBody'MANAGE_DATA $ ManageDataOp "nonce" $ Just value
+            }
 
-pattern NonceOp :: DataValue -> Operation
-pattern NonceOp value =
-    Operation
-    { operation'sourceAccount = Nothing
-    , operation'body =
-        OperationBody'MANAGE_DATA (ManageDataOp "nonce" (Just value))
-    }
-
-loggingIntoVeche :: Memo
-loggingIntoVeche = Memo'MEMO_TEXT "Logging into Veche"
+loggingIntoVeche :: IsString s => s
+loggingIntoVeche = "Logging into Veche"
 
 verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
     envelope <- decodeEnvelope
-    let TransactionEnvelope{transactionEnvelope'tx} = envelope
-        Transaction
-                { transaction'memo
-                , transaction'operations
-                , transaction'sourceAccount
-                } =
-            transactionEnvelope'tx
-        stellarAddress = viewAccount transaction'sourceAccount
-        horizonAddress = Stellar.Address $ encodePublicKey stellarAddress
-    verifySignature stellarAddress envelope
-    verifyMemo transaction'memo
-    nonce <- getNonce transaction'operations
-    pure VerificationData{address = horizonAddress, nonce}
+    let Transaction{memo, operations, source} =
+            Stellar.transactionFromEnvelopeXdr $ traceShowId envelope
+    verifySignatures envelope
+    verifyMemo memo
+    nonce <- getNonce operations
+    pure VerificationData{address = source, nonce}
   where
 
     e ?| msg = either (const $ invalidArgs [msg]) pure e
@@ -288,25 +290,51 @@ verifyResponse envelopeXdrBase64 = do
         xdrDeserialize envelopeXdrRaw
             ?| "Transaction envelope must be encoded as XDR"
 
-    verifySignature account (TransactionEnvelope tx signatures) = do
-        signature <-
-            case toList $ unLengthArray signatures of
-                [signature] -> pure signature
-                _ -> invalidArgs ["Expected exactly 1 signature"]
-        let verified =
-                or  [ verify network tx account signature
-                    | network <- [publicNetwork, testNetwork]
-                    ]
-        unless verified $ invalidArgs ["Signature is not verified"]
+    verifySignatures envelope =
+        unless (any (`verifySource` envelope) [publicNetwork, testNetwork]) $
+            invalidArgs ["Signature is not verified"]
 
-    verifyMemo transaction'memo =
-        unless (transaction'memo == loggingIntoVeche) $
-            invalidArgs ["Bad memo"]
+    verifyMemo memo =
+        when (memo /= MemoText loggingIntoVeche) $ invalidArgs ["Bad memo"]
 
-    getNonce transaction'operations =
-        case toList $ unLengthArray transaction'operations of
-            [NonceOp nonce] -> decodeUtf8' (unLengthArray nonce) ?| "Bad nonce"
-            _ -> invalidArgs ["Bad operations"]
+    getNonce = \case
+        [OperationManageData "nonce" (Just nonce)] ->
+            decodeUtf8' nonce ?| "Bad nonce"
+        _ -> invalidArgs ["Bad operations"]
+
+-- | Verify source address signature
+verifySource :: Stellar.Network -> XDR.TransactionEnvelope -> Bool
+verifySource net = \case
+    TransactionEnvelope'ENVELOPE_TYPE_TX_V0
+            (TransactionV0Envelope
+                tx@TransactionV0{transactionV0'sourceAccountEd25519} signatures
+            ) ->
+        all (Stellar.verify
+                net
+                tx
+                (Stellar.viewAccount $
+                    PublicKey'PUBLIC_KEY_TYPE_ED25519
+                        transactionV0'sourceAccountEd25519
+                )
+            )
+            (unLengthArray signatures)
+    TransactionEnvelope'ENVELOPE_TYPE_TX
+            (TransactionV1Envelope
+                tx@XDR.Transaction{transaction'sourceAccount} signatures
+            ) ->
+        all (Stellar.verify
+                net
+                tx
+                (Stellar.viewAccount $
+                    PublicKey'PUBLIC_KEY_TYPE_ED25519
+                        case transaction'sourceAccount of
+                            MuxedAccount'KEY_TYPE_ED25519         addr -> addr
+                            MuxedAccount'KEY_TYPE_MUXED_ED25519 _ addr -> addr
+                )
+            )
+            (unLengthArray signatures)
+    TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP{} ->
+        False -- this kind of transaction cannot be here
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Stellar.Address -> m ()

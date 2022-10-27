@@ -43,14 +43,14 @@ packages:
 - completed:
     name: stellar-sdk
     pantry-tree:
-      sha256: e7ccb7cf30de3adee806c361f9ba97274adf8740d0506dbc4b8d3c7e3b6bf758
-      size: 1983
-    sha256: f06bd56e187510f0c0102df91f5e2f731a75c7bad03829f51aae8b6ea6638fd3
-    size: 41162
-    url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
-    version: 0.1.0
+      sha256: bf739b73eefd6a5df7748b55d48aec97f454a5d5ed95bd64a1a4368ac958432b
+      size: 1984
+    sha256: f10a49689cbadc70a5b3be0a124d4c7a9e2514aa0cff8053374a9723eecf1062
+    size: 58063
+    url: https://github.com/cblp/haskell-stellar-sdk/archive/d275b4407ce51525439638852aaa4141a235e94a.tar.gz
+    version: 0.1.0.1
   original:
-    url: https://github.com/cblp/haskell-stellar-sdk/archive/370f67c59b3102fadd3772217c7e9681d4c4404c.tar.gz
+    url: https://github.com/cblp/haskell-stellar-sdk/archive/d275b4407ce51525439638852aaa4141a235e94a.tar.gz
 snapshots:
 - completed:
     sha256: 1ecad1f0bd2c27de88dbff6572446cfdf647c615d58a7e2e2085c6b7dfc04176

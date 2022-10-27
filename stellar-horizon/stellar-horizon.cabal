@@ -7,11 +7,15 @@ library
   build-depends:
       aeson
     , base
+    , base64-bytestring
+    , bytestring
     , http-media
     , path-pieces
+    , scientific
     , servant
     , servant-client
     , servant-docs
+    , stellar-sdk
     , text
     , time
 
@@ -19,7 +23,8 @@ library
   exposed-modules:
     Stellar.Horizon.API
     Stellar.Horizon.Client
-    Stellar.Horizon.Types
+    Stellar.Horizon.DTO
+    Stellar.Simple
 
   hs-source-dirs:   lib
 

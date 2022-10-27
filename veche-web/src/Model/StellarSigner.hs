@@ -19,7 +19,7 @@ import Import hiding (deleteBy)
 
 import Database.Persist (deleteBy, insertMany_, selectList, updateWhere, (=.),
                          (==.))
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client qualified as Stellar
 import Yesod.Persist (runDB)
 
 import Model (StellarSigner (StellarSigner), Unique (UniqueSigner))

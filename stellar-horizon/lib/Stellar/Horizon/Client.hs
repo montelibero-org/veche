@@ -10,24 +10,38 @@
 --     eResult <- runClientM req $ mkClientEnv manager publicServerBase
 --     either throwIO pure eResult
 -- @
-module Stellar.Horizon.Client
-    (
+module Stellar.Horizon.Client (
+    -- * Types
+    Account (..),
+    Address (..),
+    Asset (..),
+    assetFromText,
+    assetToText,
+    Memo (..),
+    Operation (..),
+    Signer (..),
+    Transaction (..),
+    transactionFromDto,
+    transactionFromEnvelopeXdr,
+    TxId (..),
     -- * Endpoints
-      publicServerBase
-    , testServerBase
+    publicServerBase,
+    testServerBase,
     -- * Methods
-    , getAccount
-    , getAccounts
-    , getAccountTransactions
-    , getAccountsList
-    , getAccountTransactionsList
-    ) where
+    getAccount,
+    getAccounts,
+    getAccountTransactionsDto,
+    getAccountsList,
+    getAccountTransactionsDtoList,
+    getAccountTransactionsList,
+) where
 
 import Prelude hiding (last)
 
 -- global
 import Data.List.NonEmpty (last, nonEmpty)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 import Servant.API ((:<|>) ((:<|>)))
 import Servant.Client (BaseUrl, ClientM, client, parseBaseUrl)
@@ -35,9 +49,12 @@ import System.IO.Unsafe (unsafePerformIO)
 
 -- component
 import Stellar.Horizon.API (api)
-import Stellar.Horizon.Types (Account, Address, Asset, Record (Record),
-                              Records (Records), Transaction)
-import Stellar.Horizon.Types qualified
+import Stellar.Horizon.DTO (Account (..), Address (..), Record (Record),
+                            Records (Records), Signer (..), TxId (..))
+import Stellar.Horizon.DTO qualified as DTO
+import Stellar.Simple (Asset (..), Memo (..), Operation (..), Transaction (..),
+                       assetFromText, assetToText, transactionFromDto,
+                       transactionFromEnvelopeXdr)
 
 publicServerBase :: BaseUrl
 publicServerBase = unsafePerformIO $ parseBaseUrl "https://horizon.stellar.org/"
@@ -51,15 +68,19 @@ testServerBase =
 getAccounts ::
     Maybe Asset -> Maybe Text -> Maybe Natural -> ClientM (Records Account)
 getAccount :: Address -> ClientM Account
-getAccountTransactions ::
-    Address -> Maybe Text -> Maybe Natural -> ClientM (Records Transaction)
-getAccounts :<|> getAccount :<|> getAccountTransactions = client api
+getAccountTransactionsDto ::
+    Address -> Maybe Text -> Maybe Natural -> ClientM (Records DTO.Transaction)
+getAccounts :<|> getAccount :<|> getAccountTransactionsDto = client api
 
 getAccountsList :: Asset -> ClientM [Account]
 getAccountsList = recordsToList . getAccounts . Just
 
-getAccountTransactionsList :: Address -> ClientM [Transaction]
-getAccountTransactionsList = recordsToList . getAccountTransactions
+getAccountTransactionsDtoList :: Address -> ClientM [DTO.Transaction]
+getAccountTransactionsDtoList = recordsToList . getAccountTransactionsDto
+
+getAccountTransactionsList :: HasCallStack => Address -> ClientM [Transaction]
+getAccountTransactionsList =
+    fmap (map transactionFromDto) . getAccountTransactionsDtoList
 
 recordsToList ::
     (Maybe Text -> Maybe Natural -> ClientM (Records a)) -> ClientM [a]

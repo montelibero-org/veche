@@ -1,6 +1,6 @@
 cabal-version: 1.12
 name:          veche
-version:       2022.10.25.2
+version:       2022.10.27
 build-type:    Simple
 
 library
@@ -68,7 +68,6 @@ library
     , cmark-gfm
     , containers
     , data-default
-    , Decimal
     , esqueleto
     , fast-logger
     , file-embed
@@ -83,6 +82,7 @@ library
     , persistent
     , persistent-sqlite
     , random
+    , scientific
     , servant-client
     , shakespeare        >=2.0     && <2.1
     , telegram-api

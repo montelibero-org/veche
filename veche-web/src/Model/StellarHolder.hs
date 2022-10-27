@@ -18,8 +18,8 @@ import Import hiding (deleteBy, keys)
 
 import Database.Persist (deleteBy, insertMany_, selectList, updateWhere, (=.),
                          (==.))
-import Stellar.Horizon.Types (Asset)
-import Stellar.Horizon.Types qualified as Stellar
+import Stellar.Horizon.Client (Asset)
+import Stellar.Horizon.Client qualified as Stellar
 import Yesod.Persist (runDB)
 
 import Model (StellarHolder (StellarHolder), Unique (UniqueHolder))
@@ -35,12 +35,12 @@ dbDelete :: MonadIO m => Asset -> Stellar.Address -> SqlPersistT m ()
 dbDelete asset = deleteBy . UniqueHolder asset
 
 dbInsertMany ::
-    MonadIO m => Asset -> [(Stellar.Address, Decimal)] -> SqlPersistT m ()
+    MonadIO m => Asset -> [(Stellar.Address, Scientific)] -> SqlPersistT m ()
 dbInsertMany asset amounts =
     insertMany_ [StellarHolder{asset, key, amount} | (key, amount) <- amounts]
 
 dbSetShare ::
-    MonadIO m => Asset -> Stellar.Address -> Decimal -> SqlPersistT m ()
+    MonadIO m => Asset -> Stellar.Address -> Scientific -> SqlPersistT m ()
 dbSetShare asset key amount =
     updateWhere
         @_ @_ @StellarHolder

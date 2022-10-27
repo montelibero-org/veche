@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -29,6 +30,7 @@ import Yesod.Persist (YesodPersist, YesodPersistBackend, get404)
 
 -- | Provides Persist instances using JSON-encoding as a String.
 -- Useful for enums.
+type role JsonString representational
 newtype JsonString a = JsonString a
 
 instance (FromJSON a, ToJSON a, Typeable a) => PersistField (JsonString a) where

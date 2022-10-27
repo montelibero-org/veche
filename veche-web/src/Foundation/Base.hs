@@ -26,20 +26,23 @@ import Yesod.Persist qualified
 import Yesod.Static (Static)
 
 -- component
-import Model (IssueId)
+import Model (Escrow, IssueId)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { appSettings       :: AppSettings
-    , appStatic         :: Static
-    , appWellKnown      :: Static
-    , appConnPool       :: ConnectionPool -- ^ Database connection pool.
+    { appConnPool       :: ConnectionPool -- ^ Database connection pool.
+    , appSettings       :: AppSettings
     , appHttpManager    :: Manager
     , appLogger         :: Logger
     , appStellarHorizon :: BaseUrl
+    -- static subsites
+    , appStatic     :: Static
+    , appWellKnown  :: Static
+    -- Stellar cache
+    , appEscrowsActive :: IORef (Map IssueId [Escrow])
     }
 
 -- This is where we define all of the routes in our application. For a full

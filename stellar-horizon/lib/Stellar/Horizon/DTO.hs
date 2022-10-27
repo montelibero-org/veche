@@ -8,10 +8,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Stellar.Horizon.Types
+-- | Data transfer objects -- types for encoding JSON structures of the API
+module Stellar.Horizon.DTO
     ( Account (..)
     , Address (..)
-    , Asset (..)
     , Balance (..)
     , Record (..)
     , Records (..)
@@ -60,11 +60,6 @@ data Balance = Balance
         -- ^ The Stellar address of this asset’s issuer.
     }
     deriving (Show)
-
-newtype Asset =
-    Asset
-        Text -- ^ asset code in format "{code}:{issuer}"
-    deriving newtype (FromHttpApiData, Show, ToHttpApiData)
 
 data Record a = Record
     { paging_token  :: Text
@@ -138,7 +133,10 @@ data Transaction = Transaction
         -- ^ Indicates if this transaction was successful or not.
     , created_at :: UTCTime -- ^ The date this transaction was created.
     , source_account :: Text -- ^ The account that originates the transaction.
-    , memo :: Text -- ^ The optional memo attached to a transaction.
+    , envelope_xdr :: Text
+        -- ^ A base64 encoded string of the raw TransactionEnvelope XDR struct
+        -- for this transaction.
+    , memo :: Maybe Text -- ^ The optional memo attached to a transaction.
     , memo_type :: Text
         -- ^ The type of memo. Potential values include MEMO_TEXT, MEMO_ID,
         -- MEMO_HASH, MEMO_RETURN.
