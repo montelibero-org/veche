@@ -2,7 +2,7 @@
 
 <div .d-grid .gap-2>
     <div .row>
-        <label .col-sm-2 .col-form-label>Name
+        <div .col-sm-2 .col-form-label>Name
         <div .col-sm-10 #nameView>
             <span #nameViewText .me-2>#{fromMaybe "" name}
             <button type=button .btn .btn-primary>Edit
@@ -16,18 +16,17 @@
                         Cancel
             <div .help-block #nameEditError>
     <div .row>
-        <label .col-sm-2 .col-form-label>Stellar address
-        <div .col-sm-10 .user_stellar_address>
-            #{stellarAddress}
+        <div .col-sm-2>Stellar address
+        <div .col-sm-10 .user_stellar_address>#{stellarAddress}
     <div .row>
-        <label .col-sm-2 .col-form-label>Roles
+        <div .col-sm-2>Roles
         <div .col-sm-10 >
             $if isSigner
-                <span .badge>Signer
+                <span .badge.rounded-pill.text-bg-secondary>Signer
             $if isHolder
-                <span .badge>Holder
+                <span .badge.rounded-pill.text-bg-secondary>Holder
     <div .row>
-        <label .col-sm-2 .col-form-label>Telegram
+        <div .col-sm-2 .col-form-label>Telegram
         <div .col-sm-10>
             $maybe telegram <- mTelegram
                 ^{telegramUsernameWidget telegram}
@@ -40,7 +39,7 @@
                     data-auth-url="@{TelegramBindR}"
                     data-request-access="write">
     <div .row>
-        <label .col-sm-2 .col-form-label>Notifications
+        <div .col-sm-2 .col-form-label>Notifications
         <div .col-sm-10>
             $maybe Telegram{notifyIssueAdded} <- mTelegram
                 <table .table .table-hover>

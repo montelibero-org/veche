@@ -1,17 +1,26 @@
 <!-- Static navbar -->
 <nav .navbar.navbar-dark.navbar-expand-md.text-bg-dark>
     <div .container>
-        <a .navbar-brand href="/about">
-            <img src="/static/img/logo.jpeg" width=40 .d-inline-block.align-text-topbi.me-2.rounded-circle>
-        <button type=button .navbar-toggler data-bs-toggle=collapse data-bs-target="#navbar" aria-controls=navbar aria-expanded=false aria-label="Toggle navigation">
+        <a .navbar-brand href=@{AboutR}>
+            <img src="@{StaticR img_logo_jpeg}" width=40
+                .d-inline-block .align-text-topbi .me-2 .rounded-circle>
+        <button .navbar-toggler
+                aria-controls=navbar aria-expanded=false
+                aria-label="Toggle navigation"
+                data-bs-target="#navbar" data-bs-toggle=collapse
+                type=button>
             <span .navbar-toggler-icon>
         <div id=navbar .collapse.navbar-collapse>
             <ul .navbar-nav.me-auto.mb-2.mb-md-0.me-md-auto>
                 $forall (label, route) <- navbarLeftMenu'
-                    <a .nav-link :Just route == mcurrentRoute:.active href="@{route}">_{label}
+                    <a .nav-link :Just route == mcurrentRoute:.active
+                            href=@{route}>
+                        _{label}
             <ul .navbar-nav>
                 $forall (label, route) <- navbarRightMenu'
-                    <a .nav-link :Just route == mcurrentRoute:.active href="@{route}">_{label}
+                    <a .nav-link :Just route == mcurrentRoute:.active
+                            href=@{route}>
+                        _{label}
 
 <!-- Page Contents -->
 
@@ -32,9 +41,6 @@
         $else
             <div .alert.alert-info>#{msg}
 
-    $# $if (Just HomeR == mcurrentRoute)
-    $#     ^{widget}
-    $# $else
     <div .row>
         <div .col-md-12>
             ^{widget}

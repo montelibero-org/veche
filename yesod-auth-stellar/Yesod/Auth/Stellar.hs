@@ -159,7 +159,7 @@ makeCreds (Stellar.Address credsIdent) =
 login :: (Route Auth -> Route app) -> WidgetFor app ()
 login routeToMaster =
     [whamlet|
-        <a href=@{start} role=button .btn.btn-warning>
+        <a href=@{start} role=button .btn.btn-primary>
             Create account or log in
     |]
   where
@@ -196,11 +196,10 @@ makeResponseForm routeToMaster challenge = do
             \ a special "request" transaction is made.
             \ Sign this transaction, but do not submit it, instead,
             \ paste the code below:
-        <div .panel.panel-default style="background: #eee;">
-            <div .panel-body>
-                <tt .stellar_challenge #stellar_challenge
-                        style="overflow-wrap: break-word;">
-                    #{challenge}
+        <div .alert.alert-secondary>
+            <tt .stellar_challenge #stellar_challenge
+                    style="overflow-wrap: break-word;">
+                #{challenge}
         <p>
             This is an almost empty, intentionally invalid transaction.
             \ It is costructed for the test network,
@@ -211,7 +210,7 @@ makeResponseForm routeToMaster challenge = do
                 <strong>1.
                 \ Copy transaction
             \
-            <a .btn.btn-outline-primary
+            <a .btn.btn-secondary
                     href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
                     role=button target=_blank>
                 View in Lab

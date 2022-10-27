@@ -22,16 +22,18 @@
 #{renderMarkdown body}
 
 $if isJust authnUser && enablePriceOffer
-    <div .row>
-        <p .col-md-2 .fw-bold>Escrow
-        <div .col-md>
+    <dl .row>
+        <dt .col-md-2>Escrow
+        <dd .col-md-10>
             <p .text-primary>
                 <i .bi.bi-info-square-fill>
                 Offer compensation to performers
                 by sending any amount of EURMTL to address
-                <kbd .bg-primary id="addr" data-bs-toggle="popover" data-bs-trigger="focus" 
-                    data-bs-placement="top" 
-                    data-bs-content="Address copied!">
+                <kbd .bg-primary #addr
+                        data-bs-toggle=popover
+                        data-bs-trigger=focus
+                        data-bs-placement=top
+                        data-bs-content="Address copied!">
                     #{issueEscrowAddress issueId}</kbd>.
                 See
                 <a href=@{PagesEscrowR} style="text-decoration: underline;">
@@ -39,14 +41,12 @@ $if isJust authnUser && enablePriceOffer
             $if not $ null escrows
                 $forall Escrow{amount, asset} <- escrows
                         <p>#{show amount} #{showAsset asset}
-    $maybe priceOffer <- priceOffer
-        <div .row>
-            <p .col-md-2 .fw-bold>Price offer
-            <div .col-md>#{renderMarkdown priceOffer}
-    $maybe contacts <- contacts
-        <div .row>
-            <p .col-md-2 .fw-bold>Contacts
-            <div .col-md>#{renderMarkdown contacts}
+        $maybe priceOffer <- priceOffer
+            <dt .col-md-2>Price offer
+            <dd .col-md-10>#{renderMarkdown priceOffer}
+        $maybe contacts <- contacts
+            <dt .col-md-2>Contacts
+            <dd .col-md-10>#{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}
