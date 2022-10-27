@@ -66,8 +66,8 @@ import Yesod.Core (HandlerFor, HandlerSite, Html, MonadHandler, RenderMessage,
 import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
                    fsName, textField, textareaField, unTextarea)
 import Yesod.Form qualified as Yesod
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm), bfs,
-                              renderBootstrap3)
+import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm), bfs,
+                              renderBootstrap5)
 
 -- project
 import Stellar.Horizon.Client (Account (Account),
@@ -196,22 +196,21 @@ makeResponseForm routeToMaster challenge = do
             \ a special "request" transaction is made.
             \ Sign this transaction, but do not submit it, instead,
             \ paste the code below:
-        <div .panel.panel-default style="background: #eee;">
-            <div .panel-body>
-                <tt .stellar_challenge #stellar_challenge
-                        style="overflow-wrap: break-word;">
-                    #{challenge}
+        <div .alert.alert-secondary>
+            <tt .stellar_challenge #stellar_challenge
+                    style="overflow-wrap: break-word;">
+                #{challenge}
         <p>
             This is an almost empty, intentionally invalid transaction.
             \ It is costructed for the test network,
             \ has zero fee and zero sequence number,
             \ specifically to make sure it cannot be sent to the real network.
-        <div>
+        <div .mb-3>
             <button .btn.btn-primary onclick="copy_tx()">
                 <strong>1.
                 \ Copy transaction
             \
-            <a .btn.btn-default
+            <a .btn.btn-secondary
                     href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
                     role=button target=_blank>
                 View in Lab
@@ -223,7 +222,7 @@ makeResponseForm routeToMaster challenge = do
                 \ Sign in Lab
         <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
             ^{widget}
-            <button type=submit .btn .btn-primary>
+            <button type=submit .btn .btn-primary .mt-3>
                 <strong>4.
                 \ Log in
     |]
@@ -371,14 +370,14 @@ verifyAccount Config{horizon} address = do
 runFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
-runFormPost = Yesod.runFormPost . renderBootstrap3 BootstrapBasicForm
+runFormPost = Yesod.runFormPost . renderBootstrap5 BootstrapBasicForm
 
 generateFormGet ::
     MonadHandler m =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormGet = Yesod.generateFormGet' . renderBootstrap3 BootstrapBasicForm
+generateFormGet = Yesod.generateFormGet' . renderBootstrap5 BootstrapBasicForm
 
 generateFormPost ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormPost = Yesod.generateFormPost . renderBootstrap3 BootstrapBasicForm
+generateFormPost = Yesod.generateFormPost . renderBootstrap5 BootstrapBasicForm

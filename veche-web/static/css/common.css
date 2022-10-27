@@ -1,3 +1,25 @@
+nav {
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15),inset 0 -1px 0 rgba(0,0,0,0.15);
+} 
+
+td a { 
+    display: block; 
+}
+
+kbd {
+    cursor: pointer;
+}
+
+.topic-link {
+    width: 50%;
+}
+
+@media (min-width: 768px) {
+    .topic-link {
+        width: 75%;
+    }
+}
+
 .comment {
     margin-top: 1em;
 }

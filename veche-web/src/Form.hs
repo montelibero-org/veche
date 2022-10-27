@@ -18,8 +18,8 @@ import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
                    generateFormPost, renderDivsNoLabels, runFormPostNoToken,
                    textField)
 import Yesod.Form qualified
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapHorizontalForm),
-                              BootstrapGridOptions (ColSm), renderBootstrap3)
+import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapHorizontalForm),
+                              BootstrapGridOptions (ColSm), renderBootstrap5)
 
 data BForm m a = BForm
     { action            :: Maybe (Route (HandlerSite m))
@@ -73,7 +73,7 @@ runFormPostB b@BForm{aform} = do
 
 renderForm :: Monad m => FormRender m a
 renderForm =
-    renderBootstrap3 $
+    renderBootstrap5 $
     BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10)
 
 actionForm ::

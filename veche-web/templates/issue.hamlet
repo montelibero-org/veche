@@ -2,44 +2,51 @@
     <small>
         <a href=@{ForumR forumId}>#{forumTitle}
         /
-    <br>
-    #{title}
-    $if open
-        <span .badge .badge-success>Open
-    $else
-        <span .badge .badge-danger>Closed
+<div .d-md-flex>
+    <h1>
+        #{title}
+    <h3 .d-flex .align-items-center .ms-2>
+        $if open
+            <span .badge .rounded-pill .text-bg-success>Open
+        $else
+            <span .badge .rounded-pill .text-bg-danger>Closed
 
-$if isEditAllowed
-    <div .pull-left>
-        <a .btn .btn-default href=@{IssueEditR issueId}>Edit
-$if isCloseReopenAllowed
-    <div .pull-right>
-        ^{closeReopenButton issueId open}
+    <div .ms-auto>
+        $if isEditAllowed
+            <a .btn .btn-primary href=@{IssueEditR issueId}>Edit
+        $if isCloseReopenAllowed
+            ^{closeReopenButton issueId open}
 
-<div .clearfix style="margin-bottom: 1em;">
+<div .clearfix style="margin-bottom: 1.5em;">
 
 #{renderMarkdown body}
 
 $if isJust authnUser && enablePriceOffer
-    <dl .dl-horizontal>
-        <dt>Escrow
-        <dd>
-            <p .text-info>
-                ℹ️ Offer compensation to performers
+    <dl .row>
+        <dt .col-md-2>Escrow
+        <dd .col-md-10>
+            <p .text-primary>
+                <i .bi.bi-info-square-fill>
+                Offer compensation to performers
                 by sending any amount of EURMTL to address
-                <kbd>#{issueEscrowAddress issueId}</kbd>.
+                <kbd .bg-primary #addr
+                        data-bs-toggle=popover
+                        data-bs-trigger=focus
+                        data-bs-placement=top
+                        data-bs-content="Address copied!">
+                    #{issueEscrowAddress issueId}</kbd>.
                 See
                 <a href=@{PagesEscrowR} style="text-decoration: underline;">
                     escrow terms</a>.
             $if not $ null escrows
                 $forall Escrow{amount, asset} <- escrows
-                    <p>#{show amount} #{showAsset asset}
+                        <p>#{show amount} #{showAsset asset}
         $maybe priceOffer <- priceOffer
-            <dt>Price offer
-            <dd>#{renderMarkdown priceOffer}
+            <dt .col-md-2>Price offer
+            <dd .col-md-10>#{renderMarkdown priceOffer}
         $maybe contacts <- contacts
-            <dt>Contacts
-            <dd>#{renderMarkdown contacts}
+            <dt .col-md-2>Contacts
+            <dd .col-md-10>#{renderMarkdown contacts}
 
 <hr>
 ^{pollWidget}
@@ -50,19 +57,38 @@ $if isJust authnUser && enablePriceOffer
 <hr>
 
 $if isCommentAllowed
-    <form #commentForm .form-horizontal
+    <form #commentForm .row
             action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
         ^{commentFormFields}
-        <div .form-group>
-            <label .col-sm-2 .control-label>Request info from
+        <div .d-sm-flex .d-grid>
+            <label .col-sm-2 .col-form-label .fw-bold>Request info from
             <div .col-sm-10>
                 <span #commentRequestUsers>
                 <input .form-control #commentRequestUserInput
                     placeholder="Start typing a user name or an address">
-        <div .form-group>
-            <div .col-sm-offset-2 .col-sm-10>
+        <div .d-flex .mt-3>
+            <div .offset-sm-2 .col-sm-10>
                 <button .btn .btn-primary type=submit>Add comment
 
 $if isNothing authnUser
     <div .alert .alert-info role=alert>
         _{MsgLogInToComment}
+
+<script>
+    const kbd = document.getElementById("addr");
+
+    kbd.onclick = function() {
+        document.execCommand("copy");
+    }
+
+    kbd.addEventListener("copy", function(event) {
+        event.preventDefault();
+        if (event.clipboardData) {
+            event.clipboardData.setData("text/plain", kbd.textContent);
+            const popover = bootstrap.Popover.getOrCreateInstance("#addr");
+            popover.show();
+            setTimeout(function () {
+                popover.hide()
+            }, 3000);
+        }
+    });

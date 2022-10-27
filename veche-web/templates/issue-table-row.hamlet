@@ -1,8 +1,10 @@
 <tr>
-    <td>
+    <td .topic-link>
         <a href=@{IssueR issueId}>#{title}
-    <td .text-right>
+    <td>
         $if isJust poll
-            ✅ #{approvalPercent}%
-    <td .text-right>
-        💬 #{commentNum}
+            <i .bi.bi-check-lg>
+            #{approvalPercent}%
+    <td>
+        <i .bi.bi-chat-left-text-fill>
+        #{commentNum}

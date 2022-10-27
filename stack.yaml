@@ -4,6 +4,7 @@ packages:
   - stellar-horizon
   - veche-web
   - yesod-auth-stellar
+  - yesod-form-bootstrap5
 
 extra-deps:
   # stellar-horizon:exe

@@ -1,6 +1,6 @@
 <li>
-    <div .comment_widget data-comment-id=#{toPathPiece id}>
-        <div .comment ##{commentAnchor id}>
+    <div .comment_widget.d-grid.d-lg-flex data-comment-id=#{toPathPiece id}>
+        <div .comment.me-auto ##{commentAnchor id}>
             <div .comment_header>
                 <span .comment_author>#{userNameWidget commentAuthor}
                 <span .comment_action .text-muted>
@@ -14,9 +14,9 @@
             $if message /= ""
                 <div .comment_message>#{renderMarkdown message}
 
-        <div>
+        <div .d-lg-flex.align-items-lg-end>
             $if type_ /= CommentStart
-                <a .btn.btn-default.btn-xs .comment-reply role=button>Reply
-            <a .btn.btn-default.btn-xs disabled role=button>Request Info
+                <a .btn .btn-primary .btn-sm .comment-reply .me-2 role=button>Reply
+            <a .btn .btn-primary .btn-sm .disabled disabled role=button aria-disabled=true>Request Info
 
     ^{commentForestWidget subComments}

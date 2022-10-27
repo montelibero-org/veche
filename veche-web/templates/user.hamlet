@@ -1,33 +1,32 @@
 <h1>User profile
 
-<div .form-horizontal>
-    <div .form-group>
-        <label .col-sm-2 .control-label>Name
+<div .d-grid .gap-2>
+    <div .row>
+        <div .col-sm-2 .col-form-label>Name
         <div .col-sm-10 #nameView>
-            <span #nameViewText>#{fromMaybe "" name}
-            <button type=button .btn .btn-default>Edit
+            <span #nameViewText .me-2>#{fromMaybe "" name}
+            <button type=button .btn .btn-primary>Edit
         <div .col-sm-10 #nameEdit style="display: none">
             <form #nameEditForm .input-group>
                 <input type=text .form-control #nameEditText>
-                <div .input-group-btn>
-                    <button type=submit .btn .btn-default>
+                <div .btn-group .ms-2>
+                    <button type=submit .btn .btn-success>
                         Save
-                    <button type=button .btn .btn-default #nameEditCancel>
+                    <button type=button .btn .btn-primary #nameEditCancel>
                         Cancel
             <div .help-block #nameEditError>
-    <div .form-group>
-        <label .col-sm-2 .control-label>Stellar address
-        <div .col-sm-10 .form-control-static .user_stellar_address>
-            #{stellarAddress}
-    <div .form-group>
-        <label .col-sm-2 .control-label>Roles
-        <div .col-sm-10 .form-control-static>
+    <div .row>
+        <div .col-sm-2>Stellar address
+        <div .col-sm-10 .user_stellar_address>#{stellarAddress}
+    <div .row>
+        <div .col-sm-2>Roles
+        <div .col-sm-10 >
             $if isSigner
-                <span .badge>Signer
+                <span .badge.rounded-pill.text-bg-secondary>Signer
             $if isHolder
-                <span .badge>Holder
-    <div .form-group>
-        <label .col-sm-2 .control-label>Telegram
+                <span .badge.rounded-pill.text-bg-secondary>Holder
+    <div .row>
+        <div .col-sm-2 .col-form-label>Telegram
         <div .col-sm-10>
             $maybe telegram <- mTelegram
                 ^{telegramUsernameWidget telegram}
@@ -39,8 +38,8 @@
                     data-size="large"
                     data-auth-url="@{TelegramBindR}"
                     data-request-access="write">
-    <div .form-group>
-        <label .col-sm-2 .control-label>Notifications
+    <div .row>
+        <div .col-sm-2 .col-form-label>Notifications
         <div .col-sm-10>
             $maybe Telegram{notifyIssueAdded} <- mTelegram
                 <table .table .table-hover>

@@ -18,6 +18,9 @@ library
     , yesod-form
 
   -- project
-  build-depends:    stellar-horizon
+  build-depends:
+      stellar-horizon
+    , yesod-form-bootstrap5
+
   default-language: Haskell2010
   exposed-modules:  Yesod.Auth.Stellar

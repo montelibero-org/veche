@@ -201,17 +201,17 @@ instance YesodAuth App where
                     | AuthPlugin{apName, apLogin} <- authPlugins master
                     ]
             [whamlet|
-                <div .form-horizontal>
+                <div .d-grid .gap-2>
                     $forall (label, login) <- plugins
-                        <div .form-group>
-                            <label .col-sm-4 .control-label>#{label}
+                        <div .row>
+                            <label .col-sm-4 .text-sm-end .fw-bold .col-form-label>#{label}
                             <div .col-sm-8>
                                 ^{login}
             |]
       where
         labels =
             [ ("stellar", "Via Stellar")
-            , ("telegram", "Via Telegram (only for existing accounts)")
+            , ("telegram", "Via Telegram (existing accounts only)")
             ]
 
 authenticateStellar ::

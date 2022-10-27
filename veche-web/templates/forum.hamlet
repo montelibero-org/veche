@@ -1,16 +1,17 @@
 <h1>#{title}
 
-<div .pull-left .btn-group role=group>
-    <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-default
-            href=@{ForumR forumId}>
-        #{openIssueCount} open
-    <a .btn :stateOpen:.btn-default :not stateOpen:.btn-primary
-            href=@?{(ForumR forumId, [("state", "closed")])}>
-        #{closedIssueCount} closed
-$if isAddForumIssueAllowed
-    <div .pull-right>
-        <a .btn .btn-success href=@{ForumIssueNewR forumId}>
-            New issue
+<div .d-flex>
+    <div .btn-group role=group>
+        <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-outline-primary
+                href=@{ForumR forumId}>
+            #{openIssueCount} open
+        <a .btn :stateOpen:.btn-outline-primary :not stateOpen:.btn-primary
+                href=@?{(ForumR forumId, [("state", "closed")])}>
+            #{closedIssueCount} closed
+    $if isAddForumIssueAllowed
+        <div .ms-auto>
+            <a .btn .btn-success href=@{ForumIssueNewR forumId}>
+                New issue
 
 <div .clearfix style="margin-bottom: 1em;">
 

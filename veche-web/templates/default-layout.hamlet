@@ -1,27 +1,30 @@
 <!-- Static navbar -->
-<nav .navbar.navbar-inverse.navbar-static-top>
+<nav .navbar.navbar-dark.navbar-expand-md.text-bg-dark>
     <div .container>
-        <div .navbar-header>
-            <button type=button .navbar-toggle.collapsed data-toggle=collapse data-target="#navbar" aria-expanded=false aria-controls=navbar>
-                <span .sr-only>Toggle navigation
-                <span .icon-bar>
-                <span .icon-bar>
-                <span .icon-bar>
-
-        <div #navbar .collapse.navbar-collapse>
-            <ul .nav.navbar-nav>
+        <a .navbar-brand href=@{AboutR}>
+            <img src="@{StaticR img_logo_jpeg}" width=40
+                .d-inline-block .align-text-topbi .me-2 .rounded-circle>
+        <button .navbar-toggler
+                aria-controls=navbar aria-expanded=false
+                aria-label="Toggle navigation"
+                data-bs-target="#navbar" data-bs-toggle=collapse
+                type=button>
+            <span .navbar-toggler-icon>
+        <div id=navbar .collapse.navbar-collapse>
+            <ul .navbar-nav.me-auto.mb-2.mb-md-0.me-md-auto>
                 $forall (label, route) <- navbarLeftMenu'
-                    <li :Just route == mcurrentRoute:.active>
-                        <a href="@{route}">_{label}
-
-            <ul .nav.navbar-nav.navbar-right>
+                    <a .nav-link :Just route == mcurrentRoute:.active
+                            href=@{route}>
+                        _{label}
+            <ul .navbar-nav>
                 $forall (label, route) <- navbarRightMenu'
-                    <li :Just route == mcurrentRoute:.active>
-                        <a href="@{route}">_{label}
+                    <a .nav-link :Just route == mcurrentRoute:.active
+                            href=@{route}>
+                        _{label}
 
 <!-- Page Contents -->
 
-<div .container>
+<div .container.mt-4>
     <div .alert.alert-warning>
         ^{msgBeta}
 
@@ -38,9 +41,6 @@
         $else
             <div .alert.alert-info>#{msg}
 
-    $# $if (Just HomeR == mcurrentRoute)
-    $#     ^{widget}
-    $# $else
     <div .row>
         <div .col-md-12>
             ^{widget}
@@ -49,8 +49,9 @@
         <a .btn .btn-primary href=@{AuthR LoginR}>Log in
 
 <!-- Footer -->
-<footer .footer>
-    <div .container>
-        <p .text-muted>
+<footer .footer .mt-3>
+    <div .container .d-flex .text-muted>
+        <div .me-auto>
             #{appCopyright $ appSettings master}
-            <span .pull-right>Version: #{showVersion version}
+        <div>
+            Version: #{showVersion version}
