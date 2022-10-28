@@ -45,14 +45,3 @@ Setup ghc to use llvm@12. Edit ~/.ghcup/ghc/9.0.2/lib/ghc-9.0.2/lib/settings, fi
 ```sh
 $ stack build
 ```
-
-# Running
-Run whole application.
-```sh
-$ ./veche-web/server-dev-full.sh
-```
-
-Or web frontend only.
-```sh
-$ ./veche-web/server-dev-front.sh
-```

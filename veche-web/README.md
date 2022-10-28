@@ -12,10 +12,17 @@ If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.
 Start a development server with:
 
 ```sh
-./server-dev.sh
+$ ./veche-web/server-dev-front.sh
 ```
 
 As your code changes, your site will be automatically recompiled and redeployed to localhost.
+
+Run whole application without auto-reload:
+```sh
+$ ./veche-web/server-dev-full.sh
+```
+
+Or web frontend only.
 
 ## Tests
 
