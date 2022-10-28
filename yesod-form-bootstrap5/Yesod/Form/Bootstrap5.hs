@@ -1,9 +1,9 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE OverloadedStrings #-}
--- | Helper functions for creating forms when using <http://getbootstrap.com/ Bootstrap 5>.
---
 
+-- | Helper functions for creating forms when using <http://getbootstrap.com/ Bootstrap 5>.
 module Yesod.Form.Bootstrap5
   ( -- * Example: Rendering a basic form
     -- $example
@@ -29,13 +29,12 @@ module Yesod.Form.Bootstrap5
   ) where
 
 import Control.Arrow (second)
-import Control.Monad (liftM)
+import Data.String (IsString (..))
 import Data.Text (Text)
-import Data.String (IsString(..))
-import qualified Text.Blaze.Internal as Blaze
+import Text.Blaze.Internal qualified as Blaze
 import Yesod.Core
-import Yesod.Form.Types
 import Yesod.Form.Functions
+import Yesod.Form.Types
 
 -- | Create a new 'FieldSettings' with the @form-control@ class that is
 -- required by Bootstrap v3.
@@ -44,7 +43,6 @@ import Yesod.Form.Functions
 bfs :: RenderMessage site msg => msg -> FieldSettings site
 bfs msg =
     FieldSettings (SomeMessage msg) Nothing Nothing Nothing [("class", "form-control")]
-
 
 -- | Add a placeholder attribute to a field.  If you need i18n
 -- for the placeholder, currently you\'ll need to do a hack and
@@ -226,7 +224,7 @@ instance IsString msg => IsString (BootstrapSubmit msg) where
 bootstrapSubmit
     :: (RenderMessage site msg, HandlerSite m ~ site, MonadHandler m)
     => BootstrapSubmit msg -> AForm m ()
-bootstrapSubmit = formToAForm . liftM (second return) . mbootstrapSubmit
+bootstrapSubmit = formToAForm . fmap (second pure) . mbootstrapSubmit
 
 
 -- | Same as 'bootstrapSubmit' but for monadic forms.  This isn't

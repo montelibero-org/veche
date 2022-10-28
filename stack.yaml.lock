@@ -23,13 +23,6 @@ packages:
   original:
     hackage: DRBG-0.5.5
 - completed:
-    hackage: yesod-form-1.7.3@sha256:e3b0dd75253ceb3b5a0d6683fad959cefb8ac996f1611d67c4dcddff549f6282,3388
-    pantry-tree:
-      sha256: 175436a59f09a6ea86fdef973255c855616020a0034d760db36946a575b3d9ed
-      size: 1729
-  original:
-    hackage: yesod-form-1.7.3
-- completed:
     name: telegram-api
     pantry-tree:
       sha256: 9962b8e14b3d58f5413a882f208ca0b48f9068d5acf4e537e3e9f309d0cb90e2
@@ -53,7 +46,7 @@ packages:
     url: https://github.com/cblp/haskell-stellar-sdk/archive/d275b4407ce51525439638852aaa4141a235e94a.tar.gz
 snapshots:
 - completed:
-    sha256: 1ecad1f0bd2c27de88dbff6572446cfdf647c615d58a7e2e2085c6b7dfc04176
-    size: 619403
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/25.yaml
-  original: lts-19.25
+    sha256: 9a74d76d250a455d9cd11e74f157e087787fa9aa3c4264e69c94703d1e71aede
+    size: 619200
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/30.yaml
+  original: lts-19.30

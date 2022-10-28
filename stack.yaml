@@ -1,4 +1,4 @@
-resolver: lts-19.25
+resolver: lts-19.30
 
 packages:
   - stellar-horizon
@@ -14,9 +14,10 @@ extra-deps:
   # stellar-sdk
     - DRBG-0.5.5
   # veche-web
-    - yesod-form-1.7.3
     - github: cblp/haskell-telegram-api
       commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
+      # https://github.com/klappvisor/haskell-telegram-api/pull/133
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
       commit: d275b4407ce51525439638852aaa4141a235e94a
+      # https://github.com/teequoo/haskell-stellar-sdk/pull/2
