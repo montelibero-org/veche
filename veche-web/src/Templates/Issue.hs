@@ -21,7 +21,7 @@ module Templates.Issue
 import Import
 
 -- global
-import Yesod.Form (radioFieldList)
+import Yesod.Form (fieldSettingsLabel, radioFieldList)
 import Yesod.Form.Bootstrap5 (bfs)
 
 -- component
@@ -108,7 +108,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
         title <-
             areq
                 textField
-                (bfs ("Title" :: Text)){fsName = Just "title"}
+                (bfs MsgIssueTitle){fsName = Just "title"}
                 previousTitle
         body <-
             unTextarea <$>
@@ -135,14 +135,14 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
             whenMay enablePoll $
             areq
                 (radioFieldList pollOptions)
-                "Poll"{fsName = Just "poll"}
+                (fieldSettingsLabel MsgIssuePoll){fsName = Just "poll"}
                 previousPoll
         pure IssueContent{body, contacts, poll, priceOffer, title}
 
     pollOptions =
-        [ ("Disabled" :: Text                       , Nothing            )
-        , ("Proportionally to MTL share"            , Just ByMtlAmount   )
-        , ("Proportionally to Stellar signer weight", Just BySignerWeight)
+        [ (MsgPollDisabled       , Nothing            )
+        , (MsgPollMtlShare       , Just ByMtlAmount   )
+        , (MsgPollMtlSignerWeight, Just BySignerWeight)
         ]
 
     whenMay cond action
