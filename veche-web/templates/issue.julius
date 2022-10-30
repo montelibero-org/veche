@@ -42,6 +42,14 @@ $(() => {
   } else {
     $('a.comment-reply').attr('disabled', true);
   }
+
+  $('#copyaddr').click(() => {
+    event.preventDefault();
+    navigator.clipboard.writeText($('#addr').text());
+    const popover = bootstrap.Popover.getOrCreateInstance('#copyaddr');
+    popover.show();
+    setTimeout(() => {popover.hide();}, 2000);
+  });
 });
 
 function comment_request_user_dimiss(user_id) {

@@ -25,25 +25,37 @@ $if isJust authnUser && enablePriceOffer
     <dl .row>
         <dt .col-md-2>Escrow
         <dd .col-md-10>
-            <p .text-primary>
-                <i .bi.bi-info-square-fill>
-                Offer compensation to performers
-                by sending any amount of EURMTL to address
-                <kbd .bg-primary #addr
-                        data-bs-toggle=popover
-                        data-bs-trigger=focus
-                        data-bs-placement=top
-                        data-bs-content="Address copied!">
-                    #{issueEscrowAddress issueId}</kbd>.
-                See
-                <a href=@{PagesEscrowR}>escrow terms</a>.
             $if not $ null escrows
                 $forall Escrow{amount, asset} <- escrows
                     <p>
+                        #{show $ availableToPay amount} #{showAsset asset}
                         <a data-bs-toggle=tooltip
                                 data-bs-title="#{show amount} #{showAsset asset} minus 2% service fee"
                                 style="text-decoration: underline dotted;">
-                            #{show $ availableToPay amount} #{showAsset asset}
+                            <i.bi.bi-info-square-fill>
+            <p>
+                <button .btn.btn-success
+                        aria-expanded=false
+                        aria-controls=collapseExample
+                        data-bs-toggle=collapse
+                        data-bs-target="#collapseExample"
+                        type=button>
+                    Add escrow
+                Motivate performers!
+                <div .card .collapse #collapseExample>
+                    <div .card-body>
+                        <p>
+                            Send any amount of EURMTL to address
+                            <tt #addr>#{issueEscrowAddress issueId}
+                        <button .btn.btn-primary
+                                #copyaddr
+                                data-bs-toggle=popover
+                                data-bs-trigger=focus
+                                data-bs-placement=top
+                                data-bs-content="Address copied!">
+                            Copy address
+                        <a .btn.btn-secondary href=@{PagesEscrowR} role=button>
+                            Terms and conditions
         $maybe priceOffer <- priceOffer
             <dt .col-md-2>Price offer
             <dd .col-md-10>#{renderMarkdown priceOffer}
@@ -76,22 +88,3 @@ $if isCommentAllowed
 $if isNothing authnUser
     <div .alert .alert-info role=alert>
         _{MsgLogInToComment}
-
-<script>
-    const kbd = document.getElementById("addr");
-
-    kbd.onclick = function() {
-        document.execCommand("copy");
-    }
-
-    kbd.addEventListener("copy", function(event) {
-        event.preventDefault();
-        if (event.clipboardData) {
-            event.clipboardData.setData("text/plain", kbd.textContent);
-            const popover = bootstrap.Popover.getOrCreateInstance("#addr");
-            popover.show();
-            setTimeout(function () {
-                popover.hide()
-            }, 3000);
-        }
-    });
