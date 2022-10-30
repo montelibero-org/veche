@@ -36,11 +36,14 @@ $if isJust authnUser && enablePriceOffer
                         data-bs-content="Address copied!">
                     #{issueEscrowAddress issueId}</kbd>.
                 See
-                <a href=@{PagesEscrowR} style="text-decoration: underline;">
-                    escrow terms</a>.
+                <a href=@{PagesEscrowR}>escrow terms</a>.
             $if not $ null escrows
                 $forall Escrow{amount, asset} <- escrows
-                        <p>#{show amount} #{showAsset asset}
+                    <p>
+                        <a data-bs-toggle=tooltip
+                                data-bs-title="#{show amount} #{showAsset asset} minus 2% service fee"
+                                style="text-decoration: underline dotted;">
+                            #{show $ availableToPay amount} #{showAsset asset}
         $maybe priceOffer <- priceOffer
             <dt .col-md-2>Price offer
             <dd .col-md-10>#{renderMarkdown priceOffer}

@@ -86,6 +86,7 @@ getIssueR issueId = do
     pollWidget <- makePollWidget poll issueId issueMaterialized
     (commentFormFields, commentFormEnctype) <-
         generateFormPost $ commentForm $ Just (issueId, requests)
+    let availableToPay = (* 0.98)
     defaultLayout $(widgetFile "issue")
 
 makePollWidget :: Maybe Poll -> IssueId -> IssueMaterialized -> Handler Widget
