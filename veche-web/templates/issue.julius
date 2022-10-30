@@ -50,6 +50,18 @@ $(() => {
     popover.show();
     setTimeout(() => {popover.hide();}, 2000);
   });
+
+  const escrowCalc_give = $("#escrowCalc_give");
+  const escrowCalc_get = $("#escrowCalc_get");
+  function escrowCalc_format(val) {
+    return val.toFixed(7).replace(/\.?0+$/, '');
+  }
+  escrowCalc_give[0].addEventListener("input", (e) => {
+    escrowCalc_get.val(escrowCalc_format(parseFloat(e.target.value) * 0.98));
+  });
+  escrowCalc_get[0].addEventListener("input", (e) => {
+    escrowCalc_give.val(escrowCalc_format(parseFloat(e.target.value) / 0.98));
+  });
 });
 
 function comment_request_user_dimiss(user_id) {
