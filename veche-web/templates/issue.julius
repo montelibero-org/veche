@@ -50,18 +50,47 @@ $(() => {
     popover.show();
     setTimeout(() => {popover.hide();}, 2000);
   });
+});
 
-  const escrowCalc_give = $("#escrowCalc_give");
-  const escrowCalc_get = $("#escrowCalc_get");
-  function escrowCalc_format(val) {
-    return val.toFixed(7).replace(/\.?0+$/, '');
+// initialize escrow calculator
+$(() => {
+  const escrowAddress   = #{escrowAddressT};
+  const issueId         = #{toPathPiece issueId};
+  const mtlIssuer       = #{mtlIssuer};
+  const get             = $("#escrowCalc_get");
+  const give            = $("#escrowCalc_give");
+  const stellarPayLink  = $("#escrowCalc_stellarPay");
+
+  function format(val) { return val.toFixed(7).replace(/\.?0+$/, ''); }
+
+  function updateLink(give_val) {
+    if (isFinite(give_val)) {
+      const uri =
+        `web+stellar:pay?destination=${escrowAddress}&amount=${give_val}`
+        + `&asset_code=EURMTL&asset_issuer=${mtlIssuer}`
+        + `&memo_type=MEMO_TEXT&memo=E${issueId}`;
+      stellarPayLink.attr('href', uri);
+      stellarPayLink.text(uri);
+    } else {
+      stellarPayLink.text(null);
+    }
   }
-  escrowCalc_give[0].addEventListener("input", (e) => {
-    escrowCalc_get.val(escrowCalc_format(parseFloat(e.target.value) * 0.98));
-  });
-  escrowCalc_get[0].addEventListener("input", (e) => {
-    escrowCalc_give.val(escrowCalc_format(parseFloat(e.target.value) / 0.98));
-  });
+
+  function updateFromGive() {
+    const give_val = parseFloat(give.val());
+    get.val(format(give_val * 0.98));
+    updateLink(give_val);
+  }
+
+  function updateFromGet() {
+    const give_val = format(parseFloat(get.val()) / 0.98);
+    give.val(give_val);
+    updateLink(give_val);
+  }
+
+  updateFromGive();
+  give[0].addEventListener("input", updateFromGive);
+  get[0].addEventListener("input", updateFromGet);
 });
 
 function comment_request_user_dimiss(user_id) {

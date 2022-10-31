@@ -25,11 +25,12 @@ import Import
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
 import Stellar.Simple (Asset (Asset), assetToText)
-import Stellar.Simple qualified
+import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
 
 -- component
-import Genesis (escrowFederatedHost, knownAssets, mtlAsset, mtlFund)
+import Genesis (escrowAddress, escrowFederatedHost, knownAssets, mtlAsset,
+                mtlFund, mtlIssuer)
 import Model.Escrow (Escrow (Escrow))
 import Model.Escrow qualified
 import Model.Forum qualified as Forum
@@ -86,8 +87,10 @@ getIssueR issueId = do
     pollWidget <- makePollWidget poll issueId issueMaterialized
     (commentFormFields, commentFormEnctype) <-
         generateFormPost $ commentForm $ Just (issueId, requests)
-    let availableToPay = (* 0.98)
     defaultLayout $(widgetFile "issue")
+  where
+    availableToPay = (* 0.98)
+    Stellar.Address escrowAddressT = escrowAddress
 
 makePollWidget :: Maybe Poll -> IssueId -> IssueMaterialized -> Handler Widget
 makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =

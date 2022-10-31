@@ -73,6 +73,9 @@ $if isJust authnUser && enablePriceOffer
                                     type=number
                                     value=98>
                                 <label for=escrowCalc_get>Performer gets
+                        <p>
+                            Stellar payment link:
+                            <a #escrowCalc_stellarPay>
                         <p .mt-3.mb-0>
                             <a href=@{PagesEscrowR}>Terms and conditions
         $maybe priceOffer <- priceOffer
