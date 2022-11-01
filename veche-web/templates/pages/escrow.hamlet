@@ -19,5 +19,7 @@
         The amount of assets available to send to the performer
         or return to sponsors is the amount of assets sent to the escrow
         minus the service fee.
+        Before the performer is assigned to the task the first time,
+        the return fee is zero.
     <li>
         The service fee is 2%.
