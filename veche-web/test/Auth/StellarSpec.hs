@@ -22,7 +22,7 @@ import Network.Stellar.Network qualified as Stellar
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant ((:<|>) ((:<|>)))
-import Servant.Server (Server, err404, serve)
+import Servant.Server (Server, err404, err500, serve)
 import Servant.Server qualified as Servant
 import Test.HUnit (assertFailure)
 import Text.XML.Cursor (content, descendant)
@@ -140,14 +140,18 @@ horizonTestApp :: Wai.Application
 horizonTestApp = serve api horizonTestServer where
 
     horizonTestServer :: Server API
-    horizonTestServer = getAccounts :<|> getAccount :<|> getAccountTransactions
+    horizonTestServer
+        =       getAccounts
+        :<|>    getAccount
+        :<|>    getAccountTransactions
+        :<|>    submitTransaction
 
     getAccounts _ _ _ = throwError err404
 
     getAccount :: Stellar.Address -> Servant.Handler Account
     getAccount account_id
         | account_id == Stellar.Address testGoodPublicKey =
-            pure Account{account_id, balances, signers}
+            pure Account{account_id, balances, sequence="1407955309", signers}
         | otherwise = throwError err404
       where
         balances = []
@@ -157,6 +161,8 @@ horizonTestApp = serve api horizonTestServer where
 
     signer (Stellar.Address key) =
         Signer{key, type_ = Ed25519PublicKey, weight = 1}
+
+    submitTransaction _ = throwError err500
 
 the :: HasCallStack => [a] -> a
 the = \case

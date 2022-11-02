@@ -34,6 +34,7 @@ module Stellar.Horizon.Client (
     getAccountsList,
     getAccountTransactionsDtoList,
     getAccountTransactionsList,
+    submitTransaction,
 ) where
 
 import Prelude hiding (last)
@@ -56,10 +57,12 @@ import Stellar.Simple (Asset (..), Memo (..), Operation (..), Transaction (..),
                        assetFromText, assetToText, transactionFromDto,
                        transactionFromEnvelopeXdr)
 
+-- | Public network Horizon server https://horizon.stellar.org/
 publicServerBase :: BaseUrl
 publicServerBase = unsafePerformIO $ parseBaseUrl "https://horizon.stellar.org/"
 {-# NOINLINE publicServerBase #-}
 
+-- | Test network Horizon server https://horizon-testnet.stellar.org/
 testServerBase :: BaseUrl
 testServerBase =
     unsafePerformIO $ parseBaseUrl "https://horizon-testnet.stellar.org/"
@@ -70,7 +73,12 @@ getAccounts ::
 getAccount :: Address -> ClientM Account
 getAccountTransactionsDto ::
     Address -> Maybe Text -> Maybe Natural -> ClientM (Records DTO.Transaction)
-getAccounts :<|> getAccount :<|> getAccountTransactionsDto = client api
+submitTransaction :: Text -> ClientM DTO.Transaction
+(               getAccounts
+        :<|>    getAccount
+        :<|>    getAccountTransactionsDto
+        :<|>    submitTransaction) =
+    client api
 
 getAccountsList :: Asset -> ClientM [Account]
 getAccountsList = recordsToList . getAccounts . Just

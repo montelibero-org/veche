@@ -1,6 +1,7 @@
 resolver: lts-19.30
 
 packages:
+  - oneshot
   - stellar-horizon
   - veche-web
   - yesod-auth-stellar

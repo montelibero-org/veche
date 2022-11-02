@@ -40,6 +40,9 @@ data Account = Account
         -- ^ This account’s public key encoded in a base32 string
         -- representation.
     , balances :: [Balance] -- ^ The assets this account holds.
+    , sequence :: Text
+        -- ^ This account’s current sequence number.
+        -- For use when submitting this account’s next transaction.
     , signers :: [Signer]
         -- ^ The public keys and associated weights that can be used to
         -- authorize transactions for this account.

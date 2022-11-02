@@ -16,8 +16,9 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
 import Network.HTTP.Media ((//), (/:))
 import Numeric.Natural (Natural)
-import Servant.API (Accept, Capture, Get, JSON, MimeRender, MimeUnrender,
-                    QueryParam, mimeRender, mimeUnrender, (:<|>), (:>))
+import Servant.API (Accept, Capture, Get, JSON, MimeRender, MimeUnrender, Post,
+                    QueryParam, QueryParam', Required, Strict, mimeRender,
+                    mimeUnrender, (:<|>), (:>))
 import Servant.API qualified
 import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
                      ParamKind (Normal), ToCapture, ToParam)
@@ -39,6 +40,8 @@ instance FromJSON a => MimeUnrender HalJson a where
 instance ToJSON a => MimeRender HalJson a where
     mimeRender _ = mimeRender (Proxy @JSON)
 
+type QueryParamR = QueryParam' [Required, Strict]
+
 type API
     =   "accounts"
         :> QueryParam "asset" Asset
@@ -50,6 +53,7 @@ type API
         "accounts" :> Capture "account_id" Address :> "transactions"
         :> QueryParam "cursor" Text :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Transaction)
+    :<|> "transactions" :> QueryParamR "tx" Text :> Post '[HalJson] Transaction
 
 api :: Proxy API
 api = Proxy
@@ -93,4 +97,12 @@ instance ToParam (QueryParam "limit" Natural) where
             \ an upper limit that is hardcoded in Horizon for performance\
             \ reasons.\
             \ If this argument isn’t designated, it defaults to 10."
+            Normal
+
+instance ToParam (QueryParamR "tx" Text) where
+    toParam _ =
+        DocQueryParam
+            "tx"
+            []
+            "The base64-encoded XDR of the transaction."
             Normal
