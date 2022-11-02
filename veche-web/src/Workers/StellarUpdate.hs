@@ -169,7 +169,7 @@ getAmount Asset{code, issuer} balances =
 updateEscrow :: App -> ClientEnv -> IO ()
 updateEscrow app clientEnv = do
     txs <- runClientM' clientEnv $ getAccountTransactionsList escrowAddress
-    let escrows = concatMap makeEscrow txs
+    let escrows = concatMap makeEscrows txs
     atomicWriteIORef appEscrowsActive $ Escrow.buildIndex escrows
     Aeson.encodeFile appEscrowsActiveFile escrows
   where
@@ -181,9 +181,9 @@ parseEscrowIssueIdFromMemo memo = do
     issueIdText <- stripPrefix "E" memo
     fromPathPiece issueIdText
 
-makeEscrow :: Transaction -> [Escrow]
-makeEscrow Transaction{memo, operations, source = txSource} =
-    [ Escrow{amount, asset, issueId, sponsor}
+makeEscrows :: Transaction -> [Escrow]
+makeEscrows Transaction{id, memo, operations, source = txSource} =
+    [ Escrow{amount, asset, issueId, sponsor, txId = id}
     | MemoText memoText <- [memo]
     , issueId <- toList $ parseEscrowIssueIdFromMemo memoText
     , OperationPayment{amount, asset, destination, source = opSource} <-

@@ -17,7 +17,11 @@ module Stellar.Simple (
     Transaction (..),
     transactionFromDto,
     transactionFromEnvelopeXdr,
+    TxId,
 ) where
+
+import Prelude hiding (id)
+import Prelude qualified
 
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson qualified as Aeson
@@ -39,8 +43,11 @@ import Network.Stellar.TransactionXdr qualified as XDR
 import Servant.API (FromHttpApiData, ToHttpApiData)
 import Servant.API qualified
 
-import Stellar.Horizon.DTO (Address (Address))
+import Stellar.Horizon.DTO (Address (Address), TxId)
 import Stellar.Horizon.DTO qualified as DTO
+
+identity :: a -> a
+identity = Prelude.id
 
 addressFromXdr :: XDR.AccountID -> Address
 addressFromXdr (XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 address) =
@@ -153,22 +160,23 @@ operationFromXdr op@XDR.Operation{operation'body, operation'sourceAccount} =
         _ -> OperationOther op
 
 data Transaction = Transaction
-    { memo          :: Memo
+    { id            :: TxId
+    , memo          :: Memo
     , operations    :: [Operation]
     , signatures    :: [DecoratedSignature]
     , source        :: Address
     }
 
 transactionFromDto :: HasCallStack => DTO.Transaction -> Transaction
-transactionFromDto DTO.Transaction{envelope_xdr} =
-    transactionFromEnvelopeXdr envelope
+transactionFromDto DTO.Transaction{id, envelope_xdr} =
+    transactionFromEnvelopeXdr id envelope
   where
     envelopeXdrRaw =
-        either error id $ Base64.decode $ encodeUtf8 envelope_xdr
-    envelope = either error id $ xdrDeserialize envelopeXdrRaw
+        either error identity $ Base64.decode $ encodeUtf8 envelope_xdr
+    envelope = either error identity $ xdrDeserialize envelopeXdrRaw
 
-transactionFromEnvelopeXdr :: XDR.TransactionEnvelope -> Transaction
-transactionFromEnvelopeXdr = \case
+transactionFromEnvelopeXdr :: TxId -> XDR.TransactionEnvelope -> Transaction
+transactionFromEnvelopeXdr id = \case
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_V0       e -> fromV0 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX          e -> fromV1 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP e -> fromFB e
@@ -183,7 +191,8 @@ transactionFromEnvelopeXdr = \case
                 signatures
             ) =
         Transaction
-            { memo = memoFromXdr transactionV0'memo
+            { id
+            , memo = memoFromXdr transactionV0'memo
             , operations = operationsFromXdr transactionV0'operations
             , signatures = signaturesFromXdr signatures
             , source =
@@ -201,7 +210,8 @@ transactionFromEnvelopeXdr = \case
                 signatures
             ) =
         Transaction
-            { memo = memoFromXdr transaction'memo
+            { id
+            , memo = memoFromXdr transaction'memo
             , operations = operationsFromXdr transaction'operations
             , signatures = signaturesFromXdr signatures
             , source = addressFromXdrMuxed transaction'sourceAccount
@@ -211,7 +221,8 @@ transactionFromEnvelopeXdr = \case
                 XDR.FeeBumpTransaction{feeBumpTransaction'feeSource} signatures
             ) =
         Transaction
-            { memo = MemoNone
+            { id
+            , memo = MemoNone
             , operations = []
             , signatures = signaturesFromXdr signatures
             , source = addressFromXdrMuxed feeBumpTransaction'feeSource
@@ -222,4 +233,4 @@ transactionFromEnvelopeXdr = \case
     signaturesFromXdr = toList . XDR.unLengthArray
 
 decodeUtf8Throw :: HasCallStack => ByteString -> Text
-decodeUtf8Throw = either (error . show) id . decodeUtf8'
+decodeUtf8Throw = either (error . show) identity . decodeUtf8'

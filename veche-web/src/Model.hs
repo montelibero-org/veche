@@ -76,5 +76,6 @@ data Escrow = Escrow
     , asset     :: Asset
     , issueId   :: IssueId
     , sponsor   :: Stellar.Address
+    , txId      :: TxId
     }
     deriving (FromJSON, Generic, Show, ToJSON)

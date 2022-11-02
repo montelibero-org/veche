@@ -273,7 +273,7 @@ verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
     envelope <- decodeEnvelope
     let Transaction{memo, operations, source} =
-            Stellar.transactionFromEnvelopeXdr $ traceShowId envelope
+            Stellar.transactionFromEnvelopeXdr undefined $ traceShowId envelope
     verifySignatures envelope
     verifyMemo memo
     nonce <- getNonce operations
