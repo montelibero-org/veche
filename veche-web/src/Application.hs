@@ -104,11 +104,11 @@ makeFoundation appSettings = do
 
     appEscrowActive <- do
         escrows <-
-            addCallStack
-                (   either fail pure
-                    <$> Aeson.eitherDecodeFileStrict' appEscrowActiveFile
+            addCallStack $
+                (   Aeson.eitherDecodeFileStrict' appEscrowActiveFile
+                    >>= either fail pure
                 )
-            & handleJust (guard . isDoesNotExistError) (\() -> pure [])
+                & handleJust (guard . isDoesNotExistError) (\() -> pure [])
         newIORef $ Escrow.buildIndex escrows
 
     -- We need a log function to create a connection pool. We need a connection

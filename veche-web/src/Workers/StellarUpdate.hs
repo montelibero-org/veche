@@ -27,8 +27,7 @@ import Text.Read (readMaybe)
 
 -- project
 import Stellar.Horizon.Client (Account (Account), Asset (Asset),
-                               Memo (MemoText),
-                               Operation (OperationChangeTrust, OperationCreateAccount, OperationCreateClaimableBalance, OperationPayment),
+                               Memo (MemoText), Operation (OperationPayment),
                                Transaction (Transaction),
                                TransactionOnChain (TransactionOnChain),
                                getAccount, getAccountTransactionsList,
@@ -189,42 +188,37 @@ parseEscrowIssueIdFromMemo memo = do
     issueIdText <- stripPrefix "E" memo
     fromPathPiece issueIdText
 
-returnOutgoing :: Set TxId
-returnOutgoing =
+returnedOutgoingTxIds :: Set TxId
+returnedOutgoingTxIds =
     Set.fromList [outgoing | Return{outgoing} <- toList escrowCorrections]
 
 makeEscrows :: TransactionOnChain -> [Either TransactionOnChain Escrow]
 makeEscrows toc@TransactionOnChain{id = txId, time, tx} = do
-    guard $ txId `notElem` returnOutgoing
+    guard $ txId `notElem` returnedOutgoingTxIds
     operation <- operations
-    let saveExtra =
-            pure $ Left toc{Stellar.tx = tx{Stellar.operations = [operation]}}
     case operation of
-        Right OperationChangeTrust -> []
-        Right OperationCreateAccount -> []
-        Right OperationCreateClaimableBalance -> []
-        Right OperationPayment{amount, asset, destination, source}
-            | destination == escrowAddress
-            , Just AddWithIssueId{issueId} <- correction
-            -> do
-                let sponsor = fromMaybe txSource source
-                pure $ Right Escrow{amount, asset, issueId, sponsor, time, txId}
-        Right OperationPayment{destination}
-            | destination == escrowAddress
-            , Just Return{} <- correction
-            -> []
-        Right OperationPayment{amount, asset, destination, source}
-            | destination == escrowAddress
-            , MemoText memoText <- memo
-            -> do
-                let sponsor = fromMaybe txSource source
-                issueId <- toList $ parseEscrowIssueIdFromMemo memoText
-                pure $ Right Escrow{amount, asset, issueId, sponsor, time, txId}
-        Right OperationPayment{destination, source}
-            | fromMaybe txSource source /= escrowAddress
-            , destination /= escrowAddress
-            -> []
-        _ -> saveExtra
+        Right OperationPayment{amount, asset, destination, source = opSource}
+            | destination == escrowAddress  -> incoming amount asset source'
+            | source'     == escrowAddress  -> saveExtra operation
+            | otherwise                     -> []
+          where
+            source' = fromMaybe txSource opSource
+        Right _ -> []
+        _ -> saveExtra operation
   where
+
     Transaction{memo, operations, source = txSource} = tx
-    correction = Map.lookup txId escrowCorrections
+
+    currentCorrection = Map.lookup txId escrowCorrections
+
+    saveExtra operation =
+        pure $ Left toc{Stellar.tx = tx{Stellar.operations = [operation]}}
+
+    incoming amount asset sponsor
+        | Just AddWithIssueId{issueId} <- currentCorrection = ok issueId
+        | Just Return{} <- currentCorrection = []
+        | MemoText memoText <- memo =
+            foldMap ok $ parseEscrowIssueIdFromMemo memoText
+        | otherwise = []
+      where
+        ok issueId = [Right Escrow{amount, asset, issueId, sponsor, time, txId}]

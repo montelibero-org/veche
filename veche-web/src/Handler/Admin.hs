@@ -47,7 +47,7 @@ import Model.User qualified as User
 import Model.UserRole qualified as UserRole
 import Model.Vote qualified as Vote
 import Templates.Comment (commentAnchor)
-import Templates.User (userNameText)
+import Templates.User (userNameText, userNameWidget)
 
 getAdminEscrowR :: Handler Html
 getAdminEscrowR = do
@@ -79,12 +79,16 @@ getAdminEscrowR = do
             sponsorUser <-
                 liftHandler $
                 fmap entityVal <$> User.getByStellarAddress sponsor
+            let sponsorWidget =
+                    case sponsorUser of
+                        Nothing   -> toHtml $ elide 0 4 $ toUrlPiece sponsor
+                        Just user -> userNameWidget user
             [whamlet|
                 <tr>
                     <td>#{show amount} #{showKnownAsset asset}
                     <td>
                         <a href=@{IssueR issueId}>#{toPathPiece issueId}
-                    <td>#{maybe (elide 0 4 $ toUrlPiece sponsor) tshow sponsorUser}
+                    <td>#{sponsorWidget}
                     <td>#{show time}
                     <td>
                         <a href=#{stellarExpertTx txId}>

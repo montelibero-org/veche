@@ -168,6 +168,7 @@ data Operation
     | OperationChangeTrust
     | OperationCreateAccount
     | OperationCreateClaimableBalance
+    | OperationSetOptions
     deriving (FromJSON, Generic, Read, Show, ToJSON)
 
 operationFromXdr :: XDR.Operation -> Maybe Operation
@@ -215,6 +216,7 @@ operationFromXdr XDR.Operation{operation'body, operation'sourceAccount} =
                 , source
                 , type_ = DirectPayment
                 }
+        XDR.OperationBody'SET_OPTIONS{} -> Just OperationSetOptions
         _ -> Nothing
   where
     source = addressFromXdr <$> operation'sourceAccount
