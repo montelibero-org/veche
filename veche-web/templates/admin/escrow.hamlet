@@ -11,6 +11,7 @@
         <th>id
         <th>time
         <th>memo
+        <th>operation
     <tbody>
         $forall TransactionOnChain{id, time, tx = Transaction{memo, operations}} <- extra
             <tr>

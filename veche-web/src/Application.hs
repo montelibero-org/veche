@@ -103,10 +103,12 @@ makeFoundation appSettings = do
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
     appEscrowActive <- do
-        escrows' <-
-            Aeson.eitherDecodeFileStrict' appEscrowActiveFile
-            & handleJust (guard . isDoesNotExistError) (\() -> pure $ Right [])
-        escrows <- either fail pure escrows'
+        escrows <-
+            addCallStack
+                (   either fail pure
+                    <$> Aeson.eitherDecodeFileStrict' appEscrowActiveFile
+                )
+            & handleJust (guard . isDoesNotExistError) (\() -> pure [])
         newIORef $ Escrow.buildIndex escrows
 
     -- We need a log function to create a connection pool. We need a connection

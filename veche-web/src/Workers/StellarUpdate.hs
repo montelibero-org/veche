@@ -34,7 +34,8 @@ import Stellar.Horizon.Client (Account (Account), Asset (Asset),
                                getAccount, getAccountTransactionsList,
                                getAccountsList)
 import Stellar.Horizon.Client qualified as Stellar
-import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
+import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey),
+                            TxId)
 import Stellar.Horizon.DTO qualified
 
 -- component
@@ -175,8 +176,7 @@ getAmount Asset{code, issuer} balances =
 updateEscrow :: App -> ClientEnv -> IO ()
 updateEscrow app clientEnv = do
     txs <- runClientM' clientEnv $ getAccountTransactionsList escrowAddress
-    let (extra, active) =
-            correctEscrow $ partitionEithers $ concatMap makeEscrows txs
+    let (extra, active) = partitionEithers $ concatMap makeEscrows txs
     Aeson.encodeFile appEscrowActiveFile active
     Yaml.encodeFile  appEscrowExtraFile  extra
     atomicWriteIORef appEscrowActive $ Escrow.buildIndex active
@@ -184,24 +184,18 @@ updateEscrow app clientEnv = do
     App{appEscrowActive, appSettings} = app
     AppSettings{appEscrowActiveFile, appEscrowExtraFile} = appSettings
 
-correctEscrow ::
-    ([TransactionOnChain], [Escrow]) -> ([TransactionOnChain], [Escrow])
-correctEscrow (extra, active) =
-    ( filter (\TransactionOnChain{id} -> id `notElem` outputs) extra
-    , filter (\Escrow{txId} -> txId `notMember` escrowCorrections) active
-    )
-  where
-    outputs =
-        Set.fromList
-            [output | EscrowCorrection{output} <- toList escrowCorrections]
-
 parseEscrowIssueIdFromMemo :: Text -> Maybe IssueId
 parseEscrowIssueIdFromMemo memo = do
     issueIdText <- stripPrefix "E" memo
     fromPathPiece issueIdText
 
+returnOutgoing :: Set TxId
+returnOutgoing =
+    Set.fromList [outgoing | Return{outgoing} <- toList escrowCorrections]
+
 makeEscrows :: TransactionOnChain -> [Either TransactionOnChain Escrow]
 makeEscrows toc@TransactionOnChain{id = txId, time, tx} = do
+    guard $ txId `notElem` returnOutgoing
     operation <- operations
     let saveExtra =
             pure $ Left toc{Stellar.tx = tx{Stellar.operations = [operation]}}
@@ -211,14 +205,26 @@ makeEscrows toc@TransactionOnChain{id = txId, time, tx} = do
         Right OperationCreateClaimableBalance -> []
         Right OperationPayment{amount, asset, destination, source}
             | destination == escrowAddress
-            , MemoText memoText <- memo -> do
+            , Just AddWithIssueId{issueId} <- correction
+            -> do
+                let sponsor = fromMaybe txSource source
+                pure $ Right Escrow{amount, asset, issueId, sponsor, time, txId}
+        Right OperationPayment{destination}
+            | destination == escrowAddress
+            , Just Return{} <- correction
+            -> []
+        Right OperationPayment{amount, asset, destination, source}
+            | destination == escrowAddress
+            , MemoText memoText <- memo
+            -> do
                 let sponsor = fromMaybe txSource source
                 issueId <- toList $ parseEscrowIssueIdFromMemo memoText
                 pure $ Right Escrow{amount, asset, issueId, sponsor, time, txId}
         Right OperationPayment{destination, source}
             | fromMaybe txSource source /= escrowAddress
-            , destination /= escrowAddress ->
-                []
+            , destination /= escrowAddress
+            -> []
         _ -> saveExtra
   where
     Transaction{memo, operations, source = txSource} = tx
+    correction = Map.lookup txId escrowCorrections

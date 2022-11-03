@@ -15,9 +15,11 @@
 -- declared in the Foundation.hs file.
 module Settings where
 
+-- prelude
 import ClassyPrelude
 import Import.Exception
 
+-- global
 import Control.Exception qualified as Exception
 import Data.Aeson (FromJSON, Result (Error, Success), Value, fromJSON,
                    parseJSON, withObject, (.!=), (.:), (.:?))
@@ -35,6 +37,9 @@ import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
                            widgetFileReload)
 import Yesod.Static (CombineSettings, Static, combineScripts',
                      combineStylesheets')
+
+-- component
+import Model (IssueId)
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -177,18 +182,26 @@ combineScripts :: Name -> [Route Static] -> Q Exp
 combineScripts =
     combineScripts' (appSkipCombining compileTimeAppSettings) combineSettings
 
-data EscrowCorrection = EscrowCorrection
-    { input     :: TxId
-    , output    :: TxId
-    , reason    :: Text
-    }
+data EscrowCorrection
+    = AddWithIssueId
+        { badIncoming   :: TxId
+        , issueId       :: IssueId
+        }
+    | Return
+        { badIncoming   :: TxId
+        , outgoing      :: TxId
+        }
     deriving (FromJSON, Generic)
 
 escrowCorrections :: Map TxId EscrowCorrection
 escrowCorrections =
     Map.fromList
-        [ (input, ec)
-        | ec@EscrowCorrection{input} <-
+        [   ( case ec of
+                Return{badIncoming}         -> badIncoming
+                AddWithIssueId{badIncoming} -> badIncoming
+            , ec
+            )
+        | ec <-
             either unsafeThrowWithCallStack id $
             decodeEither' @[EscrowCorrection]
                 $(embedFile "config/escrow-corrections.yaml")
