@@ -76,6 +76,7 @@ data Escrow = Escrow
     , asset     :: Asset
     , issueId   :: IssueId
     , sponsor   :: Stellar.Address
+    , time      :: UTCTime
     , txId      :: TxId
     }
     deriving (FromJSON, Generic, Show, ToJSON)

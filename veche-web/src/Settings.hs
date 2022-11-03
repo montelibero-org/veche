@@ -1,9 +1,12 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Settings are centralized, as much as possible, into this file. This
 -- includes database connection settings, static file locations, etc.
@@ -13,16 +16,19 @@
 module Settings where
 
 import ClassyPrelude
+import Import.Exception
 
 import Control.Exception qualified as Exception
 import Data.Aeson (FromJSON, Result (Error, Success), Value, fromJSON,
                    parseJSON, withObject, (.!=), (.:), (.:?))
 import Data.Default (def)
 import Data.FileEmbed (embedFile)
+import Data.Map.Strict qualified as Map
 import Data.Yaml (decodeEither')
 import Database.Persist.Sqlite (SqliteConf)
 import Language.Haskell.TH.Syntax (Exp, Name, Q)
 import Network.Wai.Handler.Warp (HostPreference)
+import Stellar.Simple (TxId)
 import Yesod (Route)
 import Yesod.Default.Config2 (applyEnvValue, configSettingsYml)
 import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
@@ -77,7 +83,8 @@ data AppSettings = AppSettings
     -- ^ Allowed logins to deliver. For testing.
     -- When empty (default), everybody is allowed.
 
-    , appEscrowsActiveFile :: FilePath
+    , appEscrowActiveFile   :: FilePath
+    , appEscrowExtraFile    :: FilePath
     }
 
 instance FromJSON AppSettings where
@@ -108,7 +115,8 @@ instance FromJSON AppSettings where
             appTelegramBotNotifyWhitelist <-
                 o .:? "telegram-bot-notify-whitelist" .!= []
 
-            appEscrowsActiveFile <- o .: "escrows-active-file"
+            appEscrowActiveFile <- o .: "escrow-active-file"
+            appEscrowExtraFile  <- o .: "escrow-extra-file"
 
             return AppSettings{..}
 
@@ -168,3 +176,20 @@ combineStylesheets =
 combineScripts :: Name -> [Route Static] -> Q Exp
 combineScripts =
     combineScripts' (appSkipCombining compileTimeAppSettings) combineSettings
+
+data EscrowCorrection = EscrowCorrection
+    { input     :: TxId
+    , output    :: TxId
+    , reason    :: Text
+    }
+    deriving (FromJSON, Generic)
+
+escrowCorrections :: Map TxId EscrowCorrection
+escrowCorrections =
+    Map.fromList
+        [ (input, ec)
+        | ec@EscrowCorrection{input} <-
+            either unsafeThrowWithCallStack id $
+            decodeEither' @[EscrowCorrection]
+                $(embedFile "config/escrow-corrections.yaml")
+        ]

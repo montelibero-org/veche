@@ -28,9 +28,9 @@ $if isJust authnUser && enablePriceOffer
             $if not $ null escrows
                 $forall Escrow{amount, asset} <- escrows
                     <p>
-                        #{show $ availableToPay amount} #{showAsset asset}
+                        #{show $ availableToPay amount} #{showKnownAsset asset}
                         <a data-bs-toggle=tooltip
-                                data-bs-title="#{show amount} #{showAsset asset} minus 2% service fee"
+                                data-bs-title="#{show amount} #{showKnownAsset asset} minus 2% service fee"
                                 style="text-decoration: underline dotted;">
                             <i.bi.bi-info-square-fill>
             <p>
@@ -74,7 +74,7 @@ $if isJust authnUser && enablePriceOffer
                                     value=98>
                                 <label for=escrowCalc_get>Performer gets
                         <p>
-                            Stellar payment link:
+                            Stellar link for apps (Keybase, lobstr.co):
                             <a #escrowCalc_stellarPay>
                         <p .mt-3.mb-0>
                             <a href=@{PagesEscrowR}>Terms and conditions

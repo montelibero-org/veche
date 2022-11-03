@@ -24,13 +24,12 @@ import Import
 -- global
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
-import Stellar.Simple (Asset (Asset), assetToText)
 import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
 
 -- component
-import Genesis (escrowAddress, escrowFederatedHost, knownAssets, mtlAsset,
-                mtlFund, mtlIssuer)
+import Genesis (escrowAddress, escrowFederatedHost, mtlAsset, mtlFund,
+                mtlIssuer, showKnownAsset)
 import Model.Escrow (Escrow (Escrow))
 import Model.Escrow qualified
 import Model.Forum qualified as Forum
@@ -54,11 +53,6 @@ import Templates.User (userNameWidget)
 issueEscrowAddress :: IssueId -> Text
 issueEscrowAddress issueId =
     "E" <> toPathPiece issueId <> "*" <> escrowFederatedHost
-
-showAsset :: Asset -> Text
-showAsset a@Asset{code}
-    | a `elem` knownAssets  = code
-    | otherwise             = assetToText a
 
 getIssueR :: IssueId -> Handler Html
 getIssueR issueId = do

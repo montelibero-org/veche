@@ -15,8 +15,7 @@ import Database.Persist.Sql (ConnectionPool, SqlBackend, runSqlPool)
 import Network.HTTP.Client (HasHttpManager, Manager)
 import Network.HTTP.Client qualified
 import Servant.Client (BaseUrl)
-import Yesod.Core (Lang, RenderMessage, getYesod, mkMessage, mkYesodData,
-                   parseRoutesFile)
+import Yesod.Core (Lang, RenderMessage, mkMessage, mkYesodData, parseRoutesFile)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Form (FormMessage, defaultFormMessage)
@@ -42,7 +41,7 @@ data App = App
     , appStatic     :: Static
     , appWellKnown  :: Static
     -- Stellar cache
-    , appEscrowsActive :: IORef (Map IssueId [Escrow])
+    , appEscrowActive :: IORef (Map IssueId [Escrow])
     }
 
 -- This is where we define all of the routes in our application. For a full

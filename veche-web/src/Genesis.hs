@@ -1,4 +1,6 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Genesis where
@@ -10,7 +12,7 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 
 -- project
-import Stellar.Simple (Asset, mkAsset)
+import Stellar.Simple (Asset (Asset), assetToText, mkAsset)
 import Stellar.Simple qualified as Stellar
 
 mtlIssuer :: Text
@@ -68,3 +70,8 @@ escrowFederatedHost = "veche.montelibero.org"
 
 knownAssets :: Set Asset
 knownAssets = Set.fromList [mtlAsset, eurmtl]
+
+showKnownAsset :: Asset -> Text
+showKnownAsset a@Asset{code}
+    | a `elem` knownAssets  = code
+    | otherwise             = assetToText a

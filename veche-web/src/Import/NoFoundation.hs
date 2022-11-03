@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -8,23 +7,24 @@ module Import.NoFoundation
     , module Import.NoFoundation
     ) where
 
-import ClassyPrelude as X hiding (Handler, delete, id, link, link2, on, poll)
+import ClassyPrelude as X hiding (Handler, delete, for_, id, link, link2, on,
+                           poll)
 
 import CMarkGFM (commonmarkToHtml, extAutolink, extStrikethrough, extTable,
                  extTagfilter, optHardBreaks, optSmart)
 import Control.Arrow as X ((>>>))
 import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))
-import Data.Scientific as X (Scientific)
 import Data.Default as X (def)
+import Data.Foldable as X (for_)
 import Data.Function as X ((&))
 import Data.Kind as X (Type)
 import Data.Proxy as X (Proxy (Proxy))
+import Data.Scientific as X (Scientific)
 import Data.Tree as X (Forest, Tree (Node), unfoldForest)
 import Data.Void as X (Void)
 import Data.Yaml as X (array)
 import Database.Persist as X (Entity (..), Key)
 import Database.Persist.Sql as X (SqlPersistT)
-import GHC.Stack (CallStack, callStack, prettyCallStack)
 import GHC.Stack as X (HasCallStack)
 import Network.HTTP.Types as X (internalServerError500, status400)
 import Text.Blaze.Html (preEscapedToHtml)
@@ -33,7 +33,7 @@ import Yesod.Auth as X
 import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
                         MonadHandler, PathPiece, TypedContent (TypedContent),
                         addHeader, cacheSeconds, defaultLayout, fromPathPiece,
-                        getCurrentRoute, hamlet, invalidArgs, julius,
+                        getCurrentRoute, getYesod, hamlet, invalidArgs, julius,
                         lookupGetParam, lookupPostParams, notFound,
                         permissionDenied, redirect, requireCheckJsonBody,
                         respondSource, returnJson, sendChunkText,
@@ -78,28 +78,6 @@ asyncLinked :: MonadUnliftIO m => m a -> m ()
 asyncLinked = async >=> link
 
 type EntitySet a = Map (Key a) a
-
-data WithCallStack = WithCallStack
-    { stack     :: CallStack
-    , parent    :: SomeException
-    }
-
-instance Exception WithCallStack where
-    displayException WithCallStack{stack, parent} =
-        prettyCallStack stack <> ('\n' : displayException parent)
-
-instance Show WithCallStack where
-    show = displayException
-
-addCallStack :: (HasCallStack, MonadUnliftIO m) => m a -> m a
-addCallStack action =
-    action `catchAny` \e -> throwIO $ WithCallStack callStack e
-
-withCallStack :: (HasCallStack, Exception e) => e -> WithCallStack
-withCallStack e = WithCallStack{stack = callStack, parent = SomeException e}
-
-throwWithCallStack :: (HasCallStack, Exception e, MonadIO m) => e -> m a
-throwWithCallStack = throwIO . withCallStack
 
 renderMarkdown :: Text -> Html
 renderMarkdown =

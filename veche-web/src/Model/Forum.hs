@@ -18,6 +18,7 @@ module Model.Forum (
     isPublic,
 ) where
 
+import Import.Exception
 import Import.NoFoundation hiding (getEntity404)
 
 import Data.Map.Strict ((!?))

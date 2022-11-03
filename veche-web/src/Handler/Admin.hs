@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Handler.Admin (
+    getAdminEscrowR,
     getAdminEventsR,
     getAdminUpdateDatabaseR,
 ) where
@@ -20,23 +21,82 @@ import Import hiding (Value)
 
 import Data.Text qualified as Text
 import Data.Typeable (TypeRep, typeOf)
+import Data.Yaml qualified as Yaml
 import Database.Esqueleto.Experimental (SqlExpr, SqlQuery, Value (Value), desc,
                                         from, innerJoin, on, orderBy, select,
                                         table, (:&) ((:&)), (==.), (^.))
 import Database.Persist (selectList)
+import Stellar.Simple (Transaction (Transaction),
+                       TransactionOnChain (TransactionOnChain), TxId)
+import Stellar.Simple qualified
+import Web.HttpApiData (toUrlPiece)
+import Yesod.Core (liftHandler)
 import Yesod.Persist (runDB)
 
+import Genesis (showKnownAsset)
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified as Comment
+import Model.Escrow (Escrow (Escrow))
+import Model.Escrow qualified
 import Model.Issue (Issue (Issue), IssueId)
 import Model.Issue qualified
 import Model.Request (Request (Request))
 import Model.Request qualified
 import Model.User (User, UserId)
+import Model.User qualified as User
 import Model.UserRole qualified as UserRole
 import Model.Vote qualified as Vote
 import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
+
+getAdminEscrowR :: Handler Html
+getAdminEscrowR = do
+    roleE <- UserRole.get Admin ?|> permissionDenied ""
+    requireAuthz $ AdminOp roleE
+
+    App{appEscrowActive, appSettings = AppSettings{appEscrowExtraFile}} <-
+        getYesod
+
+    active <- readIORef appEscrowActive
+    extra <-
+        addCallStack $
+        Yaml.decodeFileThrow @_ @[TransactionOnChain] appEscrowExtraFile
+    defaultLayout $(widgetFile "admin/escrow")
+
+  where
+
+    activeHead =
+        [whamlet|
+            <th>amount
+            <th>issue
+            <th>sponsor
+            <th>time
+            <th>transaction
+        |]
+
+    activeRows escrows =
+        for_ escrows \Escrow{amount, asset, issueId, sponsor, time, txId} -> do
+            sponsorUser <-
+                liftHandler $
+                fmap entityVal <$> User.getByStellarAddress sponsor
+            [whamlet|
+                <tr>
+                    <td>#{show amount} #{showKnownAsset asset}
+                    <td>
+                        <a href=@{IssueR issueId}>#{toPathPiece issueId}
+                    <td>#{maybe (elide 0 4 $ toUrlPiece sponsor) tshow sponsorUser}
+                    <td>#{show time}
+                    <td>
+                        <a href=#{stellarExpertTx txId}>
+                            #{elide 4 4 $ toUrlPiece txId}
+            |]
+
+elide :: Int -> Int -> Text -> Text
+elide a b t = Text.take a t <> "…" <> Text.takeEnd b t
+
+stellarExpertTx :: TxId -> Text
+stellarExpertTx txid =
+    "https://stellar.expert/explorer/public/tx/" <> toPathPiece txid
 
 data Event = Event
     { author            :: Entity User

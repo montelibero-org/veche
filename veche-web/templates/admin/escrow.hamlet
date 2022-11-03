@@ -1,0 +1,23 @@
+<h1>Escrow
+
+<h2>by issue
+<table .table.table-striped.table-hover>
+    <thead>^{activeHead}
+    <tbody>^{activeRows $ fold active}
+
+<h2>extra transactions
+<table .table.table-striped.table-hover>
+    <thead>
+        <th>id
+        <th>time
+        <th>memo
+    <tbody>
+        $forall TransactionOnChain{id, time, tx = Transaction{memo, operations}} <- extra
+            <tr>
+                <td>
+                    <a href=#{stellarExpertTx id}>#{elide 4 4 $ toUrlPiece id}
+                <td>#{show time}
+                <td>#{show memo}
+                <td>
+                    $forall operation <- operations
+                        <p>#{either show show operation}

@@ -35,6 +35,7 @@ module Model.Issue (
 ) where
 
 import Foundation.Base
+import Import.Exception
 import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global

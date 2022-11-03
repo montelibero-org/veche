@@ -4,6 +4,7 @@
 /                               RootR                   GET
 /.well-known                    WellKnownR              Static appWellKnown
 /about                          AboutR                  GET
+/admin/escrow                   AdminEscrowR            GET
 /admin/events                   AdminEventsR            GET
 /admin/update-database          AdminUpdateDatabaseR    GET
 /api/complete-user              ApiCompleteUserR        GET

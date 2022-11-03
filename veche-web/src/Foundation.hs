@@ -31,7 +31,7 @@ import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
                    HandlerSite, SessionBackend, Yesod, addMessage,
                    defaultClientSessionBackend, defaultCsrfMiddleware,
                    defaultYesodMiddleware, getApprootText, getRouteToParent,
-                   getYesod, guessApproot, unauthorizedI)
+                   guessApproot, unauthorizedI)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe

@@ -60,7 +60,7 @@ import Yesod.Static (static, staticDevel)
 
 -- component
 import Handler.About (getAboutR)
-import Handler.Admin (getAdminEventsR, getAdminUpdateDatabaseR)
+import Handler.Admin (getAdminEscrowR, getAdminEventsR, getAdminUpdateDatabaseR)
 import Handler.API (getApiCompleteUserR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
@@ -102,14 +102,11 @@ makeFoundation appSettings = do
 
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
-    appEscrowsActive <- do
-        escrows <-
-            catchJust
-                (guard . isDoesNotExistError)
-                (Aeson.eitherDecodeFileStrict' appEscrowsActiveFile
-                    >>= either fail pure
-                )
-                (\() -> pure [])
+    appEscrowActive <- do
+        escrows' <-
+            Aeson.eitherDecodeFileStrict' appEscrowActiveFile
+            & handleJust (guard . isDoesNotExistError) (\() -> pure $ Right [])
+        escrows <- either fail pure escrows'
         newIORef $ Escrow.buildIndex escrows
 
     -- We need a log function to create a connection pool. We need a connection
@@ -119,7 +116,7 @@ makeFoundation appSettings = do
     -- from there, and then create the real foundation.
     let mkFoundation appConnPool =
             App { appConnPool
-                , appEscrowsActive
+                , appEscrowActive
                 , appHttpManager
                 , appLogger
                 , appSettings
@@ -159,7 +156,7 @@ makeFoundation appSettings = do
   where
     AppSettings
         { appDatabaseConf
-        , appEscrowsActiveFile
+        , appEscrowActiveFile
         , appMutableStatic
         , appStaticDir
         , appStellarHorizonUrl

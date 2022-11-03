@@ -12,7 +12,6 @@ import Import
 
 -- global
 import Data.Map.Strict qualified as Map
-import Yesod.Core (getYesod)
 
 -- component
 import Model (Escrow (..), IssueId)
@@ -24,5 +23,5 @@ buildIndex escrows =
 -- | Get active (unspent) escrows for the issue
 getActive :: IssueId -> Handler [Escrow]
 getActive issue = do
-    App{appEscrowsActive} <- getYesod
-    fromMaybe [] . lookup issue <$> readIORef appEscrowsActive
+    App{appEscrowActive} <- getYesod
+    fromMaybe [] . lookup issue <$> readIORef appEscrowActive

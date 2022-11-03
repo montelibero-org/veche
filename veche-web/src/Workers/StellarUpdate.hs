@@ -10,13 +10,16 @@
 
 module Workers.StellarUpdate (stellarDataUpdater) where
 
+-- prelude
 import Import
 
 -- global
 import Control.Concurrent (threadDelay)
 import Data.Aeson qualified as Aeson
 import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import Data.Text qualified as Text
+import Data.Yaml qualified as Yaml
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
@@ -24,9 +27,12 @@ import Text.Read (readMaybe)
 
 -- project
 import Stellar.Horizon.Client (Account (Account), Asset (Asset),
-                               Memo (MemoText), Operation (OperationPayment),
-                               Transaction (Transaction), getAccount,
-                               getAccountTransactionsList, getAccountsList)
+                               Memo (MemoText),
+                               Operation (OperationChangeTrust, OperationCreateAccount, OperationCreateClaimableBalance, OperationPayment),
+                               Transaction (Transaction),
+                               TransactionOnChain (TransactionOnChain),
+                               getAccount, getAccountTransactionsList,
+                               getAccountsList)
 import Stellar.Horizon.Client qualified as Stellar
 import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.DTO qualified
@@ -169,25 +175,50 @@ getAmount Asset{code, issuer} balances =
 updateEscrow :: App -> ClientEnv -> IO ()
 updateEscrow app clientEnv = do
     txs <- runClientM' clientEnv $ getAccountTransactionsList escrowAddress
-    let escrows = concatMap makeEscrows txs
-    atomicWriteIORef appEscrowsActive $ Escrow.buildIndex escrows
-    Aeson.encodeFile appEscrowsActiveFile escrows
+    let (extra, active) =
+            correctEscrow $ partitionEithers $ concatMap makeEscrows txs
+    Aeson.encodeFile appEscrowActiveFile active
+    Yaml.encodeFile  appEscrowExtraFile  extra
+    atomicWriteIORef appEscrowActive $ Escrow.buildIndex active
   where
-    App{appEscrowsActive, appSettings} = app
-    AppSettings{appEscrowsActiveFile} = appSettings
+    App{appEscrowActive, appSettings} = app
+    AppSettings{appEscrowActiveFile, appEscrowExtraFile} = appSettings
+
+correctEscrow ::
+    ([TransactionOnChain], [Escrow]) -> ([TransactionOnChain], [Escrow])
+correctEscrow (extra, active) =
+    ( filter (\TransactionOnChain{id} -> id `notElem` outputs) extra
+    , filter (\Escrow{txId} -> txId `notMember` escrowCorrections) active
+    )
+  where
+    outputs =
+        Set.fromList
+            [output | EscrowCorrection{output} <- toList escrowCorrections]
 
 parseEscrowIssueIdFromMemo :: Text -> Maybe IssueId
 parseEscrowIssueIdFromMemo memo = do
     issueIdText <- stripPrefix "E" memo
     fromPathPiece issueIdText
 
-makeEscrows :: Transaction -> [Escrow]
-makeEscrows Transaction{id, memo, operations, source = txSource} =
-    [ Escrow{amount, asset, issueId, sponsor, txId = id}
-    | MemoText memoText <- [memo]
-    , issueId <- toList $ parseEscrowIssueIdFromMemo memoText
-    , OperationPayment{amount, asset, destination, source = opSource} <-
-        operations
-    , destination == escrowAddress
-    , let sponsor = fromMaybe txSource opSource
-    ]
+makeEscrows :: TransactionOnChain -> [Either TransactionOnChain Escrow]
+makeEscrows toc@TransactionOnChain{id = txId, time, tx} = do
+    operation <- operations
+    let saveExtra =
+            pure $ Left toc{Stellar.tx = tx{Stellar.operations = [operation]}}
+    case operation of
+        Right OperationChangeTrust -> []
+        Right OperationCreateAccount -> []
+        Right OperationCreateClaimableBalance -> []
+        Right OperationPayment{amount, asset, destination, source}
+            | destination == escrowAddress
+            , MemoText memoText <- memo -> do
+                let sponsor = fromMaybe txSource source
+                issueId <- toList $ parseEscrowIssueIdFromMemo memoText
+                pure $ Right Escrow{amount, asset, issueId, sponsor, time, txId}
+        Right OperationPayment{destination, source}
+            | fromMaybe txSource source /= escrowAddress
+            , destination /= escrowAddress ->
+                []
+        _ -> saveExtra
+  where
+    Transaction{memo, operations, source = txSource} = tx

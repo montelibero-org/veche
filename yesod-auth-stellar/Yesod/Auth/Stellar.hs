@@ -20,8 +20,7 @@ module Yesod.Auth.Stellar
     , Config (..)
     ) where
 
-import Debug.Trace
-
+-- global
 import Control.Exception (Exception, throwIO)
 import Control.Monad (unless, when)
 import Data.ByteString.Base64 (decodeBase64, encodeBase64)
@@ -29,7 +28,7 @@ import Data.Function ((&))
 import Data.String (IsString)
 import Data.Text (Text, strip)
 import Data.Text qualified as Text
-import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (notFound404)
 import Network.ONCRPC.XDR (lengthArray, unLengthArray, xdrDeserialize,
@@ -273,7 +272,7 @@ verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
     envelope <- decodeEnvelope
     let Transaction{memo, operations, source} =
-            Stellar.transactionFromEnvelopeXdr undefined $ traceShowId envelope
+            Stellar.transactionFromEnvelopeXdr envelope
     verifySignatures envelope
     verifyMemo memo
     nonce <- getNonce operations
@@ -297,8 +296,7 @@ verifyResponse envelopeXdrBase64 = do
         when (memo /= MemoText loggingIntoVeche) $ invalidArgs ["Bad memo"]
 
     getNonce = \case
-        [OperationManageData "nonce" (Just nonce)] ->
-            decodeUtf8' nonce ?| "Bad nonce"
+        [Right (OperationManageData "nonce" (Just nonce))] -> pure nonce
         _ -> invalidArgs ["Bad operations"]
 
 -- | Verify source address signature

@@ -20,8 +20,8 @@ import Data.Text.Encoding qualified as TE
 import Data.Version (showVersion)
 import Text.Hamlet (hamletFile)
 import Yesod.Core (addScript, addStylesheet, defaultCsrfCookieName,
-                   defaultCsrfHeaderName, getMessages, getYesod, languages,
-                   pageBody, pageHead, pageTitle, widgetToPageContent)
+                   defaultCsrfHeaderName, getMessages, languages, pageBody,
+                   pageHead, pageTitle, widgetToPageContent)
 
 -- package
 import Paths_veche (version)

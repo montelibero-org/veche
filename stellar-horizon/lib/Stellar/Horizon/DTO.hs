@@ -52,7 +52,7 @@ data Account = Account
 
 newtype Address = Address Text
     deriving newtype
-        (Eq, FromHttpApiData, FromJSON, Ord, Show, ToHttpApiData, ToJSON)
+        (Eq, FromHttpApiData, FromJSON, Ord, Read, Show, ToHttpApiData, ToJSON)
 
 data Balance = Balance
     { balance :: Text

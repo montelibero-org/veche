@@ -20,4 +20,4 @@ stellar-horizon-url: http://localhost:9999
 
 telegram-bot-name: veche_test_bot
 
-escrows-active-file: escrows-active.json
+escrow-active-file: escrow-active.json

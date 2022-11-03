@@ -15,7 +15,6 @@ import Foundation.Base
 import Import.NoFoundation
 
 -- global
-import Yesod.Core (getYesod)
 import Yesod.Form (runInputGet)
 
 -- component

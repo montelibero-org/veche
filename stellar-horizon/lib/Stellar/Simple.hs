@@ -1,5 +1,8 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -15,6 +18,7 @@ module Stellar.Simple (
     Memo (..),
     Operation (..),
     Transaction (..),
+    TransactionOnChain (..),
     transactionFromDto,
     transactionFromEnvelopeXdr,
     TxId,
@@ -25,6 +29,7 @@ import Prelude qualified
 
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson qualified as Aeson
+import Data.Aeson.Types qualified as Aeson
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as Base64
@@ -34,11 +39,12 @@ import Data.Scientific (Scientific, scientific)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import Data.Time (UTCTime)
+import GHC.Generics (Generic)
 import GHC.Stack (HasCallStack)
 import Network.ONCRPC.XDR (xdrDeserialize)
 import Network.ONCRPC.XDR qualified as XDR
 import Network.Stellar.Keypair qualified as StellarKey
-import Network.Stellar.TransactionXdr (DecoratedSignature)
 import Network.Stellar.TransactionXdr qualified as XDR
 import Servant.API (FromHttpApiData, ToHttpApiData)
 import Servant.API qualified
@@ -66,7 +72,7 @@ amountFromXdr :: Int64 -> Scientific
 amountFromXdr i = scientific (fromIntegral i) (-7)
 
 data Asset = Asset{issuer :: Maybe Text, code :: Text}
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Read, Show)
 
 -- | Make asset from the canonical pair of code and issuer
 mkAsset :: Text -> Text -> Asset
@@ -87,9 +93,6 @@ assetFromText t
   where
     (code, _issuer) = Text.break (== ':') t
     issuer = Text.drop 1 _issuer
-
-instance Show Asset where
-    show = Text.unpack . assetToText
 
 instance FromHttpApiData Asset where
     parseUrlPiece = Right . assetFromText
@@ -119,64 +122,128 @@ assetFromXdr = \case
             , issuer = Just $ StellarKey.encodePublic $ XDR.unLengthArray issuer
             }
 
-data Memo = MemoNone | MemoText Text | MemoOther XDR.Memo
-    deriving (Eq)
+newtype Shown a = Shown String
+    deriving newtype (Eq, FromJSON, ToJSON)
+
+instance Show (Shown a) where
+    show (Shown s) = s
+
+shown :: Show a => a -> Shown a
+shown = Shown . show
+
+data Memo = MemoNone | MemoText Text | MemoOther (Shown XDR.Memo)
+    deriving (Eq, Show)
+
+instance ToJSON Memo where
+    toJSON = \case
+        MemoNone    -> Aeson.Null
+        MemoText  m -> Aeson.String m
+        MemoOther m -> Aeson.String $ Text.pack $ show m
+
+instance FromJSON Memo where
+    parseJSON = \case
+        Aeson.Null      -> pure MemoNone
+        Aeson.String t  -> pure $ MemoText t
+        v               -> Aeson.typeMismatch "Memo" v
 
 memoFromXdr :: XDR.Memo -> Memo
 memoFromXdr = \case
     XDR.Memo'MEMO_NONE -> MemoNone
     XDR.Memo'MEMO_TEXT text ->
         MemoText $ decodeUtf8Throw $ XDR.unLengthArray text
-    memo -> MemoOther memo
+    memo -> MemoOther $ shown memo
+
+data PaymentType = DirectPayment | PathPayment
+    deriving (FromJSON, Generic, Read, Show, ToJSON)
 
 data Operation
-    = OperationManageData ByteString (Maybe ByteString)
+    = OperationManageData Text (Maybe Text)
     | OperationPayment
         { asset         :: Asset
         , amount        :: Scientific
         , destination   :: Address
         , source        :: Maybe Address
+        , type_         :: PaymentType
         }
-    | OperationOther XDR.Operation
+    | OperationChangeTrust
+    | OperationCreateAccount
+    | OperationCreateClaimableBalance
+    deriving (FromJSON, Generic, Read, Show, ToJSON)
 
-operationFromXdr :: XDR.Operation -> Operation
-operationFromXdr op@XDR.Operation{operation'body, operation'sourceAccount} =
+operationFromXdr :: XDR.Operation -> Maybe Operation
+operationFromXdr XDR.Operation{operation'body, operation'sourceAccount} =
     case operation'body of
-        XDR.OperationBody'MANAGE_DATA (XDR.ManageDataOp name value) ->
+        XDR.OperationBody'CHANGE_TRUST{} -> Just OperationChangeTrust
+        XDR.OperationBody'CREATE_ACCOUNT{} -> Just OperationCreateAccount
+        XDR.OperationBody'CREATE_CLAIMABLE_BALANCE{} ->
+            Just OperationCreateClaimableBalance
+        XDR.OperationBody'MANAGE_DATA (XDR.ManageDataOp name mvalue) ->
             OperationManageData
-                (XDR.unLengthArray name) (XDR.unLengthArray <$> value)
+            <$> either
+                    (const Nothing) Just (decodeUtf8' $ XDR.unLengthArray name)
+            <*> case mvalue of
+                    Nothing -> Just Nothing
+                    Just array ->
+                        either (const Nothing) (Just . Just) $
+                        decodeUtf8' $ XDR.unLengthArray array
+        XDR.OperationBody'PATH_PAYMENT_STRICT_RECEIVE
+                XDR.PathPaymentStrictReceiveOp
+                    { pathPaymentStrictReceiveOp'destAmount
+                    , pathPaymentStrictReceiveOp'destAsset
+                    , pathPaymentStrictReceiveOp'destination
+                    } ->
+            Just
+            OperationPayment
+                { amount = amountFromXdr pathPaymentStrictReceiveOp'destAmount
+                , asset  = assetFromXdr  pathPaymentStrictReceiveOp'destAsset
+                , destination =
+                    addressFromXdrMuxed pathPaymentStrictReceiveOp'destination
+                , source
+                , type_ = PathPayment
+                }
         XDR.OperationBody'PAYMENT
                 XDR.PaymentOp
                     { paymentOp'amount
                     , paymentOp'asset
                     , paymentOp'destination
                     } ->
+            Just
             OperationPayment
-                { asset         = assetFromXdr          paymentOp'asset
-                , amount        = amountFromXdr         paymentOp'amount
+                { amount        = amountFromXdr         paymentOp'amount
+                , asset         = assetFromXdr          paymentOp'asset
                 , destination   = addressFromXdrMuxed   paymentOp'destination
-                , source        = addressFromXdr <$>    operation'sourceAccount
+                , source
+                , type_ = DirectPayment
                 }
-        _ -> OperationOther op
+        _ -> Nothing
+  where
+    source = addressFromXdr <$> operation'sourceAccount
 
 data Transaction = Transaction
-    { id            :: TxId
-    , memo          :: Memo
-    , operations    :: [Operation]
-    , signatures    :: [DecoratedSignature]
+    { memo          :: Memo
+    , operations    :: [Either (Shown XDR.Operation) Operation]
     , source        :: Address
     }
+    deriving (FromJSON, Generic, Show, ToJSON)
 
-transactionFromDto :: HasCallStack => DTO.Transaction -> Transaction
-transactionFromDto DTO.Transaction{id, envelope_xdr} =
-    transactionFromEnvelopeXdr id envelope
+data TransactionOnChain = TransactionOnChain
+    { id    :: TxId
+    , time  :: UTCTime
+    , tx    :: Transaction
+    }
+    deriving (FromJSON, Generic, ToJSON)
+
+transactionFromDto :: HasCallStack => DTO.Transaction -> TransactionOnChain
+transactionFromDto DTO.Transaction{created_at, envelope_xdr, id} =
+    TransactionOnChain
+        {id, time = created_at, tx = transactionFromEnvelopeXdr envelope}
   where
     envelopeXdrRaw =
         either error identity $ Base64.decode $ encodeUtf8 envelope_xdr
     envelope = either error identity $ xdrDeserialize envelopeXdrRaw
 
-transactionFromEnvelopeXdr :: TxId -> XDR.TransactionEnvelope -> Transaction
-transactionFromEnvelopeXdr id = \case
+transactionFromEnvelopeXdr :: XDR.TransactionEnvelope -> Transaction
+transactionFromEnvelopeXdr = \case
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_V0       e -> fromV0 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX          e -> fromV1 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP e -> fromFB e
@@ -188,13 +255,11 @@ transactionFromEnvelopeXdr id = \case
                     , transactionV0'operations
                     , transactionV0'sourceAccountEd25519
                     }
-                signatures
+                _signatures
             ) =
         Transaction
-            { id
-            , memo = memoFromXdr transactionV0'memo
-            , operations = operationsFromXdr transactionV0'operations
-            , signatures = signaturesFromXdr signatures
+            { memo          = memoFromXdr transactionV0'memo
+            , operations    = operationsFromXdr transactionV0'operations
             , source =
                 Address $
                 StellarKey.encodePublic $
@@ -207,30 +272,29 @@ transactionFromEnvelopeXdr id = \case
                     , transaction'operations
                     , transaction'sourceAccount
                     }
-                signatures
+                _signatures
             ) =
         Transaction
-            { id
-            , memo = memoFromXdr transaction'memo
-            , operations = operationsFromXdr transaction'operations
-            , signatures = signaturesFromXdr signatures
-            , source = addressFromXdrMuxed transaction'sourceAccount
+            { memo          = memoFromXdr transaction'memo
+            , operations    = operationsFromXdr transaction'operations
+            , source        = addressFromXdrMuxed transaction'sourceAccount
             }
 
     fromFB  (XDR.FeeBumpTransactionEnvelope
-                XDR.FeeBumpTransaction{feeBumpTransaction'feeSource} signatures
+                XDR.FeeBumpTransaction{feeBumpTransaction'feeSource} _signatures
             ) =
         Transaction
-            { id
-            , memo = MemoNone
-            , operations = []
-            , signatures = signaturesFromXdr signatures
-            , source = addressFromXdrMuxed feeBumpTransaction'feeSource
+            { memo          = MemoNone
+            , operations    = []
+            , source        = addressFromXdrMuxed feeBumpTransaction'feeSource
             }
 
-    operationsFromXdr = map operationFromXdr . toList . XDR.unLengthArray
-
-    signaturesFromXdr = toList . XDR.unLengthArray
+    operationsFromXdr ::
+        XDR.Array n XDR.Operation -> [Either (Shown XDR.Operation) Operation]
+    operationsFromXdr =
+        map (\xop -> maybe (Left $ shown xop) Right $ operationFromXdr xop)
+        . toList
+        . XDR.unLengthArray
 
 decodeUtf8Throw :: HasCallStack => ByteString -> Text
 decodeUtf8Throw = either (error . show) identity . decodeUtf8'

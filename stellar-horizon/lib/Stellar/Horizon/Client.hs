@@ -21,6 +21,7 @@ module Stellar.Horizon.Client (
     Operation (..),
     Signer (..),
     Transaction (..),
+    TransactionOnChain (..),
     transactionFromDto,
     transactionFromEnvelopeXdr,
     TxId (..),
@@ -54,8 +55,8 @@ import Stellar.Horizon.DTO (Account (..), Address (..), Record (Record),
                             Records (Records), Signer (..), TxId (..))
 import Stellar.Horizon.DTO qualified as DTO
 import Stellar.Simple (Asset (..), Memo (..), Operation (..), Transaction (..),
-                       assetFromText, assetToText, transactionFromDto,
-                       transactionFromEnvelopeXdr)
+                       TransactionOnChain (..), assetFromText, assetToText,
+                       transactionFromDto, transactionFromEnvelopeXdr)
 
 -- | Public network Horizon server https://horizon.stellar.org/
 publicServerBase :: BaseUrl
@@ -86,7 +87,8 @@ getAccountsList = recordsToList . getAccounts . Just
 getAccountTransactionsDtoList :: Address -> ClientM [DTO.Transaction]
 getAccountTransactionsDtoList = recordsToList . getAccountTransactionsDto
 
-getAccountTransactionsList :: HasCallStack => Address -> ClientM [Transaction]
+getAccountTransactionsList ::
+    HasCallStack => Address -> ClientM [TransactionOnChain]
 getAccountTransactionsList =
     fmap (map transactionFromDto) . getAccountTransactionsDtoList
 
