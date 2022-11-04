@@ -76,7 +76,7 @@ commentAForm mParams = do
         unTextarea <$>
         areq
             textareaField
-            (bfs ("Comment" :: Text))
+            (bfs MsgIssueComment)
                 {fsId = Just "comment_message", fsName = Just "message"}
             Nothing
     provideInfo <-

@@ -4,14 +4,14 @@
     <div .btn-group role=group>
         <a .btn :stateOpen:.btn-primary :not stateOpen:.btn-outline-primary
                 href=@{ForumR forumId}>
-            #{openIssueCount} open
+            #{openIssueCount} _{MsgOpen}
         <a .btn :stateOpen:.btn-outline-primary :not stateOpen:.btn-primary
                 href=@?{(ForumR forumId, [("state", "closed")])}>
-            #{closedIssueCount} closed
+            #{closedIssueCount} _{MsgClosed}
     $if isAddForumIssueAllowed
         <div .ms-auto>
             <a .btn .btn-success href=@{ForumIssueNewR forumId}>
-                New issue
+                _{MsgNewIssue}
 
 <div .clearfix style="margin-bottom: 1em;">
 

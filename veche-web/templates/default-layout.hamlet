@@ -46,7 +46,7 @@
             ^{widget}
 
     $if isNothing muser && not (isAuthRMay mcurrentRoute)
-        <a .btn .btn-primary href=@{AuthR LoginR}>Log in
+        <a .btn .btn-primary href=@{AuthR LoginR}>_{MsgLogIn}
 
 <!-- Footer -->
 <footer .footer .mt-3>

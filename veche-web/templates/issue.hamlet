@@ -7,13 +7,13 @@
         #{title}
     <h3 .d-flex .align-items-center .ms-2>
         $if open
-            <span .badge .rounded-pill .text-bg-success>Open
+            <span .badge .rounded-pill .text-bg-success>_{MsgIssueOpen}
         $else
-            <span .badge .rounded-pill .text-bg-danger>Closed
+            <span .badge .rounded-pill .text-bg-danger>_{MsgIssueClosed}
 
     <div .ms-auto>
         $if isEditAllowed
-            <a .btn .btn-primary href=@{IssueEditR issueId}>Edit
+            <a .btn .btn-primary href=@{IssueEditR issueId}>_{MsgIssueEdit}
         $if isCloseReopenAllowed
             ^{closeReopenButton issueId open}
 
@@ -79,10 +79,10 @@ $if isJust authnUser && enablePriceOffer
                         <p .mt-3.mb-0>
                             <a href=@{PagesEscrowR}>Terms and conditions
         $maybe priceOffer <- priceOffer
-            <dt .col-md-2>Price offer
+            <dt .col-md-2>_{MsgIssuePriceOffer}
             <dd .col-md-10>#{renderMarkdown priceOffer}
         $maybe contacts <- contacts
-            <dt .col-md-2>Contacts
+            <dt .col-md-2>_{MsgIssueContacts}
             <dd .col-md-10>#{renderMarkdown contacts}
 
 <hr>
@@ -98,14 +98,14 @@ $if isCommentAllowed
             action=@{CommentsR} enctype=#{commentFormEnctype} method=post>
         ^{commentFormFields}
         <div .d-sm-flex .d-grid>
-            <label .col-sm-2 .col-form-label .fw-bold>Request info from
+            <label .col-sm-2 .col-form-label .fw-bold>_{MsgIssueRequestInfoFrom}
             <div .col-sm-10>
                 <span #commentRequestUsers>
                 <input .form-control #commentRequestUserInput
-                    placeholder="Start typing a user name or an address">
+                    placeholder="_{MsgIssueRequestStartTyping}">
         <div .d-flex .mt-3>
             <div .offset-sm-2 .col-sm-10>
-                <button .btn .btn-primary type=submit>Add comment
+                <button .btn .btn-primary type=submit>_{MsgIssueAddComment}
 
 $if isNothing authnUser
     <div .alert .alert-info role=alert>
