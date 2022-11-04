@@ -3,6 +3,18 @@ version:       0
 build-type:    Simple
 cabal-version: >=1.2
 
+executable escrow-award
+  build-depends:
+      base
+    , base64-bytestring
+    , http-client-tls
+    , servant-client
+    , stellar-horizon
+    , stellar-sdk
+    , text
+
+  main-is:       escrow-award.hs
+
 executable escrow-setdomain
   build-depends:
       base
