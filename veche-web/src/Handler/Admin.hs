@@ -25,7 +25,7 @@ import Data.Yaml qualified as Yaml
 import Database.Esqueleto.Experimental (SqlExpr, SqlQuery, Value (Value), desc,
                                         from, innerJoin, on, orderBy, select,
                                         table, (:&) ((:&)), (==.), (^.))
-import Database.Persist (selectList)
+import Database.Persist (get, selectList)
 import Stellar.Simple (Transaction (Transaction),
                        TransactionOnChain (TransactionOnChain), TxId)
 import Stellar.Simple qualified
@@ -74,20 +74,25 @@ getAdminEscrowR = do
             <th>transaction
         |]
 
-    activeRows escrows =
-        for_ escrows \Escrow{amount, asset, issueId, sponsor, time, txId} -> do
+    activeRows =
+        traverse_ \Escrow{amount, asset, issueId, sponsor, time, txId} -> do
             sponsorUser <-
                 liftHandler $
                 fmap entityVal <$> User.getByStellarAddress sponsor
+            mIssue <- liftHandler $ runDB $ get issueId
+            let issueIsClosed = any (\Issue{..} -> not open) mIssue
             let sponsorWidget =
                     case sponsorUser of
                         Nothing   -> toHtml $ elide 0 4 $ toUrlPiece sponsor
                         Just user -> userNameWidget user
             [whamlet|
+                $newline never
                 <tr>
                     <td>#{show amount} #{showKnownAsset asset}
                     <td>
                         <a href=@{IssueR issueId}>#{toPathPiece issueId}
+                        $if issueIsClosed
+                            <span .badge.bg-danger>closed
                     <td>#{sponsorWidget}
                     <td>#{show time}
                     <td>
