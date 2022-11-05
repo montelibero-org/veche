@@ -17,6 +17,7 @@ module Stellar.Simple (
     -- * Transaction builder
     transactionBuilder,
     addPayment,
+    addManageData,
     setMemoText,
     build,
     signWithSecret,
@@ -138,6 +139,17 @@ addPayment address asset amount b@TransactionBuilder{operations} =
         , paymentOp'asset = assetToXdr asset
         , paymentOp'amount = amount
         }
+
+addManageData :: Text -> Maybe Text -> TransactionBuilder -> TransactionBuilder
+addManageData key mvalue b@TransactionBuilder{operations} =
+    b{operations = operations |> op}
+  where
+    op = XDR.Operation{operation'sourceAccount = Nothing, operation'body}
+    operation'body = XDR.OperationBody'MANAGE_DATA data_
+    data_ =
+        XDR.ManageDataOp
+            (XDR.lengthArray' $ encodeUtf8 key)
+            (XDR.lengthArray' . encodeUtf8 <$> mvalue)
 
 assetToXdr :: Asset -> XDR.Asset
 assetToXdr = \case
