@@ -12,8 +12,9 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 
 -- project
-import Stellar.Simple (Asset (Asset), assetToText, mkAsset)
+import Stellar.Simple (Asset (Asset), mkAsset)
 import Stellar.Simple qualified as Stellar
+import Stellar.Simple.Types (assetToText)
 
 mtlIssuer :: Text
 mtlIssuer = "GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
