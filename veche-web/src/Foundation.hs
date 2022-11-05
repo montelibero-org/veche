@@ -204,14 +204,16 @@ instance YesodAuth App where
                 <div .d-grid .gap-2>
                     $forall (label, login) <- plugins
                         <div .row>
-                            <label .col-sm-4 .text-sm-end .fw-bold .col-form-label>#{label}
+                            <label .col-form-label .col-sm-4 .fw-bold
+                                    .text-sm-end>
+                                #{label}
                             <div .col-sm-8>
                                 ^{login}
             |]
       where
         labels =
             [ ("stellar", "Via Stellar")
-            , ("telegram", "Via Telegram (existing accounts only)")
+            , ("telegram", "Via Telegram (existing Veche accounts only)")
             ]
 
 authenticateStellar ::
