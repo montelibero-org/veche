@@ -33,15 +33,16 @@ $if isJust authnUser && enablePriceOffer
                                 data-bs-title="#{show amount} #{showKnownAsset asset} minus 2% service fee"
                                 style="text-decoration: underline dotted;">
                             <i.bi.bi-info-square-fill>
-            <p>
-                <button .btn.btn-success
-                        aria-expanded=false
-                        aria-controls=collapseExample
-                        data-bs-toggle=collapse
-                        data-bs-target="#collapseExample"
-                        type=button>
-                    Sponsor
-                Motivate performers!
+            $if open
+                <p>
+                    <button .btn.btn-success
+                            aria-expanded=false
+                            aria-controls=collapseExample
+                            data-bs-toggle=collapse
+                            data-bs-target="#collapseExample"
+                            type=button>
+                        Sponsor
+                    Motivate performers!
                 <div .card .collapse #collapseExample>
                     <div .card-body>
                         <p>
