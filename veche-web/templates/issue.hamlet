@@ -75,8 +75,10 @@ $if isJust authnUser && enablePriceOffer
                                     value=98>
                                 <label for=escrowCalc_get>Performer gets
                         <p>
-                            Stellar link for apps (Keybase, lobstr.co):
-                            <a #escrowCalc_stellarPay>
+                            <a #escrowCalc_stellarPay .btn.btn-primary
+                                    role=button>
+                                Pay with app
+                                <small>(Keybase, Lobstr)
                         <p .mt-3.mb-0>
                             <a href=@{PagesEscrowR}>Terms and conditions
         $maybe priceOffer <- priceOffer
