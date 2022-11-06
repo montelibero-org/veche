@@ -43,9 +43,9 @@ import Yesod.Core as X (Fragment ((:#:)), HandlerFor, Html, HtmlUrl,
 import Yesod.Core.Types as X (loggerSet)
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
                         FieldSettings (..), FormResult (FormSuccess), MForm,
-                        Textarea (..), aopt, areq, generateFormPost,
-                        hiddenField, intField, ireq, runFormPost, textField,
-                        textareaField)
+                        Textarea (..), aopt, areq, fieldSettingsLabel,
+                        generateFormPost, hiddenField, intField, ireq,
+                        runFormPost, textField, textareaField)
 
 import Authorization as X
 import Database.Persist.Extra as X
