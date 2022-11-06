@@ -1,3 +1,7 @@
+# issue
+IssueClose: Close
+IssueReopen: Reopen
+
 # navbar
 About: About
 Dashboard: Dashboard

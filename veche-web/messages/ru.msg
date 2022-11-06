@@ -1,3 +1,7 @@
+# issue
+IssueClose: Закрыть
+IssueReopen: Открыть
+
 # navbar
 Dashboard: Главная
 Forums: Форумы

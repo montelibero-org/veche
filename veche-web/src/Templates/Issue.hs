@@ -21,6 +21,7 @@ module Templates.Issue
 import Import
 
 -- global
+import Yesod.Core (getMessageRender)
 import Yesod.Form (fieldSettingsLabel, radioFieldList)
 import Yesod.Form.Bootstrap5 (bfs)
 
@@ -34,11 +35,20 @@ import Model.Request qualified
 import Templates.Comment (commentAnchor)
 
 closeReopenButton :: IssueId -> Bool -> Widget
-closeReopenButton issueId issueIsOpen
-    | issueIsOpen =
-        actionButton (IssueCloseR  issueId) ["btn-danger"] "Close" True
-    | otherwise =
-        actionButton (IssueReopenR issueId) ["btn-success"] "Reopen" True
+closeReopenButton issueId issueIsOpen = do
+    mr <- getMessageRender
+    if issueIsOpen then
+        actionButton
+            (IssueCloseR issueId)
+            ["btn-danger"]
+            (mr MsgIssueClose)
+            True
+    else
+        actionButton
+            (IssueReopenR issueId)
+            ["btn-success"]
+            (mr MsgIssueReopen)
+            True
 
 voteButtons :: Bool -> IssueId -> Choice -> Widget
 voteButtons isEnabled issueId currentChoice =
