@@ -48,7 +48,7 @@ commentWidget
             subComments) =
     $(widgetFile "comment")
   where
-    Entity _authorId commentAuthor = author
+    Entity authorId commentAuthor = author
     Comment{message, type_, created} = comment
     createdTime = formatTime defaultTimeLocale rfc822DateFormat created
 

@@ -1,5 +1,8 @@
 <li>
-    <div .comment_widget data-comment-id=#{toPathPiece id} data-author-id=#{toPathPiece _authorId} data-author-name=#{userNameWidget commentAuthor}>
+    <div .comment_widget
+            data-author-id=#{toPathPiece authorId}
+            data-author-name=#{userNameWidget commentAuthor}
+            data-comment-id=#{toPathPiece id}>
         <div .d-grid.d-lg-flex>
             <div .comment.me-auto ##{commentAnchor id}>
                 <div .comment_header>
@@ -11,13 +14,17 @@
                             requested information from #
                             $forall user <- requestedUsers
                                 <span .requested_user>#{userNameWidget user}
-                    <span .comment_timestamp .pull-right .text-muted>#{createdTime}
+                    <span .comment_timestamp .pull-right .text-muted>
+                        #{createdTime}
                 $if message /= ""
                     <div .comment_message>#{renderMarkdown message}
 
             <div .d-lg-flex.align-items-lg-end>
                 $if type_ /= CommentStart
-                    <a .btn .btn-primary .btn-sm .comment-reply .me-2 role=button>Reply
-                <a .btn .btn-primary .btn-sm .comment-request role=button>Request Info
+                    <a .btn .btn-primary .btn-sm .comment-reply .me-2
+                            role=button>
+                        Reply
+                <a .btn .btn-primary .btn-sm .comment-request role=button>
+                    Request Info
 
     ^{commentForestWidget subComments}
