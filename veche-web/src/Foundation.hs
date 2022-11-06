@@ -194,26 +194,23 @@ instance YesodAuth App where
         authLayout do
             setTitleI LoginTitle
             master <- getYesod
-            let plugins =
-                    [   ( lookup apName labels & fromMaybe apName
-                        , apLogin routeToParent
-                        )
-                    | AuthPlugin{apName, apLogin} <- authPlugins master
-                    ]
             [whamlet|
                 <div .d-grid .gap-2>
-                    $forall (label, login) <- plugins
+                    $forall AuthPlugin{apName, apLogin} <- authPlugins master
                         <div .row>
                             <label .col-form-label .col-sm-4 .fw-bold
                                     .text-sm-end>
-                                #{label}
+                                $maybe label <- lookup apName labels
+                                    _{label}
+                                $nothing
+                                    #{apName}
                             <div .col-sm-8>
-                                ^{login}
+                                ^{apLogin routeToParent}
             |]
       where
         labels =
-            [ ("stellar", "Via Stellar")
-            , ("telegram", "Via Telegram (existing Veche accounts only)")
+            [ ("stellar" , MsgAuthnViaStellar )
+            , ("telegram", MsgAuthnViaTelegram)
             ]
 
 authenticateStellar ::

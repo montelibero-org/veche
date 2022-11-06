@@ -22,7 +22,7 @@ import Import
 
 -- global
 import Yesod.Core (getMessageRender)
-import Yesod.Form (fieldSettingsLabel, radioFieldList)
+import Yesod.Form (radioFieldList)
 import Yesod.Form.Bootstrap5 (bfs)
 
 -- component

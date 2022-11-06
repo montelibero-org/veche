@@ -1,3 +1,7 @@
+# authentication
+AuthnViaStellar: Через Stellar
+AuthnViaTelegram: Через Telegram (только если уже есть аккаунт на Вече)
+
 # comment
 CommentProvideInfo: Информация предоставлена для
 
