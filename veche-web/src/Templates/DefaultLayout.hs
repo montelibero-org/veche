@@ -87,14 +87,16 @@ defaultLayout widget = do
     -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
     -- (title, parents) <- breadcrumbs
 
-    let navbarLeftMenu'  = navbarLeftMenu  $ isJust muser
-        navbarRightMenu' = navbarRightMenu $ isJust muser
-
     -- We break up the default layout into two components:
     -- default-layout is the contents of the body tag, and
     -- default-layout-wrapper is the entire page. Since the final
     -- value passed to hamletToRepHtml cannot be a widget, this allows
     -- you to use normal widget features in default-layout.
+    let navbarLeftMenu'  = navbarLeftMenu  $ isJust muser
+        navbarRightMenu' = navbarRightMenu $ isJust muser
+
+    let switchLanguage isoCode name =
+            actionButton (SettingsLanguageR isoCode) ["dropdown-item"] name True
 
     pc <-
         widgetToPageContent do
