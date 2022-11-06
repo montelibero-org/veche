@@ -10,7 +10,7 @@ IssueClose: Закрыть
 IssueReopen: Открыть
 
 # navbar
-Dashboard: Главная
+Dashboard: Важное
 Forums: Форумы
 Issues: Обсуждения
 Profile: Профиль
