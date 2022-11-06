@@ -1,3 +1,6 @@
+# comment
+CommentProvideInfo: Информация предоставлена для
+
 # issue
 IssueClose: Закрыть
 IssueReopen: Открыть

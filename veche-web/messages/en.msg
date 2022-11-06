@@ -1,3 +1,6 @@
+# comment
+CommentProvideInfo: Provide info for
+
 # issue
 IssueClose: Close
 IssueReopen: Reopen

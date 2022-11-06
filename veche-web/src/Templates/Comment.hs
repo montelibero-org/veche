@@ -90,7 +90,8 @@ commentAForm mParams = do
                             fromMaybe [] mActiveRequests
                         ]
                     )
-                    "Provide info for"{fsName = Just "provide"}
+                    (fieldSettingsLabel MsgCommentProvideInfo)
+                        {fsName = Just "provide"}
                     Nothing
     pure
         CommentInput
