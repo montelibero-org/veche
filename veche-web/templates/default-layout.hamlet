@@ -53,5 +53,9 @@
     <div .container .d-flex .text-muted>
         <div .me-auto>
             #{appCopyright $ appSettings master}
+        <div .me-auto>
+            Language:
+            ^{actionButton (SettingsLanguageR "en") [] "EN" True}
+            ^{actionButton (SettingsLanguageR "ru") [] "RU" True}
         <div>
             Version: #{showVersion version}

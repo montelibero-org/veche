@@ -27,6 +27,7 @@ library
     Handler.Issue
     Handler.Pages
     Handler.Root
+    Handler.Settings
     Handler.Stellar
     Handler.Telegram
     Handler.User

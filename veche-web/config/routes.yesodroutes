@@ -23,6 +23,7 @@
 /issues/#IssueId/vote/#Choice   IssueVoteR              POST
 /pages/escrow                   PagesEscrowR            GET
 /robots.txt                     RobotsR                 GET
+/settings/language/#Text        SettingsLanguageR       POST
 /static                         StaticR                 Static appStatic
 /stellar-federation             StellarFederationR      GET
 /telegram/bind                  TelegramBindR           GET
