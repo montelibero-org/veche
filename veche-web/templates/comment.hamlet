@@ -1,21 +1,24 @@
 <li>
     <div .comment_widget
             data-author-id=#{toPathPiece authorId}
-            data-author-name=#{userNameWidget commentAuthor}
+            data-author-name=#{userNameText commentAuthor}
             data-comment-id=#{toPathPiece id}>
         <div .d-grid.d-lg-flex>
             <div .comment.me-auto ##{commentAnchor id}>
                 <div .comment_header>
                     <span .comment_author>#{userNameWidget commentAuthor}
-                    <span .comment_action .text-muted>
-                        $if null requestedUsers
-                            #{type_}
-                        $else
-                            requested information from #
-                            $forall user <- requestedUsers
-                                <span .requested_user>#{userNameWidget user}
-                    <span .comment_timestamp .pull-right .text-muted>
-                        #{createdTime}
+                    <span .text-muted>
+                        <span .comment_action>
+                            $if null requestedUsers
+                                #{type_}
+                            $else
+                                requested information from #
+                                $forall user <- requestedUsers
+                                    <span .requested_user>#{userNameWidget user}
+                        on
+                        <a .comment_timestamp .text-muted
+                                href=##{commentAnchor id}>
+                            #{createdTime}
                 $if message /= ""
                     <div .comment_message>#{renderMarkdown message}
 
