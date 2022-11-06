@@ -50,12 +50,15 @@
 
 <!-- Footer -->
 <footer .footer .mt-3>
-    <div .container .d-flex .text-muted>
-        <div .me-auto>
-            #{appCopyright $ appSettings master}
-        <div .me-auto>
-            Language:
-            ^{actionButton (SettingsLanguageR "en") [] "EN" True}
-            ^{actionButton (SettingsLanguageR "ru") [] "RU" True}
+    <div .container .d-grid .gap-2 .d-sm-flex .justify-content-between .text-muted>
         <div>
+            #{appCopyright $ appSettings master}
+        <div .justify-content-between .dropdown>
+            <a .text-muted style="text-decoration: none" href="#" data-bs-toggle=dropdown aria-expanded=false>
+                <i .bi.bi-globe>
+                Language
+            <ul .dropdown-menu>
+                <li>^{actionButton (SettingsLanguageR "en") ["dropdown-item"] "English" True}
+                <li>^{actionButton (SettingsLanguageR "ru") ["dropdown-item"] "Русский" True}
+        <div .justify-content-end>
             Version: #{showVersion version}
