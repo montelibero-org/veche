@@ -1,4 +1,4 @@
 ^{issuesToVote}
 
-<h2>Information requests (#{show $ length requests})
+<h2>_{MsgInfoRequests} (#{show $ length requests})
 ^{issueRequestTable requests}

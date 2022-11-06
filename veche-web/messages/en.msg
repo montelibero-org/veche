@@ -22,6 +22,10 @@ CreateAccountOrLogIn: Create account or log in
 Veche: Veche
 AboutDescription: This is a tool for organizing work in the Montelibero community.
 
+# dashboard
+InfoRequests: Information requests
+Issue: Issue
+
 # forums
 Public: Public
 OnlyFor: Only for

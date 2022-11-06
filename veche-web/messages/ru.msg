@@ -22,6 +22,10 @@ CreateAccountOrLogIn: Создать аккаунт или войти
 Veche: Вече
 AboutDescription: Это инструмент для организации работы в сообществе Монтелиберо.
 
+# dashboard
+InfoRequests: Запросы информации
+Issue: Задача
+
 # forums
 Public: Публичный
 OnlyFor: Только для
