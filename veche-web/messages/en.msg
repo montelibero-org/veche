@@ -62,3 +62,17 @@ IssueAddComment: Add comment
 PollDisabled: Disabled
 PollMtlShare: Proportionally to MTL share
 PollMtlSignerWeight: Proportionally to Stellar signer weight
+
+# user profile
+UserProfile: User profile
+Name: Name
+Save: Save
+Cancel: Cancel
+StellarAddress: Stellar Address
+Roles: Roles
+Notifications: Notifications
+Event: Event
+NewDiscussion: A new discussion is started
+SomebodyReplied: Somebody replied to you
+SomebodyRequested: Somebody requested you to comment
+ConnectTelegramNotifications: Connect Telegram to enable notifications

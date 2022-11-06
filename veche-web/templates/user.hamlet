@@ -1,25 +1,25 @@
-<h1>User profile
+<h1>_{MsgUserProfile}
 
 <div .d-grid .gap-2>
     <div .row>
-        <div .col-sm-2 .col-form-label>Name
+        <div .col-sm-2 .col-form-label>_{MsgName}
         <div .col-sm-10 #nameView>
             <span #nameViewText .me-2>#{fromMaybe "" name}
-            <button type=button .btn .btn-primary>Edit
+            <button type=button .btn .btn-primary>_{MsgIssueEdit}
         <div .col-sm-10 #nameEdit style="display: none">
             <form #nameEditForm .input-group>
                 <input type=text .form-control #nameEditText>
                 <div .btn-group .ms-2>
                     <button type=submit .btn .btn-success>
-                        Save
+                        _{MsgSave}
                     <button type=button .btn .btn-primary #nameEditCancel>
-                        Cancel
+                        _{MsgCancel}
             <div .help-block #nameEditError>
     <div .row>
-        <div .col-sm-2>Stellar address
+        <div .col-sm-2>_{MsgStellarAddress}
         <div .col-sm-10 .user_stellar_address>#{stellarAddress}
     <div .row>
-        <div .col-sm-2>Roles
+        <div .col-sm-2>_{MsgRoles}
         <div .col-sm-10 >
             $if isSigner
                 <span .badge.rounded-pill.text-bg-secondary>Signer
@@ -39,27 +39,27 @@
                     data-auth-url="@{TelegramBindR}"
                     data-request-access="write">
     <div .row>
-        <div .col-sm-2 .col-form-label>Notifications
+        <div .col-sm-2 .col-form-label>_{MsgNotifications}
         <div .col-sm-10>
             $maybe Telegram{notifyIssueAdded} <- mTelegram
                 <table .table .table-hover>
                     <thead>
                         <tr>
-                            <th>Event
+                            <th>_{MsgEvent}
                             <th>Telegram
                     <tbody>
                         <tr>
-                            <td>A new discussion is started
+                            <td>_{MsgNewDiscussion}
                             <td>
                                 <input :notifyIssueAdded:checked disabled
                                     type=checkbox>
                         <tr>
-                            <td>Somebody replied to you
+                            <td>_{MsgSomebodyReplied}
                             <td>
                                 <input checked disabled type=checkbox>
                         <tr>
-                            <td>Somebody requested you to comment
+                            <td>_{MsgSomebodyRequested}
                             <td>
                                 <input checked disabled type=checkbox>
             $nothing
-                Connect Telegram to enable notifications
+                _{MsgConnectTelegramNotifications}

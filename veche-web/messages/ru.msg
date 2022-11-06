@@ -61,4 +61,18 @@ IssueAddComment: Добавить комментарий
 # poll type
 PollDisabled: Выключено
 PollMtlShare: Пропорционально количеству MTL
-PollMtlSignerWeight: Пропорционально весу подписи Stellar
+PollMtlSignerWeight: Пропорционально весу подписи Stella
+
+# user profile
+UserProfile: Профиль пользователя
+Name: Имя
+Save: Cохранить
+Cancel: Отмена
+StellarAddress: Адрес Stellar
+Roles: Роли
+Notifications: Уведомления
+Event: Событие
+NewDiscussion: Начато новое обсуждение
+SomebodyReplied: Кто-то ответил вам
+SomebodyRequested: Кто-то запросил у вас комментарий
+ConnectTelegramNotifications: Подключите Telegram, чтобы включить уведомления
