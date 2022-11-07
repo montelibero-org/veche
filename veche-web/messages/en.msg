@@ -1,14 +1,3 @@
-# authentication
-AuthnViaStellar: Via Stellar
-AuthnViaTelegram: Via Telegram (existing Veche accounts only)
-
-# comment
-CommentProvideInfo: Provide info for
-
-# issue
-IssueClose: Close
-IssueReopen: Reopen
-
 # navbar
 About: About
 Dashboard: Dashboard
@@ -25,8 +14,8 @@ LogInToComment: Log in to see full publication and add comments
 Unauthorized: You must log in to access this page
 
 # log in
-ViaStellar: Via Stellar
-ViaTelegram: Via Telegram (existing Veche accounts only)
+AuthnViaStellar: Via Stellar
+AuthnViaTelegram: Via Telegram (existing Veche accounts only)
 CreateAccountOrLogIn: Create account or log in
 
 # about
@@ -64,7 +53,7 @@ IssueReopen: Reopen
 IssueReply: Reply
 IssueRequestInfo: Request info
 IssueComment: Комментарий
-IssueProvideInfo: Provide info for
+CommentProvideInfo: Provide info for
 IssueRequestInfoFrom: Request info from
 IssueRequestStartTyping: Start typing a user name or an address
 IssueAddComment: Add comment
