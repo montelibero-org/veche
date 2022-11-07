@@ -120,3 +120,7 @@ actionButton route classes label isEnabled =
     |]
   where
     attrs = [("class" :: Text, Text.unwords $ "btn" : classes)]
+
+addAttr :: Text -> Text -> FieldSettings site -> FieldSettings site
+addAttr name value fs@FieldSettings{fsAttrs} = fs{fsAttrs = fsAttrs'} where
+    fsAttrs' = (name, value) : fsAttrs
