@@ -168,9 +168,9 @@ editIssueForm forumE issueId previousContent =
             [whamlet|
                 <div .d-flex>
                     <div .me-auto>
-                        <a .btn .btn-outline-primary href=@{IssueR issueId}>Cancel
+                        <a .btn .btn-outline-primary href=@{IssueR issueId}>_{MsgCancel}
                     <div>
-                        <button .btn .btn-success type=submit>Save
+                        <button .btn .btn-success type=submit>_{MsgSave}
             |]
         }
 
