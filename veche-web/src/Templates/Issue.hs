@@ -124,7 +124,9 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
             unTextarea <$>
             areq
                 textareaField
-                (bfs MsgIssueMessage){fsName = Just "body"}
+                (   (bfs MsgIssueMessage){fsName = Just "body"}
+                    & addAttr "style" "height: 20em;"
+                )
                 previousBody
         priceOffer <-
             whenMay enablePriceOffer $
