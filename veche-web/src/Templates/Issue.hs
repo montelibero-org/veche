@@ -93,7 +93,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
     header =
         [whamlet|
             <div .row .mb-3>
-                <label .col-sm-2 .col-form-label .fw-bold>Forum
+                <label .col-sm-2 .col-form-label .fw-bold>_{MsgIssueForum}
                 <div .col-sm-10 .form-control-static>
                     <a href=@{ForumR forumId}>#{forumTitle}
         |]
@@ -124,7 +124,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
             unTextarea <$>
             areq
                 textareaField
-                (   (bfs ("Message" :: Text)){fsName = Just "body"}
+                (   (bfs MsgIssueMessage){fsName = Just "body"}
                     & addAttr "style" "height: 20em;"
                 )
                 previousBody
@@ -133,7 +133,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 Just . unTextarea
                 <$> areq
                         textareaField
-                        (bfs ("Price offer" :: Text))
+                        (bfs MsgIssuePriceOffer)
                             {fsName = Just "priceOffer"}
                         previousPriceOffer
         contacts <-
@@ -141,7 +141,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 Just . unTextarea
                 <$> areq
                         textareaField
-                        (bfs ("Contacts" :: Text)){fsName = Just "contacts"}
+                        (bfs MsgIssueContacts){fsName = Just "contacts"}
                         previousContacts
         poll <-
             whenMay enablePoll $
@@ -170,9 +170,9 @@ editIssueForm forumE issueId previousContent =
             [whamlet|
                 <div .d-flex>
                     <div .me-auto>
-                        <a .btn .btn-outline-primary href=@{IssueR issueId}>Cancel
+                        <a .btn .btn-outline-primary href=@{IssueR issueId}>_{MsgCancel}
                     <div>
-                        <button .btn .btn-success type=submit>Save
+                        <button .btn .btn-success type=submit>_{MsgSave}
             |]
         }
 
@@ -184,7 +184,7 @@ newIssueForm forum@(forumId, _) =
             [whamlet|
                 <div .row>
                     <div .offset-sm-2.col-sm-10>
-                        <button type=submit .btn .btn-success>Publish
+                        <button type=submit .btn .btn-success>_{MsgIssuePublish}
             |]
         }
 

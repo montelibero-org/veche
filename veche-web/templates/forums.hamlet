@@ -1,4 +1,4 @@
-<h1>Forums
+<h1>_{MsgForums}
 
 <table .table .table-striped>
     $forall (forumId, Forum{title, requireRole}) <- forums
@@ -7,6 +7,6 @@
                 <a href=@{ForumR forumId}>#{title}
             <td>
                 $maybe role <- requireRole
-                    Only for #{show role}
+                    _{MsgOnlyFor} #{show role}
                 $nothing
-                    Public
+                    _{MsgPublic}
