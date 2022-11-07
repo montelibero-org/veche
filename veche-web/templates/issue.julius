@@ -105,8 +105,8 @@ $(() => {
   }
 
   updateFromGive();
-  give[0].addEventListener("input", updateFromGive);
-  get[0].addEventListener("input", updateFromGet);
+  give.each(x => x.addEventListener("input", updateFromGive));
+  get .each(x => x.addEventListener("input", updateFromGet ));
 });
 
 function comment_request_user_dimiss(user_id) {
