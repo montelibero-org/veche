@@ -25,7 +25,7 @@ import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
 import Servant.Docs qualified
 
 import Stellar.Horizon.DTO (Account, Address, Records, Transaction)
-import Stellar.Simple (Asset)
+import Stellar.Simple.Types (Asset)
 
 data HalJson
 

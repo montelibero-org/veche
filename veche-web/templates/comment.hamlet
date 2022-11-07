@@ -1,23 +1,29 @@
 <li>
-    <div .comment_widget data-comment-id=#{toPathPiece id}>
-        <div .d-grid.d-lg-flex>
-            <div .comment.me-auto ##{commentAnchor id}>
-                <div .comment_header>
-                    <span .comment_author>#{userNameWidget commentAuthor}
-                    <span .comment_action .text-muted>
+    <div .comment_widget
+            data-author-id=#{toPathPiece authorId}
+            data-author-name=#{userNameText commentAuthor}
+            data-comment-id=#{toPathPiece id}>
+        <div .comment ##{commentAnchor id}>
+            <div .comment_header>
+                <span .comment_author>^{userNameWidget commentAuthor}
+                <span .text-muted>
+                    <span .comment_action>
                         $if null requestedUsers
                             #{type_}
                         $else
                             requested information from #
                             $forall user <- requestedUsers
-                                <span .requested_user>#{userNameWidget user}
-                    <span .comment_timestamp .pull-right .text-muted>#{createdTime}
-                $if message /= ""
-                    <div .comment_message>#{renderMarkdown message}
-
-            <div .d-lg-flex.align-items-lg-end>
-                $if type_ /= CommentStart
-                    <a .btn .btn-primary .btn-sm .comment-reply .me-2 role=button>_{MsgIssueReply}
-                <a .btn .btn-primary .btn-sm .disabled disabled role=button aria-disabled=true>_{MsgIssueRequestInfo}
+                                <span .requested_user>^{userNameWidget user}
+                    on
+                    <a .comment_timestamp .text-muted
+                            href=##{commentAnchor id}>
+                        #{createdTime}
+            $if message /= ""
+                <div .comment_message>#{renderMarkdown message}
+        <div>
+            $if type_ /= CommentStart
+                <a .comment-reply .me-3 .text-muted>_{MsgIssueReply}
+            <a .comment-request .text-muted .text-nowrap>
+                _{MsgIssueRequestInfoFrom} #{userNameText commentAuthor}
 
     ^{commentForestWidget subComments}

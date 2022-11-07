@@ -1,3 +1,14 @@
+# authentication
+AuthnViaStellar: Via Stellar
+AuthnViaTelegram: Via Telegram (existing Veche accounts only)
+
+# comment
+CommentProvideInfo: Provide info for
+
+# issue
+IssueClose: Close
+IssueReopen: Reopen
+
 # navbar
 About: About
 Dashboard: Dashboard

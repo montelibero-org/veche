@@ -3,24 +3,28 @@ $(() => {
   const commentRequestUserInput = $('#commentRequestUserInput');
   const commentRequestUsers     = $('#commentRequestUsers');
 
+  function addRequestInfo(userId, username) {
+    commentRequestUsers.html((_, old) =>
+      old
+      + `<span class="user" data-user-id="${userId}">
+          ${username}
+          <input type="hidden" name="request_user" value="${userId}">
+          <a  class="badge dismiss"
+              onclick='comment_request_user_dimiss(${JSON.stringify(userId)})'
+              >
+              &times;
+          </a>
+        </span>`
+    );
+  }
+
   commentRequestUserInput.autocomplete({
     source: "@{ApiCompleteUserR}",
     minLength: 1,
     select: (event, ui) => {
       const value = ui.item.value;
       event.preventDefault();
-      commentRequestUsers.html((_, old) =>
-        old
-        + `<span class="user" data-user-id="${value}">
-            ${ui.item.label}
-            <input type="hidden" name="request_user" value="${value}">
-            <a  class="badge dismiss"
-                onclick='comment_request_user_dimiss(${JSON.stringify(value)})'
-                >
-                &times;
-            </a>
-          </span>`
-      );
+      addRequestInfo(value, ui.item.label)
       commentRequestUserInput.val(null);
 
       console.log(
@@ -38,6 +42,14 @@ $(() => {
       commentForm.appendTo(widget);
       $('#comment_parent').val(widget.data('comment-id'));
       $('#comment_message').focus();
+    });
+    $('a.comment-request').click(event => {
+      const widget = $(event.target).closest('.comment_widget');
+      const userId = widget.data('author-id');
+      const username = widget.data('author-name');
+      addRequestInfo(userId, username);
+      event.target.disabled = true;
+      event.target.classList.add("disabled");
     });
   } else {
     $('a.comment-reply').attr('disabled', true);
@@ -69,10 +81,10 @@ $(() => {
         `web+stellar:pay?destination=${escrowAddress}&amount=${give_val}`
         + `&asset_code=EURMTL&asset_issuer=${mtlIssuer}`
         + `&memo_type=MEMO_TEXT&memo=E${issueId}`;
+      stellarPayLink.removeClass('disabled');
       stellarPayLink.attr('href', uri);
-      stellarPayLink.text(uri);
     } else {
-      stellarPayLink.text(null);
+      stellarPayLink.addClass('disabled');
     }
   }
 

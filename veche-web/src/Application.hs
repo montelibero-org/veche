@@ -71,6 +71,7 @@ import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
                       postIssueReopenR, postIssueVoteR)
 import Handler.Pages (getPagesEscrowR)
 import Handler.Root (getRootR)
+import Handler.Settings (postSettingsLanguageR)
 import Handler.Stellar (getStellarFederationR)
 import Handler.Telegram (getTelegramBindR, postTelegramUnbindR)
 import Handler.User (getUserR, putUserR)

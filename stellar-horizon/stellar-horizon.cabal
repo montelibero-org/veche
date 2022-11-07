@@ -9,6 +9,8 @@ library
     , base
     , base64-bytestring
     , bytestring
+    , containers
+    , http-client-tls
     , http-media
     , path-pieces
     , scientific
@@ -25,6 +27,7 @@ library
     Stellar.Horizon.Client
     Stellar.Horizon.DTO
     Stellar.Simple
+    Stellar.Simple.Types
 
   hs-source-dirs:   lib
 

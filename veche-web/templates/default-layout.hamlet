@@ -50,8 +50,18 @@
 
 <!-- Footer -->
 <footer .footer .mt-3>
-    <div .container .d-flex .text-muted>
-        <div .me-auto>
-            #{appCopyright $ appSettings master}
+    <div .container .d-grid .gap-2 .d-sm-flex .justify-content-between
+            .text-muted>
         <div>
+            #{appCopyright $ appSettings master}
+        <div .justify-content-between .dropdown>
+            <a .text-muted aria-expanded=false data-bs-toggle=dropdown href="#"
+                    style="text-decoration: none;">
+                <i .bi.bi-globe>
+                Language
+            <ul .dropdown-menu>
+                <li>^{switchLanguage "en" "English"}
+                <li>^{switchLanguage "ja" "日本語"}
+                <li>^{switchLanguage "ru" "Русский"}
+        <div .justify-content-end>
             Version: #{showVersion version}

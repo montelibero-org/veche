@@ -1,6 +1,6 @@
 cabal-version: 1.12
 name:          veche
-version:       2022.11
+version:       2022.11.7
 build-type:    Simple
 
 library
@@ -27,6 +27,7 @@ library
     Handler.Issue
     Handler.Pages
     Handler.Root
+    Handler.Settings
     Handler.Stellar
     Handler.Telegram
     Handler.User

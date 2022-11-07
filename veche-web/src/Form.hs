@@ -10,7 +10,6 @@ module Form where
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Stack (HasCallStack)
-import Text.Blaze.Html (Html)
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
@@ -21,6 +20,7 @@ import Yesod.Form qualified
 import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), renderBootstrap5)
 
+-- | Bootstrap-friendly wrapper around 'AForm'
 data BForm m a = BForm
     { action            :: Maybe (Route (HandlerSite m))
     , aform             :: AForm m a
@@ -109,14 +109,14 @@ generateCsrfField = fmap fst $ generateFormPost $ renderDivsNoLabels $ pure ()
 actionButton ::
     Route site ->
     [Text] ->   -- ^ additional classes, e.g. @["btn-ganger"]@
-    Html ->     -- ^ button label
+    Text ->     -- ^ button label
     Bool ->     -- ^ is enabled
     WidgetFor site ()
 actionButton route classes label isEnabled =
     [whamlet|
         <button *{attrs} onclick="submitPostForm('@{route}')"
                 :not isEnabled:disabled>
-            ^{label}
+            #{label}
     |]
   where
     attrs = [("class" :: Text, Text.unwords $ "btn" : classes)]
