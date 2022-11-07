@@ -38,12 +38,14 @@ $(() => {
 
   if (#{isCommentAllowed}) {
     $('a.comment-reply').click(event => {
+      event.preventDefault();
       const widget = $(event.target).closest('.comment_widget');
       commentForm.appendTo(widget);
       $('#comment_parent').val(widget.data('comment-id'));
       $('#comment_message').focus();
     });
     $('a.comment-request').click(event => {
+      event.preventDefault();
       const widget = $(event.target).closest('.comment_widget');
       const userId = widget.data('author-id');
       const username = widget.data('author-name');

@@ -22,8 +22,8 @@
                 <div .comment_message>#{renderMarkdown message}
         <div>
             $if type_ /= CommentStart
-                <a .comment-reply .me-3 .text-muted>Reply
-            <a .comment-request .text-muted .text-nowrap>
+                <a .comment-reply .me-3 .text-muted href="#">Reply
+            <a .comment-request .text-muted .text-nowrap href="#">
                 Request info from #{userNameText commentAuthor}
 
     ^{commentForestWidget subComments}
