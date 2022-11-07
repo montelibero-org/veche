@@ -1,4 +1,6 @@
 $(() => {
+  const comment_message         = $('#comment_message');
+  const comment_parent          = $('#comment_parent');
   const commentForm             = $('#commentForm');
   const commentRequestUserInput = $('#commentRequestUserInput');
   const commentRequestUsers     = $('#commentRequestUsers');
@@ -38,21 +40,23 @@ $(() => {
 
   if (#{isCommentAllowed}) {
     $('a.comment-reply').click(event => {
+      event.preventDefault();
       const widget = $(event.target).closest('.comment_widget');
       commentForm.appendTo(widget);
-      $('#comment_parent').val(widget.data('comment-id'));
-      $('#comment_message').focus();
+      comment_parent.val(widget.data('comment-id'));
+      comment_message.focus();
     });
     $('a.comment-request').click(event => {
+      event.preventDefault();
       const widget = $(event.target).closest('.comment_widget');
       const userId = widget.data('author-id');
       const username = widget.data('author-name');
       addRequestInfo(userId, username);
-      event.target.disabled = true;
-      event.target.classList.add("disabled");
+      comment_message.focus();
     });
   } else {
-    $('a.comment-reply').attr('disabled', true);
+    $('a.comment-reply').remove();
+    $('a.comment-request').remove();
   }
 
   $('#copyaddr').click(() => {
@@ -101,8 +105,8 @@ $(() => {
   }
 
   updateFromGive();
-  give[0].addEventListener("input", updateFromGive);
-  get[0].addEventListener("input", updateFromGet);
+  give.each(x => x.addEventListener("input", updateFromGive));
+  get .each(x => x.addEventListener("input", updateFromGet ));
 });
 
 function comment_request_user_dimiss(user_id) {
