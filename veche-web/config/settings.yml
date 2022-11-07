@@ -32,7 +32,7 @@ database:
   database: "_env:VECHE_DATABASE:veche.sqlite3"
   poolsize: "_env:YESOD_SQLITE_POOLSIZE:10"
 
-copyright: © 2022 MTL Foundation
+copyright: © 2022 Veche Team
 #analytics: UA-YOURCODE
 
 stellar-horizon-url: https://horizon.stellar.org
