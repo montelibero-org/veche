@@ -9,8 +9,6 @@ import Data.Text.IO qualified as Text
 
 import Stellar.Simple
 
-import Genesis (eurmtl)
-
 main :: IO ()
 main = do
     t <-
@@ -26,5 +24,8 @@ main = do
   where
     escrow =
         Address "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
+    eurmtl =
+        mkAsset
+            "EURMTL" "GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
     dest1 = Address "GDLTH4KKMA4R2JGKA7XKI5DLHJBUT42D5RHVK6SS6YHZZLHVLCWJAYXI"
     dest2 = Address "GCPT3X4FJBMUBR5AIB7SEUQX7HJ4XX3K4TNI2J7WIHMHMFGDMRRJJVWL"
