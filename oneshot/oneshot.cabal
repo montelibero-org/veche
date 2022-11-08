@@ -7,21 +7,14 @@ common common
   build-depends:
     , base
     , stellar-horizon
+    , text
 
   default-language: Haskell2010
 
 executable escrow-award
-  import:        common
-  build-depends: text
-  main-is:       escrow-award.hs
+  import:  common
+  main-is: escrow-award.hs
 
 executable escrow-setdomain
-  import:        common
-  build-depends:
-    , base64-bytestring
-    , http-client-tls
-    , servant-client
-    , stellar-sdk
-    , text
-
-  main-is:       escrow-setdomain.hs
+  import:  common
+  main-is: escrow-setdomain.hs

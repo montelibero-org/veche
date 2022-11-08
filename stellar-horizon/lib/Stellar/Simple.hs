@@ -17,6 +17,7 @@ module Stellar.Simple (
     -- * Transaction builder
     transactionBuilder,
     addPayment,
+    addSetHomeDomain,
     addManageData,
     setMemoText,
     build,
@@ -178,3 +179,26 @@ signWithSecret secret tx =
 
 transactionEnvelopeXdrBase64T :: XDR.TransactionEnvelope -> Text
 transactionEnvelopeXdrBase64T = decodeUtf8Throw . Base64.encode . xdrSerialize
+
+defaultOptions :: XDR.SetOptionsOp
+defaultOptions =
+    XDR.SetOptionsOp
+        { setOptionsOp'inflationDest    = Nothing
+        , setOptionsOp'clearFlags       = Nothing
+        , setOptionsOp'setFlags         = Nothing
+        , setOptionsOp'masterWeight     = Nothing
+        , setOptionsOp'lowThreshold     = Nothing
+        , setOptionsOp'medThreshold     = Nothing
+        , setOptionsOp'highThreshold    = Nothing
+        , setOptionsOp'homeDomain       = Nothing
+        , setOptionsOp'signer           = Nothing
+        }
+
+addSetHomeDomain :: Text -> TransactionBuilder -> TransactionBuilder
+addSetHomeDomain domain b@TransactionBuilder{operations} =
+    b{operations = operations |> op}
+  where
+    op = XDR.Operation{operation'sourceAccount = Nothing, operation'body}
+    operation'body = XDR.OperationBody'SET_OPTIONS options
+    options = defaultOptions{XDR.setOptionsOp'homeDomain}
+    setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain
