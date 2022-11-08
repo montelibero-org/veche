@@ -22,7 +22,7 @@ module Stellar.Simple (
     setMemoText,
     build,
     signWithSecret,
-    transactionEnvelopeXdrBase64T,
+    xdrSerializeBase64T,
 ) where
 
 -- prelude
@@ -44,7 +44,7 @@ import Servant.Client (ClientM, mkClientEnv, runClientM)
 import Text.Read (readEither)
 
 -- stellar-sdk
-import Network.ONCRPC.XDR (xdrSerialize)
+import Network.ONCRPC.XDR (XDR, xdrSerialize)
 import Network.ONCRPC.XDR qualified as XDR
 import Network.Stellar.Builder qualified as XdrBuilder
 import Network.Stellar.Keypair qualified as StellarKey
@@ -177,8 +177,8 @@ signWithSecret secret tx =
     either (error . show) identity $
     XdrBuilder.sign publicNetwork tx [StellarKey.fromPrivateKey' secret]
 
-transactionEnvelopeXdrBase64T :: XDR.TransactionEnvelope -> Text
-transactionEnvelopeXdrBase64T = decodeUtf8Throw . Base64.encode . xdrSerialize
+xdrSerializeBase64T :: XDR a => a -> Text
+xdrSerializeBase64T = decodeUtf8Throw . Base64.encode . xdrSerialize
 
 defaultOptions :: XDR.SetOptionsOp
 defaultOptions =

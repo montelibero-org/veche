@@ -13,7 +13,6 @@ main = do
         & addSetHomeDomain "veche.montelibero.org"
         & build
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
-    let envelope = t & signWithSecret secret & transactionEnvelopeXdrBase64T
-    Text.putStrLn envelope
+    Text.putStrLn $ t & signWithSecret secret & xdrSerializeBase64T
   where
     account = Address "GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"

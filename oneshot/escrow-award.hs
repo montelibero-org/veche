@@ -18,9 +18,7 @@ main = do
         & addPayment dest2 eurmtl  0.4e7
         & build
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
-    let envelope = signWithSecret secret t & transactionEnvelopeXdrBase64T
-    Text.putStrLn $ "envelope = " <> envelope
---     runClientM (submitTransaction envelopeXdrBase64) clientEnv >>= print
+    Text.putStrLn $ signWithSecret secret t & xdrSerializeBase64T
   where
     escrow =
         Address "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
