@@ -98,8 +98,11 @@ makeFoundation appSettings = do
     let makeStaticSubsite
             | appMutableStatic  = staticDevel
             | otherwise         = static
+    let makeWKSubsite
+            | appMutableStatic  = fmap WKStatic . staticDevel
+            | otherwise         = fmap WKStatic . static
     appStatic       <- makeStaticSubsite    appStaticDir
-    appWellKnown    <- makeStaticSubsite $  appStaticDir </> ".well-known"
+    appWellKnown    <- makeWKSubsite $      appStaticDir </> ".well-known"
 
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 

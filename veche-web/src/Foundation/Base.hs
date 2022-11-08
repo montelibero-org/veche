@@ -1,8 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -14,10 +19,14 @@ import Import.NoFoundation hiding (action)
 import Database.Persist.Sql (ConnectionPool, SqlBackend, runSqlPool)
 import Network.HTTP.Client (HasHttpManager, Manager)
 import Network.HTTP.Client qualified
+import Network.Wai qualified as Wai
 import Servant.Client (BaseUrl)
-import Yesod.Core (Lang, RenderMessage, mkMessage, mkYesodData, parseRoutesFile)
+import Yesod.Core (Lang, ParseRoute, RenderMessage, RenderRoute,
+                   YesodSubDispatch, mkMessage, mkYesodData, parseRoute,
+                   parseRoutesFile, renderRoute, yesodSubDispatch)
 import Yesod.Core qualified
-import Yesod.Core.Types (Logger)
+import Yesod.Core.Types (Logger, YesodSubRunnerEnv (YesodSubRunnerEnv))
+import Yesod.Core.Types qualified
 import Yesod.Form (FormMessage, defaultFormMessage)
 import Yesod.Persist (DBRunner, YesodPersist, YesodPersistRunner,
                       defaultGetDBRunner)
@@ -26,6 +35,38 @@ import Yesod.Static (Static)
 
 -- component
 import Model (Escrow, IssueId)
+
+-- | 'Static' variant for `.well-known` directory
+newtype WKStatic = WKStatic Static
+
+unwrapWKStatic :: WKStatic -> Static
+unwrapWKStatic (WKStatic static) = static
+
+instance RenderRoute WKStatic where
+
+    newtype Route WKStatic = WKStaticR (Route Static)
+        deriving (Eq, Read, Show)
+
+    renderRoute (WKStaticR r) = renderRoute r
+
+instance ParseRoute WKStatic where
+    parseRoute = fmap WKStaticR . parseRoute @Static
+
+instance YesodSubDispatch WKStatic master where
+    yesodSubDispatch YesodSubRunnerEnv{..} req respond =
+        yesodSubDispatch @Static
+            YesodSubRunnerEnv
+                { ysreGetSub = unwrapWKStatic . ysreGetSub
+                , ysreToParentRoute = ysreToParentRoute . WKStaticR
+                , ..
+                }
+            req
+            respond'
+      where
+        acao = ("Access-Control-Allow-Origin", "*")
+        respond' response = do
+            let (status, headers, stream) = Wai.responseToStream response
+            stream $ respond . Wai.responseStream status (headers <> [acao])
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -39,7 +80,7 @@ data App = App
     , appStellarHorizon :: BaseUrl
     -- static subsites
     , appStatic     :: Static
-    , appWellKnown  :: Static
+    , appWellKnown  :: WKStatic
     -- Stellar cache
     , appEscrowActive :: IORef (Map IssueId [Escrow])
     }

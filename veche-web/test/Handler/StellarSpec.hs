@@ -14,8 +14,9 @@ spec =
     withApp do
         describe "toml" $
             it "is accessible without authentication" do
-                get $ WellKnownR $ StaticRoute ["stellar.toml"] []
+                get $ WellKnownR $ WKStaticR $ StaticRoute ["stellar.toml"] []
                 statusIs 200
+                assertHeader "Access-Control-Allow-Origin" "*"
 
         describe "Federation" $
             it "works" do
