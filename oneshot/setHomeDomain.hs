@@ -9,11 +9,11 @@ import Stellar.Simple
 main :: IO ()
 main = do
     t <-
-        transactionBuilder escrow
+        transactionBuilder account
         & addSetHomeDomain "veche.montelibero.org"
         & build
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = t & signWithSecret secret & transactionEnvelopeXdrBase64T
     Text.putStrLn envelope
   where
-    escrow = Address "GAS5XNXJJPOOJ73ODLCHGMEY4PUZB5S2TIXUBSYYMCNIYL6PHZGCB7RW"
+    account = Address "GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"

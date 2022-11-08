@@ -15,6 +15,6 @@ executable escrow-award
   import:  common
   main-is: escrow-award.hs
 
-executable escrow-setdomain
+executable setHomeDomain
   import:  common
-  main-is: escrow-setdomain.hs
+  main-is: setHomeDomain.hs
