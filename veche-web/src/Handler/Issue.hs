@@ -30,8 +30,6 @@ import Text.Printf (printf)
 -- component
 import Genesis (escrowAddress, escrowFederatedHost, mtlAsset, mtlFund,
                 mtlIssuer, showKnownAsset)
-import Model.Escrow (Escrow (Escrow))
-import Model.Escrow qualified
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
@@ -61,7 +59,7 @@ getIssueR issueId = do
     let IssueMaterialized
                 { body
                 , comments
-                , escrows
+                , escrow
                 , forum = Forum{enablePriceOffer, title = forumTitle}
                 , isCloseReopenAllowed
                 , isCommentAllowed

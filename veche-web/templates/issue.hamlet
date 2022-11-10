@@ -25,8 +25,8 @@ $if isJust authnUser && enablePriceOffer
     <dl .row>
         <dt .col-md-2>Escrow
         <dd .col-md-10>
-            $if not $ null escrows
-                $forall Escrow{amount, asset} <- escrows
+            $if not $ null escrow
+                $forall (asset, amount) <- Map.assocs escrow
                     <p>
                         #{show $ availableToPay amount} #{showKnownAsset asset}
                         <a data-bs-toggle=tooltip

@@ -23,9 +23,12 @@
 
 module Model where
 
+-- prelude
 import ClassyPrelude
 
-import Data.Aeson (FromJSON, ToJSON)
+-- global
+import Data.Aeson (FromJSON)
+import Data.Map.Strict qualified as Map
 import Data.Scientific (Scientific)
 import Database.Persist (PersistField)
 import Database.Persist.Extra (JsonString (JsonString))
@@ -35,9 +38,12 @@ import Database.Persist.Sql qualified
 import Database.Persist.TH (derivePersistFieldJSON, mkMigrate, mkPersist,
                             mpsConstraintLabelModifier, mpsFieldLabelModifier,
                             persistFileWith, share, sqlSettings)
-import Stellar.Horizon.Client (Asset, TxId)
-import Stellar.Horizon.Client qualified as Stellar
 
+-- project
+import Stellar.Simple (Asset, Operation, TransactionOnChain, TxId (TxId))
+import Stellar.Simple qualified as Stellar
+
+-- component
 import Model.Types (Choice, CommentType, ForumId, Poll, Role,
                     StellarMultiSigAddress)
 
@@ -71,12 +77,36 @@ $(  let lowerFirst t =
         $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
     )
 
-data Escrow = Escrow
-    { amount    :: Scientific
-    , asset     :: Asset
-    , issueId   :: IssueId
-    , sponsor   :: Stellar.Address
-    , time      :: UTCTime
-    , txId      :: TxId
+data Corrections = Corrections{exclude :: Set TxId, include :: Map TxId IssueId}
+    deriving (FromJSON, Generic)
+
+type CorrectionsFile = Corrections
+
+type TransactionsOnChain = [TransactionOnChain]
+
+type EscrowFile = TransactionsOnChain
+
+data EscrowStat = EscrowStat
+    { balances      :: Map IssueId (Map Asset Scientific)
+    , excluded      :: [TransactionOnChain]
+    , unknownOps    :: [Operation]
+    , unknownTxs    :: [TransactionOnChain]
     }
-    deriving (FromJSON, Generic, Show, ToJSON)
+
+instance Semigroup EscrowStat where
+    EscrowStat b1 e1 o1 t1 <> EscrowStat b2 e2 o2 t2 =
+        EscrowStat
+        { balances      = Map.unionWith (Map.unionWith (+)) b1 b2
+        , excluded      = e1 <> e2
+        , unknownOps    = o1 <> o2
+        , unknownTxs    = t1 <> t2
+        }
+
+instance Monoid EscrowStat where
+    mempty =
+        EscrowStat
+        { balances      = mempty
+        , excluded      = mempty
+        , unknownOps    = mempty
+        , unknownTxs    = mempty
+        }
