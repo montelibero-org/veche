@@ -15,6 +15,11 @@ executable escrow-award
   import:  common
   main-is: escrow-award.hs
 
+executable sellOffer
+  import:        common
+  build-depends: named
+  main-is:       sellOffer.hs
+
 executable setHomeDomain
   import:  common
   main-is: setHomeDomain.hs

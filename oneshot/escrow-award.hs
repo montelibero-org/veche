@@ -13,9 +13,9 @@ main :: IO ()
 main = do
     t <-
         transactionBuilder escrow
-        & setMemoText "E17"
-        & addPayment dest1 eurmtl 19.6e7
-        & addPayment dest2 eurmtl  0.4e7
+        & tx_memoText "E17"
+        & op_payment dest1 eurmtl 19.6e7
+        & op_payment dest2 eurmtl  0.4e7
         & build
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     Text.putStrLn $ signWithSecret secret t & xdrSerializeBase64T

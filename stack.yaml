@@ -20,5 +20,5 @@ extra-deps:
       # https://github.com/klappvisor/haskell-telegram-api/pull/133
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk
-      commit: d275b4407ce51525439638852aaa4141a235e94a
+      commit: 958c11f0ecafc5e80751c76c656964dc1ef42b6e
       # https://github.com/teequoo/haskell-stellar-sdk/pull/2

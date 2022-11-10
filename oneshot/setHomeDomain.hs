@@ -10,7 +10,7 @@ main :: IO ()
 main = do
     t <-
         transactionBuilder account
-        & addSetHomeDomain "veche.montelibero.org"
+        & op_setHomeDomain "veche.montelibero.org"
         & build
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     Text.putStrLn $ t & signWithSecret secret & xdrSerializeBase64T

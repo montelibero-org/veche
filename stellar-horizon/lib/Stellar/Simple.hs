@@ -1,8 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Stellar.Simple (
     Address (..),
@@ -16,10 +18,11 @@ module Stellar.Simple (
     TxId,
     -- * Transaction builder
     transactionBuilder,
-    addPayment,
-    addSetHomeDomain,
-    addManageData,
-    setMemoText,
+    op_payment,
+    op_setHomeDomain,
+    op_manageData,
+    op_manageSellOffer,
+    tx_memoText,
     build,
     signWithSecret,
     xdrSerializeBase64T,
@@ -32,13 +35,15 @@ import Prelude qualified
 -- global
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
-import Data.Int (Int64)
+import Data.Int (Int32, Int64)
+import Data.Ratio (Ratio, denominator, numerator)
 import Data.Sequence (Seq, (|>))
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import GHC.Stack (HasCallStack)
+import Named (NamedF (Arg), (:!))
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Servant.Client (ClientM, mkClientEnv, runClientM)
 import Text.Read (readEither)
@@ -76,8 +81,8 @@ transactionBuilder :: Address -> TransactionBuilder
 transactionBuilder account =
     TransactionBuilder{account, memo = MemoNone, operations = mempty}
 
-setMemoText :: Text -> TransactionBuilder -> TransactionBuilder
-setMemoText t b = b{memo = MemoText t}
+tx_memoText :: Text -> TransactionBuilder -> TransactionBuilder
+tx_memoText t b = b{memo = MemoText t}
 
 build :: HasCallStack => TransactionBuilder -> IO XDR.TransactionEnvelope
 build TransactionBuilder{account, memo, operations} = do
@@ -127,30 +132,54 @@ runClientPublic action = do
     e <- runClientM action env
     either (error . show) pure e
 
-addPayment ::
+op_payment ::
     Address -> Asset -> Int64 -> TransactionBuilder -> TransactionBuilder
-addPayment address asset amount b@TransactionBuilder{operations} =
-    b{operations = operations |> op}
-  where
-    op = XDR.Operation{operation'sourceAccount = Nothing, operation'body}
-    operation'body = XDR.OperationBody'PAYMENT payment
-    payment =
-        XDR.PaymentOp
-        { paymentOp'destination = addressToXdrMuxed address
-        , paymentOp'asset = assetToXdr asset
-        , paymentOp'amount = amount
+op_payment address asset amount =
+    addOperation $
+    XDR.OperationBody'PAYMENT $
+    XDR.PaymentOp
+    { paymentOp'destination = addressToXdrMuxed address
+    , paymentOp'asset = assetToXdr asset
+    , paymentOp'amount = amount
+    }
+
+op_manageData :: Text -> Maybe Text -> TransactionBuilder -> TransactionBuilder
+op_manageData key mvalue =
+    addOperation $
+    XDR.OperationBody'MANAGE_DATA $
+    XDR.ManageDataOp
+        (XDR.lengthArray' $ encodeUtf8 key)
+        (XDR.lengthArray' . encodeUtf8 <$> mvalue)
+
+addOperation :: XDR.OperationBody -> TransactionBuilder -> TransactionBuilder
+addOperation operation'body b@TransactionBuilder{operations} =
+    b   { operations =
+            operations
+            |> XDR.Operation{operation'sourceAccount = Nothing, operation'body}
         }
 
-addManageData :: Text -> Maybe Text -> TransactionBuilder -> TransactionBuilder
-addManageData key mvalue b@TransactionBuilder{operations} =
-    b{operations = operations |> op}
-  where
-    op = XDR.Operation{operation'sourceAccount = Nothing, operation'body}
-    operation'body = XDR.OperationBody'MANAGE_DATA data_
-    data_ =
-        XDR.ManageDataOp
-            (XDR.lengthArray' $ encodeUtf8 key)
-            (XDR.lengthArray' . encodeUtf8 <$> mvalue)
+type Price = Ratio Int32
+
+priceToXdr :: Ratio Int32 -> XDR.Price
+priceToXdr r = XDR.Price{price'n = numerator r, price'd = denominator r}
+
+op_manageSellOffer ::
+    "selling" :! Asset ->
+    "buying"  :! Asset ->
+    Int64 ->
+    Price ->
+    TransactionBuilder ->
+    TransactionBuilder
+op_manageSellOffer (Arg selling) (Arg buying) amount price =
+    addOperation $
+    XDR.OperationBody'MANAGE_SELL_OFFER $
+    XDR.ManageSellOfferOp
+        { manageSellOfferOp'amount  = amount
+        , manageSellOfferOp'buying  = assetToXdr buying
+        , manageSellOfferOp'offerID = 0
+        , manageSellOfferOp'price   = priceToXdr price
+        , manageSellOfferOp'selling = assetToXdr selling
+        }
 
 assetToXdr :: Asset -> XDR.Asset
 assetToXdr = \case
@@ -159,12 +188,12 @@ assetToXdr = \case
         | Text.length code <= 4 ->
             XDR.Asset'ASSET_TYPE_CREDIT_ALPHANUM4 $
             XDR.AlphaNum4
-                (XDR.lengthArray' $ encodeUtf8 code)
+                (XDR.padLengthArray (encodeUtf8 code) 0)
                 (addressToXdr $ Address issuer)
         | otherwise ->
             XDR.Asset'ASSET_TYPE_CREDIT_ALPHANUM12 $
             XDR.AlphaNum12
-                (XDR.lengthArray' $ encodeUtf8 code)
+                (XDR.padLengthArray (encodeUtf8 code) 0)
                 (addressToXdr $ Address issuer)
 
 signWithSecret ::
@@ -194,11 +223,9 @@ defaultOptions =
         , setOptionsOp'signer           = Nothing
         }
 
-addSetHomeDomain :: Text -> TransactionBuilder -> TransactionBuilder
-addSetHomeDomain domain b@TransactionBuilder{operations} =
-    b{operations = operations |> op}
-  where
-    op = XDR.Operation{operation'sourceAccount = Nothing, operation'body}
-    operation'body = XDR.OperationBody'SET_OPTIONS options
-    options = defaultOptions{XDR.setOptionsOp'homeDomain}
-    setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain
+op_setHomeDomain :: Text -> TransactionBuilder -> TransactionBuilder
+op_setHomeDomain domain =
+    addOperation $
+    XDR.OperationBody'SET_OPTIONS $
+    defaultOptions
+    {XDR.setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain}
