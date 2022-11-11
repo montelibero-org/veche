@@ -69,7 +69,7 @@ import Network.Stellar.TransactionXdr qualified as XDR
 
 -- component
 import Data.Foldable (toList)
-import Stellar.Horizon.API (api)
+import Stellar.Horizon.API (TxText, api)
 import Stellar.Horizon.DTO (Account (..), Address (..), Record (Record),
                             Records (Records), Signer (..), TxId (..))
 import Stellar.Horizon.DTO qualified as DTO
@@ -97,7 +97,7 @@ getAccounts ::
 getAccount :: Address -> ClientM Account
 getAccountTransactionsDto ::
     Address -> Maybe Text -> Maybe Natural -> ClientM (Records DTO.Transaction)
-submitTransaction :: Text -> ClientM DTO.Transaction
+submitTransaction :: TxText -> ClientM DTO.Transaction
 (               getAccounts
         :<|>    getAccount
         :<|>    getAccountTransactionsDto

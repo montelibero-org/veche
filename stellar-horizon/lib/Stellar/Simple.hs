@@ -22,10 +22,14 @@ module Stellar.Simple (
     op_setHomeDomain,
     op_manageData,
     op_manageSellOffer,
+    tx_feePerOp,
     tx_memoText,
     build,
     signWithSecret,
     xdrSerializeBase64T,
+    -- * Client
+    getPublicClient,
+    submit,
 ) where
 
 -- prelude
@@ -36,6 +40,7 @@ import Prelude qualified
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Int (Int32, Int64)
+import Data.Maybe (fromMaybe)
 import Data.Ratio (Ratio, denominator, numerator)
 import Data.Sequence (Seq, (|>))
 import Data.Text (Text)
@@ -43,9 +48,11 @@ import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
 import GHC.Stack (HasCallStack)
-import Named (NamedF (Arg), (:!))
-import Network.HTTP.Client.TLS (getGlobalManager)
-import Servant.Client (ClientM, mkClientEnv, runClientM)
+import Named (NamedF (Arg, ArgF), (:!), (:?))
+import Network.HTTP.Client (ResponseTimeout, managerResponseTimeout,
+                            responseTimeoutDefault)
+import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
+import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
 import Text.Read (readEither)
 
 -- stellar-sdk
@@ -56,9 +63,13 @@ import Network.Stellar.Keypair qualified as StellarKey
 import Network.Stellar.Network (publicNetwork)
 import Network.Stellar.TransactionXdr qualified as XDR
 
+-- project
+import WithCallStack (throwWithCallStackIO)
+
 -- component
+import Stellar.Horizon.API (TxText (TxText))
 import Stellar.Horizon.Client (decodeUtf8Throw, getAccount, publicServerBase,
-                               xlm)
+                               submitTransaction, xlm)
 import Stellar.Horizon.DTO (Address (Address), TxId)
 import Stellar.Horizon.DTO qualified as DTO
 import Stellar.Simple.Types (Asset (..), Memo (..), Operation (..),
@@ -73,20 +84,42 @@ mkAsset code issuer = Asset{code, issuer = Just issuer}
 
 data TransactionBuilder = TransactionBuilder
     { account       :: Address
+    , clientEnv     :: ClientEnv
+    , feePerOp      :: Word32
     , memo          :: Memo
     , operations    :: Seq XDR.Operation
     }
 
-transactionBuilder :: Address -> TransactionBuilder
-transactionBuilder account =
-    TransactionBuilder{account, memo = MemoNone, operations = mempty}
+getPublicClient :: "responseTimeout" :? ResponseTimeout -> IO ClientEnv
+getPublicClient (ArgF responseTimeout) = do
+    manager <-
+        newTlsManagerWith
+            tlsManagerSettings
+            { managerResponseTimeout =
+                fromMaybe responseTimeoutDefault responseTimeout
+            }
+    pure $ mkClientEnv manager publicServerBase
+
+transactionBuilder :: Address -> ClientEnv -> TransactionBuilder
+transactionBuilder account clientEnv =
+    TransactionBuilder
+    { account
+    , clientEnv
+    , feePerOp = defaultFeePerOp
+    , memo = MemoNone
+    , operations = mempty
+    }
+
+tx_feePerOp :: Word32 -> TransactionBuilder -> TransactionBuilder
+tx_feePerOp feePerOp b = b{feePerOp}
 
 tx_memoText :: Text -> TransactionBuilder -> TransactionBuilder
 tx_memoText t b = b{memo = MemoText t}
 
 build :: HasCallStack => TransactionBuilder -> IO XDR.TransactionEnvelope
-build TransactionBuilder{account, memo, operations} = do
-    DTO.Account{sequence = sequenceText} <- runClientPublic $ getAccount account
+build TransactionBuilder{account, clientEnv, feePerOp, memo, operations} = do
+    DTO.Account{sequence = sequenceText} <-
+        runClientThrow (getAccount account) clientEnv
     let seqNum = either error identity $ readEither $ Text.unpack sequenceText
         tx =
             XDR.Transaction
@@ -103,7 +136,7 @@ build TransactionBuilder{account, memo, operations} = do
         XDR.TransactionV1Envelope tx XDR.emptyBoundedLengthArray
   where
     transaction'cond = XDR.Preconditions'PRECOND_NONE
-    transaction'fee = defaultFee * fromIntegral (length operations)
+    transaction'fee = feePerOp * fromIntegral (length operations)
     transaction'memo =
         case memo of
             MemoNone    -> XDR.Memo'MEMO_NONE
@@ -122,15 +155,15 @@ addressToXdrMuxed (Address address) =
     XDR.MuxedAccount'KEY_TYPE_ED25519 $
     XDR.lengthArray' $ StellarKey.decodePublic' address
 
-defaultFee :: Word32
-defaultFee = 100
+defaultFeePerOp :: Word32
+defaultFeePerOp = 100
 
-runClientPublic :: HasCallStack => ClientM a -> IO a
-runClientPublic action = do
-    manager <- getGlobalManager
-    let env = mkClientEnv manager publicServerBase
+runClientThrow :: HasCallStack => ClientM a -> ClientEnv -> IO a
+runClientThrow action env = do
+    -- manager <- getGlobalManager
+    -- let env = mkClientEnv manager publicServerBase
     e <- runClientM action env
-    either (error . show) pure e
+    either throwWithCallStackIO pure e
 
 op_payment ::
     Address -> Asset -> Int64 -> TransactionBuilder -> TransactionBuilder
@@ -229,3 +262,6 @@ op_setHomeDomain domain =
     XDR.OperationBody'SET_OPTIONS $
     defaultOptions
     {XDR.setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain}
+
+submit :: XDR.TransactionEnvelope -> ClientEnv -> IO DTO.Transaction
+submit = runClientThrow . submitTransaction . TxText . xdrSerializeBase64T

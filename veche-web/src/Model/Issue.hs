@@ -34,8 +34,8 @@ module Model.Issue (
     dbUpdateAllIssueApprovals,
 ) where
 
+-- prelude
 import Foundation.Base
-import Import.Exception
 import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global

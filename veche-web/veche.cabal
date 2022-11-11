@@ -32,7 +32,6 @@ library
     Handler.Telegram
     Handler.User
     Import
-    Import.Exception
     Import.NoFoundation
     Model
     Model.Comment
@@ -95,6 +94,7 @@ library
     , wai
     , wai-extra
     , warp               >=3.0     && <3.4
+    , withcallstack
     , yaml               >=0.11    && <0.12
     , yesod              >=1.6     && <1.7
     , yesod-auth         >=1.6     && <1.7

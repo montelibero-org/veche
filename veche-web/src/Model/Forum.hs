@@ -18,14 +18,16 @@ module Model.Forum (
     isPublic,
 ) where
 
-import Import.Exception
+-- prelude
 import Import.NoFoundation hiding (getEntity404)
 
+-- global
 import Data.Map.Strict ((!?))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet))
 import Yesod.Persist (runDB)
 import Yesod.Persist qualified as Persist
 
+-- component
 import Genesis (forums)
 import Model (Issue (Issue), IssueId)
 import Model qualified
@@ -40,7 +42,7 @@ getEntity404 id = (id,) <$> get404 id
 getJust :: (HasCallStack, MonadIO m) => ForumId -> m Forum
 getJust id =
     forums !? id
-    ?| throwWithCallStack (PersistForeignConstraintUnmet "forum.id")
+    ?| throwWithCallStackIO (PersistForeignConstraintUnmet "forum.id")
 
 getJustEntity :: (HasCallStack, MonadIO m) => ForumId -> m EntityForum
 getJustEntity id = (id,) <$> getJust id

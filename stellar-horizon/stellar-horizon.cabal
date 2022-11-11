@@ -10,8 +10,10 @@ library
     , base64-bytestring
     , bytestring
     , containers
+    , http-client
     , http-client-tls
     , http-media
+    , http-types
     , named
     , path-pieces
     , scientific
@@ -21,6 +23,7 @@ library
     , stellar-sdk
     , text
     , time
+    , withcallstack
 
   default-language: Haskell2010
   exposed-modules:

@@ -6,13 +6,16 @@
 import Data.Function
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
+import Named
 
 import Stellar.Simple
 
 main :: IO ()
 main = do
+    client <- getPublicClient ! defaults
     t <-
-        transactionBuilder escrow
+        client
+        & transactionBuilder escrow
         & tx_memoText "E17"
         & op_payment dest1 eurmtl 19.6e7
         & op_payment dest2 eurmtl  0.4e7

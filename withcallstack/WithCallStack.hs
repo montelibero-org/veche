@@ -1,4 +1,6 @@
-module Import.Exception where
+{-# LANGUAGE NamedFieldPuns #-}
+
+module WithCallStack where
 
 import Control.Exception (throw)
 import GHC.Stack (CallStack, HasCallStack, callStack, prettyCallStack)
@@ -25,8 +27,8 @@ addCallStack action =
 withCallStack :: (HasCallStack, Exception e) => e -> WithCallStack
 withCallStack e = WithCallStack{stack = callStack, parent = SomeException e}
 
-throwWithCallStack :: (HasCallStack, Exception e, MonadIO m) => e -> m a
-throwWithCallStack = throwIO . withCallStack
+throwWithCallStackIO :: (HasCallStack, Exception e, MonadIO m) => e -> m a
+throwWithCallStackIO = throwIO . withCallStack
 
-unsafeThrowWithCallStack :: (HasCallStack, Exception e) => e -> a
-unsafeThrowWithCallStack = throw . withCallStack
+impureThrowWithCallStack :: (HasCallStack, Exception e) => e -> a
+impureThrowWithCallStack = throw . withCallStack

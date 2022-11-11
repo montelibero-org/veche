@@ -1,24 +1,29 @@
 {-# OPTIONS -Wno-orphans #-}
 
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Stellar.Horizon.API (API, api) where
+module Stellar.Horizon.API (API, api, TxText (..)) where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Network.HTTP.Media ((//), (/:))
+import Network.HTTP.Types (urlEncodeBuilder)
 import Numeric.Natural (Natural)
-import Servant.API (Accept, Capture, Get, JSON, MimeRender, MimeUnrender, Post,
-                    QueryParam, QueryParam', Required, Strict, mimeRender,
-                    mimeUnrender, (:<|>), (:>))
+import Servant.API (Accept, Capture, FromHttpApiData, Get, JSON, MimeRender,
+                    MimeUnrender, Post, QueryParam, QueryParam', Required,
+                    Strict, ToHttpApiData, mimeRender, mimeUnrender,
+                    toQueryParam, (:<|>), (:>))
 import Servant.API qualified
 import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
                      ParamKind (Normal), ToCapture, ToParam)
@@ -42,6 +47,17 @@ instance ToJSON a => MimeRender HalJson a where
 
 type QueryParamR = QueryParam' [Required, Strict]
 
+-- | TODO hack before url encoding is fixed in servant
+-- waiting https://github.com/fizruk/http-api-data/commit/5b01eee1d5dcd4e2c981c58fd33afb96e1b29ca6 to be released
+-- http-api-data > 0.5
+newtype TxText = TxText Text
+    deriving newtype FromHttpApiData
+
+instance ToHttpApiData TxText where
+    toQueryParam (TxText t) = t
+    toEncodedUrlPiece (TxText t) =
+        urlEncodeBuilder True $ encodeUtf8 $ toQueryParam t
+
 type API
     =   "accounts"
         :> QueryParam "asset" Asset
@@ -53,7 +69,8 @@ type API
         "accounts" :> Capture "account_id" Address :> "transactions"
         :> QueryParam "cursor" Text :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Transaction)
-    :<|> "transactions" :> QueryParamR "tx" Text :> Post '[HalJson] Transaction
+    :<|>
+        "transactions" :> QueryParamR "tx" TxText :> Post '[HalJson] Transaction
 
 api :: Proxy API
 api = Proxy
@@ -99,7 +116,7 @@ instance ToParam (QueryParam "limit" Natural) where
             \ If this argument isn’t designated, it defaults to 10."
             Normal
 
-instance ToParam (QueryParamR "tx" Text) where
+instance ToParam (QueryParamR "tx" TxText) where
     toParam _ =
         DocQueryParam
             "tx"

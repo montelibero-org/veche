@@ -1,0 +1,10 @@
+cabal-version: 3.4
+name:          withcallstack
+version:       0
+
+library
+  build-depends:
+    , base
+    , unliftio
+
+  exposed-modules: WithCallStack

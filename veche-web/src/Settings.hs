@@ -17,7 +17,6 @@ module Settings where
 
 -- prelude
 import ClassyPrelude
-import Import.Exception
 
 -- global
 import Control.Exception qualified as Exception
@@ -37,6 +36,9 @@ import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
                            widgetFileReload)
 import Yesod.Static (CombineSettings, Static, combineScripts',
                      combineStylesheets')
+
+-- project
+import WithCallStack (impureThrowWithCallStack)
 
 -- component
 import Model (IssueId)
@@ -202,7 +204,7 @@ escrowCorrections =
             , ec
             )
         | ec <-
-            either unsafeThrowWithCallStack id $
+            either impureThrowWithCallStack id $
             decodeEither' @[EscrowCorrection]
                 $(embedFile "config/escrow-corrections.yaml")
         ]
