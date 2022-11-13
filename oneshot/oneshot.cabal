@@ -15,6 +15,7 @@ common common
     DisambiguateRecordFields
     ImportQualifiedPost
     NamedFieldPuns
+    OverloadedLabels
     OverloadedStrings
     ScopedTypeVariables
 
@@ -44,6 +45,5 @@ executable updateSigners
   build-depends:
     , containers
     , pretty-simple
-    , scientific
 
   main-is:       updateSigners.hs

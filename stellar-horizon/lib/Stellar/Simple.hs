@@ -22,6 +22,7 @@ module Stellar.Simple (
     op_payment,
     op_setHomeDomain,
     op_setSigners,
+    op_setThresholds,
     op_manageData,
     op_manageSellOffer,
     tx_feePerOp,
@@ -285,6 +286,21 @@ op_setSigners =
             , signer'weight = fromIntegral weight
             }
         }
+
+op_setThresholds ::
+    "low"  :? Word32 ->
+    "med"  :? Word32 ->
+    "high" :? Word32 ->
+    TransactionBuilder ->
+    TransactionBuilder
+op_setThresholds (ArgF low) (ArgF med) (ArgF high) =
+    addOperation $
+    XDR.OperationBody'SET_OPTIONS $
+    defaultOptions
+    { XDR.setOptionsOp'lowThreshold  = low
+    , XDR.setOptionsOp'medThreshold  = med
+    , XDR.setOptionsOp'highThreshold = high
+    }
 
 submit :: XDR.TransactionEnvelope -> ClientEnv -> IO DTO.Transaction
 submit = runClientThrow . submitTransaction . TxText . xdrSerializeBase64T
