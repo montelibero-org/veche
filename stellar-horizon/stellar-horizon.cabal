@@ -36,6 +36,10 @@ library
   hs-source-dirs:   lib
 
 executable horizon
+  -- TODO:
+  buildable:        False
+
+  -- global
   build-depends:
       base
     , http-client-tls

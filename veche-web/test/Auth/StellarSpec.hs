@@ -6,9 +6,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Auth.StellarSpec (spec) where
 
+-- prelude
 import TestImport
 
 -- global
@@ -21,14 +23,14 @@ import Network.Stellar.Keypair qualified as Stellar
 import Network.Stellar.Network qualified as Stellar
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
-import Servant ((:<|>) ((:<|>)))
 import Servant.Server (Server, err404, err500, serve)
 import Servant.Server qualified as Servant
 import Test.HUnit (assertFailure)
 import Text.XML.Cursor (content, descendant)
 
 -- project
-import Stellar.Horizon.API (API, api)
+import Stellar.Horizon.API (API, Accounts (Accounts), Horizon (Horizon))
+import Stellar.Horizon.API qualified
 import Stellar.Horizon.Client (Account (Account), Signer (Signer))
 import Stellar.Horizon.Client qualified as Stellar
 import Stellar.Horizon.DTO (SignerType (Ed25519PublicKey))
@@ -137,14 +139,16 @@ withMockHorizon =
     bracket (forkIO $ Warp.run 9999 horizonTestApp) killThread . const
 
 horizonTestApp :: Wai.Application
-horizonTestApp = serve api horizonTestServer where
+horizonTestApp = serve (Proxy @API) horizonTestServer where
 
     horizonTestServer :: Server API
-    horizonTestServer
-        =       getAccounts
-        :<|>    getAccount
-        :<|>    getAccountTransactions
-        :<|>    submitTransaction
+    horizonTestServer =
+        Horizon
+        { accounts =
+            Accounts{getAccounts, getAccount, getAccountTransactionsDto}
+        , getFeeStats
+        , submitTransaction
+        }
 
     getAccounts _ _ _ = throwError err404
 
@@ -157,10 +161,12 @@ horizonTestApp = serve api horizonTestServer where
         balances = []
         signers = [signer account_id]
 
-    getAccountTransactions _ _ _ = throwError err404
+    getAccountTransactionsDto _ _ _ = throwError err404
 
     signer (Stellar.Address key) =
         Signer{key, type_ = Ed25519PublicKey, weight = 1}
+
+    getFeeStats = throwError err404
 
     submitTransaction _ = throwError err500
 

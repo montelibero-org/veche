@@ -12,6 +12,7 @@ module TestImport
 
 import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy, poll)
 
+import Data.Proxy as X
 import Data.Text.Encoding qualified
 import Data.Text.Lazy qualified as TextL (Text)
 import Database.Persist as X hiding (get)

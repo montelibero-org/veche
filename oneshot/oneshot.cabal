@@ -15,6 +15,7 @@ common common
     DisambiguateRecordFields
     ImportQualifiedPost
     NamedFieldPuns
+    NumDecimals
     OverloadedLabels
     OverloadedStrings
     ScopedTypeVariables

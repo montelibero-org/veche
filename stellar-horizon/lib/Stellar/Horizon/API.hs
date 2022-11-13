@@ -1,7 +1,9 @@
 {-# OPTIONS -Wno-orphans #-}
 
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
@@ -10,26 +12,37 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Stellar.Horizon.API (API, api, TxText (..)) where
+module Stellar.Horizon.API (
+    -- * API
+    API,
+    Accounts (..),
+    Horizon (..),
+    -- * Helper types
+    TxText (..),
+) where
 
+-- global
 import Data.Aeson (FromJSON, ToJSON)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
+import GHC.Generics (Generic)
 import Network.HTTP.Media ((//), (/:))
 import Network.HTTP.Types (urlEncodeBuilder)
 import Numeric.Natural (Natural)
 import Servant.API (Accept, Capture, FromHttpApiData, Get, JSON, MimeRender,
-                    MimeUnrender, Post, QueryParam, QueryParam', Required,
-                    Strict, ToHttpApiData, mimeRender, mimeUnrender,
-                    toQueryParam, (:<|>), (:>))
+                    MimeUnrender, NamedRoutes, Post, QueryParam, QueryParam',
+                    Required, Strict, ToHttpApiData, mimeRender, mimeUnrender,
+                    toQueryParam, (:>))
 import Servant.API qualified
+import Servant.API.Generic ((:-))
 import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
                      ParamKind (Normal), ToCapture, ToParam)
 import Servant.Docs qualified
 
-import Stellar.Horizon.DTO (Account, Address, Records, Transaction)
+-- component
+import Stellar.Horizon.DTO (Account, Address, FeeStats, Records, Transaction)
 import Stellar.Simple.Types (Asset)
 
 data HalJson
@@ -58,22 +71,33 @@ instance ToHttpApiData TxText where
     toEncodedUrlPiece (TxText t) =
         urlEncodeBuilder True $ encodeUtf8 $ toQueryParam t
 
-type API
-    =   "accounts"
-        :> QueryParam "asset" Asset
+type API = NamedRoutes Horizon
+
+data Horizon m = Horizon
+    { accounts :: m :- "accounts" :> NamedRoutes Accounts
+    , getFeeStats :: m :- "fee_stats" :> Get '[HalJson] FeeStats
+    , submitTransaction :: m
+        :- "transactions"
+        :> QueryParamR "tx" TxText
+        :> Post '[HalJson] Transaction
+    }
+    deriving Generic
+
+data Accounts m = Accounts
+    { getAccounts :: m
+        :- QueryParam "asset" Asset
         :> QueryParam "cursor" Text
         :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Account)
-    :<|> "accounts" :> Capture "account_id" Address :> Get '[HalJson] Account
-    :<|>
-        "accounts" :> Capture "account_id" Address :> "transactions"
-        :> QueryParam "cursor" Text :> QueryParam "limit" Natural
+    , getAccount :: m :- Capture "account_id" Address :> Get '[HalJson] Account
+    , getAccountTransactionsDto :: m
+        :- Capture "account_id" Address
+        :> "transactions"
+        :> QueryParam "cursor" Text
+        :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Transaction)
-    :<|>
-        "transactions" :> QueryParamR "tx" TxText :> Post '[HalJson] Transaction
-
-api :: Proxy API
-api = Proxy
+    }
+    deriving Generic
 
 instance ToCapture (Capture "account_id" Address) where
     toCapture _ =

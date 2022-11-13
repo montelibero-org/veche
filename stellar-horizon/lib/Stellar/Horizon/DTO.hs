@@ -13,6 +13,8 @@ module Stellar.Horizon.DTO
     ( Account (..)
     , Address (..)
     , Balance (..)
+    , FeeDistribution
+    , FeeStats (..)
     , Record (..)
     , Records (..)
     , Signer (..)
@@ -29,6 +31,7 @@ import Data.Aeson.KeyMap qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types qualified as Aeson
 import Data.List (dropWhileEnd)
+import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Traversable (for)
@@ -63,6 +66,13 @@ data Balance = Balance
         -- ^ The Stellar address of this asset’s issuer.
     }
     deriving (Show)
+
+type FeeDistribution = Map Text Text
+
+data FeeStats = FeeStats
+    { fee_charged   :: FeeDistribution
+    , max_fee       :: FeeDistribution
+    }
 
 data Record a = Record
     { paging_token  :: Text
@@ -163,9 +173,16 @@ newtype TxId = TxId Text
 
 concat
     <$> traverse
-            (deriveJSON
-                defaultOptions
-                    { constructorTagModifier    = camelTo2 '_'
-                    , fieldLabelModifier        = dropWhileEnd (== '_')
-                    })
-            [''Account, ''Balance, ''Signer, ''SignerType, ''Transaction]
+            (   deriveJSON
+                    defaultOptions
+                        { constructorTagModifier    = camelTo2 '_'
+                        , fieldLabelModifier        = dropWhileEnd (== '_')
+                        }
+            )
+            [ ''Account
+            , ''Balance
+            , ''FeeStats
+            , ''Signer
+            , ''SignerType
+            , ''Transaction
+            ]

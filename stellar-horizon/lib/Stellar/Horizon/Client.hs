@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- |
 -- @
@@ -34,15 +35,17 @@ module Stellar.Horizon.Client (
     -- * Methods
     getAccount,
     getAccounts,
-    getAccountTransactionsDto,
     getAccountsList,
+    getAccountTransactionsDto,
     getAccountTransactionsDtoList,
     getAccountTransactionsList,
+    getFeeStats,
     submitTransaction,
     -- * Helpers
     decodeUtf8Throw,
 ) where
 
+-- prelude
 import Prelude hiding (id, last)
 import Prelude qualified
 
@@ -52,12 +55,12 @@ import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as Base64
 import Data.Int (Int64)
 import Data.List.NonEmpty (last, nonEmpty)
+import Data.Proxy (Proxy (Proxy))
 import Data.Scientific (Scientific, scientific)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
-import Servant.API ((:<|>) ((:<|>)))
 import Servant.Client (BaseUrl, ClientM, client, parseBaseUrl)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -69,9 +72,11 @@ import Network.Stellar.TransactionXdr qualified as XDR
 
 -- component
 import Data.Foldable (toList)
-import Stellar.Horizon.API (TxText, api)
-import Stellar.Horizon.DTO (Account (..), Address (..), Record (Record),
-                            Records (Records), Signer (..), TxId (..))
+import Stellar.Horizon.API (API, Accounts (Accounts), Horizon (Horizon), TxText)
+import Stellar.Horizon.API qualified
+import Stellar.Horizon.DTO (Account (..), Address (..), FeeStats,
+                            Record (Record), Records (Records), Signer (..),
+                            TxId (..))
 import Stellar.Horizon.DTO qualified as DTO
 import Stellar.Simple.Types (Asset (..), Memo (..), Operation (..),
                              PaymentType (DirectPayment, PathPayment), Shown,
@@ -97,13 +102,14 @@ getAccounts ::
 getAccount :: Address -> ClientM Account
 getAccountTransactionsDto ::
     Address -> Maybe Text -> Maybe Natural -> ClientM (Records DTO.Transaction)
+getFeeStats :: ClientM FeeStats
 submitTransaction :: TxText -> ClientM DTO.Transaction
-(               getAccounts
-        :<|>    getAccount
-        :<|>    getAccountTransactionsDto
-        :<|>    submitTransaction
-        ) =
-    client api
+Horizon { accounts =
+            Accounts{getAccount, getAccounts, getAccountTransactionsDto}
+        , getFeeStats
+        , submitTransaction
+        } =
+    client (Proxy @API)
 
 getAccountsList :: Asset -> ClientM [Account]
 getAccountsList = recordsToList . getAccounts . Just
