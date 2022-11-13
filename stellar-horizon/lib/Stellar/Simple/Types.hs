@@ -107,4 +107,4 @@ data TransactionOnChain = TransactionOnChain
     , time  :: UTCTime
     , tx    :: Transaction
     }
-    deriving (FromJSON, Generic, ToJSON)
+    deriving (FromJSON, Generic, Show, ToJSON)

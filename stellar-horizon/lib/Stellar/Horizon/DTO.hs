@@ -21,9 +21,9 @@ module Stellar.Horizon.DTO
     , TxId (..)
     ) where
 
-import Data.Aeson (FromJSON, ToJSON, camelTo2, constructorTagModifier,
-                   defaultOptions, fieldLabelModifier, object, parseJSON,
-                   toJSON, withObject, (.:), (.=))
+import Data.Aeson (FromJSON, FromJSONKey, ToJSON, camelTo2,
+                   constructorTagModifier, defaultOptions, fieldLabelModifier,
+                   object, parseJSON, toJSON, withObject, (.:), (.=))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
@@ -152,6 +152,7 @@ newtype TxId = TxId Text
         ( Eq
         , FromHttpApiData
         , FromJSON
+        , FromJSONKey
         , Ord
         , PathPiece
         , Read

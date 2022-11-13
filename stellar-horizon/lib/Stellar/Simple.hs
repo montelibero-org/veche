@@ -15,7 +15,7 @@ module Stellar.Simple (
     Operation (..),
     Transaction (..),
     TransactionOnChain (..),
-    TxId,
+    TxId (..),
     -- * Transaction builder
     transactionBuilder,
     op_payment,
