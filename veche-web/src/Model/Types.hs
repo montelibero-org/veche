@@ -93,7 +93,7 @@ data Poll = BySignerWeight | ByMtlAmount
     deriving (Eq, Read, Show)
 derivePersistField "Poll"
 
-data Role = Admin | MtlHolder | MtlSigner
+data Role = Admin | Audit | MtlHolder | MtlSigner
     deriving (Eq, Ord, Read, Show)
 deriveJSON defaultOptions ''Role
 derivePersistField "Role"

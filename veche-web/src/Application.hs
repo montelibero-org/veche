@@ -60,8 +60,9 @@ import Yesod.Static (static, staticDevel)
 
 -- component
 import Handler.About (getAboutR)
-import Handler.Admin (getAdminEscrowR, getAdminEventsR, getAdminUpdateDatabaseR)
+import Handler.Admin (getAdminEventsR, getAdminUpdateDatabaseR)
 import Handler.API (getApiCompleteUserR)
+import Handler.Audit (getAuditEscrowR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)

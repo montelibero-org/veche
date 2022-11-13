@@ -16,7 +16,7 @@ import Yesod.Persist (Entity (Entity))
 import Model (Issue (Issue), UserId, UserRole (UserRole))
 import Model qualified
 import Model.Types (EntityForum, Forum (Forum), Poll (..),
-                    Role (Admin, MtlHolder, MtlSigner), Roles)
+                    Role (Admin, Audit, MtlHolder, MtlSigner), Roles)
 import Model.Types qualified
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
@@ -31,6 +31,7 @@ data AuthzRequest
     | EditIssue         (Entity Issue) UserId
     | CloseReopenIssue  (Entity Issue) UserId
     | AdminOp (Entity UserRole)
+    | AuditOp (Entity UserRole)
 
 isAllowed :: AuthzRequest -> Bool
 isAllowed = \case
@@ -43,6 +44,7 @@ isAllowed = \case
     EditIssue        issue user -> authzEditIssue issue user
     CloseReopenIssue issue user -> authzEditIssue issue user
     AdminOp (Entity _ UserRole{role}) -> role == Admin
+    AuditOp (Entity _ UserRole{role}) -> role == Audit
   where
     authzEditIssue (Entity _ Issue{author}) user = author == user
 

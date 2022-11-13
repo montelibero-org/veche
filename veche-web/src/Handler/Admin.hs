@@ -11,7 +11,6 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Handler.Admin (
-    getAdminEscrowR,
     getAdminEventsR,
     getAdminUpdateDatabaseR,
 ) where
@@ -22,26 +21,17 @@ module Handler.Admin (
 import Import hiding (Value)
 
 -- global
-import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Data.Typeable (TypeRep, typeOf)
 import Database.Esqueleto.Experimental (SqlExpr, SqlQuery, Value (Value), desc,
                                         from, innerJoin, on, orderBy, select,
                                         table, (:&) ((:&)), (==.), (^.))
-import Database.Persist (get, selectList)
-import Yesod.Core (liftHandler)
+import Database.Persist (selectList)
 import Yesod.Persist (runDB)
 
--- project
-import Stellar.Simple (Asset, TransactionOnChain (TransactionOnChain))
-import Stellar.Simple qualified
-
 -- component
-import Genesis (showKnownAsset)
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified as Comment
-import Model.Escrow (EscrowStat (EscrowStat))
-import Model.Escrow qualified
 import Model.Issue (Issue (Issue), IssueId)
 import Model.Issue qualified
 import Model.Request (Request (Request))
@@ -51,46 +41,6 @@ import Model.UserRole qualified as UserRole
 import Model.Vote qualified as Vote
 import Templates.Comment (commentAnchor)
 import Templates.User (userNameText)
-
-getAdminEscrowR :: Handler Html
-getAdminEscrowR = do
-    roleE <- UserRole.get Admin ?|> permissionDenied ""
-    requireAuthz $ AdminOp roleE
-
-    App{appEscrow} <- getYesod
-
-    EscrowStat{balances, unknownOps, unknownTxs} <-
-        readIORef appEscrow
-    defaultLayout $(widgetFile "admin/escrow")
-
-balancesHead :: Widget
-balancesHead =
-    [whamlet|
-        <th>issue
-        <th>amount
-    |]
-
-balancesRow :: (IssueId, Map Asset Scientific) -> Widget
-balancesRow (issueId, amounts) = do
-    mIssue <- liftHandler $ runDB $ get issueId
-    let issueIsClosed = any (\Issue{..} -> not open) mIssue
-    [whamlet|
-        <td>
-            <a href=@{IssueR issueId}>#{toPathPiece issueId}
-            $if issueIsClosed
-                <span .badge.bg-danger>closed
-        <td>
-            $forall (asset, amount) <- Map.assocs amounts
-                #{show amount} #{showKnownAsset asset} <br>
-    |]
-
--- elide :: Int -> Int -> Text -> Text
--- elide a b t = Text.take a t <> "…" <> Text.takeEnd b t
-
--- stellarExpertTx :: TxId -> Widget
--- stellarExpertTx txId = [whamlet|<a href=#{href}>#{shortTxId}|] where
---     href = "https://stellar.expert/explorer/public/tx/" <> toPathPiece txId
---     shortTxId = elide 4 4 $ toUrlPiece txId
 
 data Event = Event
     { author            :: Entity User

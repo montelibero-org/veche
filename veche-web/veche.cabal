@@ -20,6 +20,7 @@ library
     Handler.About
     Handler.Admin
     Handler.API
+    Handler.Audit
     Handler.Comment
     Handler.Common
     Handler.Dashboard
