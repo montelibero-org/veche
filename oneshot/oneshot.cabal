@@ -10,7 +10,14 @@ common common
     , stellar-horizon
     , text
 
-  default-extensions: NamedFieldPuns
+  default-extensions:
+    BlockArguments
+    DisambiguateRecordFields
+    ImportQualifiedPost
+    NamedFieldPuns
+    OverloadedStrings
+    ScopedTypeVariables
+
   default-language:   Haskell2010
 
 executable escrow-award
@@ -31,3 +38,12 @@ executable sellOffer
 executable setHomeDomain
   import:  common
   main-is: setHomeDomain.hs
+
+executable updateSigners
+  import:        common
+  build-depends:
+    , containers
+    , pretty-simple
+    , scientific
+
+  main-is:       updateSigners.hs

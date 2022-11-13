@@ -59,7 +59,7 @@ data Balance = Balance
         -- ^ The number of units of an asset held by this account.
     , asset_code :: Maybe Text
         -- ^ The code for this asset.
-    , asset_issuer :: Maybe Address
+    , asset_issuer :: Maybe Text
         -- ^ The Stellar address of this asset’s issuer.
     }
     deriving (Show)

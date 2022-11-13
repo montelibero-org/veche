@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -20,6 +21,7 @@ module Stellar.Simple (
     transactionBuilder,
     op_payment,
     op_setHomeDomain,
+    op_setSigners,
     op_manageData,
     op_manageSellOffer,
     tx_feePerOp,
@@ -28,6 +30,7 @@ module Stellar.Simple (
     signWithSecret,
     xdrSerializeBase64T,
     -- * Client
+    runClientThrow,
     getPublicClient,
     submit,
 ) where
@@ -40,13 +43,16 @@ import Prelude qualified
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Int (Int32, Int64)
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.Monoid (Endo (Endo), appEndo)
 import Data.Ratio (Ratio, denominator, numerator)
 import Data.Sequence (Seq, (|>))
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import GHC.Stack (HasCallStack)
 import Named (NamedF (Arg, ArgF), (:!), (:?))
 import Network.HTTP.Client (ResponseTimeout, managerResponseTimeout,
@@ -61,6 +67,7 @@ import Network.ONCRPC.XDR qualified as XDR
 import Network.Stellar.Builder qualified as XdrBuilder
 import Network.Stellar.Keypair qualified as StellarKey
 import Network.Stellar.Network (publicNetwork)
+import Network.Stellar.TransactionXdr (Uint256)
 import Network.Stellar.TransactionXdr qualified as XDR
 
 -- project
@@ -143,16 +150,12 @@ build TransactionBuilder{account, clientEnv, feePerOp, memo, operations} = do
             MemoText t  -> XDR.Memo'MEMO_TEXT $ XDR.lengthArray' $ encodeUtf8 t
             MemoOther{} -> undefined
     transaction'operations = XDR.boundLengthArrayFromList $ toList operations
-    transaction'sourceAccount = addressToXdrMuxed account
+    transaction'sourceAccount =
+        XDR.MuxedAccount'KEY_TYPE_ED25519 $ addressToXdr account
 
-addressToXdr :: Address -> XDR.AccountID
+addressToXdr :: Address -> Uint256
 addressToXdr (Address address) =
-    XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 $
-    XDR.lengthArray' $ StellarKey.decodePublic' address
-
-addressToXdrMuxed :: Address -> XDR.MuxedAccount
-addressToXdrMuxed (Address address) =
-    XDR.MuxedAccount'KEY_TYPE_ED25519 $
+    -- XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 $
     XDR.lengthArray' $ StellarKey.decodePublic' address
 
 defaultFeePerOp :: Word32
@@ -160,8 +163,6 @@ defaultFeePerOp = 100
 
 runClientThrow :: HasCallStack => ClientM a -> ClientEnv -> IO a
 runClientThrow action env = do
-    -- manager <- getGlobalManager
-    -- let env = mkClientEnv manager publicServerBase
     e <- runClientM action env
     either throwWithCallStackIO pure e
 
@@ -171,7 +172,8 @@ op_payment address asset amount =
     addOperation $
     XDR.OperationBody'PAYMENT $
     XDR.PaymentOp
-    { paymentOp'destination = addressToXdrMuxed address
+    { paymentOp'destination =
+        XDR.MuxedAccount'KEY_TYPE_ED25519 $ addressToXdr address
     , paymentOp'asset = assetToXdr asset
     , paymentOp'amount = amount
     }
@@ -222,12 +224,16 @@ assetToXdr = \case
             XDR.Asset'ASSET_TYPE_CREDIT_ALPHANUM4 $
             XDR.AlphaNum4
                 (XDR.padLengthArray (encodeUtf8 code) 0)
-                (addressToXdr $ Address issuer)
+                (   XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 $
+                    addressToXdr $ Address issuer
+                )
         | otherwise ->
             XDR.Asset'ASSET_TYPE_CREDIT_ALPHANUM12 $
             XDR.AlphaNum12
                 (XDR.padLengthArray (encodeUtf8 code) 0)
-                (addressToXdr $ Address issuer)
+                (   XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 $
+                    addressToXdr $ Address issuer
+                )
 
 signWithSecret ::
     HasCallStack =>
@@ -262,6 +268,23 @@ op_setHomeDomain domain =
     XDR.OperationBody'SET_OPTIONS $
     defaultOptions
     {XDR.setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain}
+
+op_setSigners :: Map Address Word8 -> TransactionBuilder -> TransactionBuilder
+op_setSigners =
+    appEndo
+    . Map.foldMapWithKey \address weight ->
+        Endo $
+        addOperation $
+        XDR.OperationBody'SET_OPTIONS $
+        defaultOptions
+        { XDR.setOptionsOp'signer =
+            Just
+            XDR.Signer
+            { signer'key =
+                XDR.SignerKey'SIGNER_KEY_TYPE_ED25519 $ addressToXdr address
+            , signer'weight = fromIntegral weight
+            }
+        }
 
 submit :: XDR.TransactionEnvelope -> ClientEnv -> IO DTO.Transaction
 submit = runClientThrow . submitTransaction . TxText . xdrSerializeBase64T

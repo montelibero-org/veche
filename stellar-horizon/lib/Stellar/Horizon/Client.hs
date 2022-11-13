@@ -101,7 +101,8 @@ submitTransaction :: TxText -> ClientM DTO.Transaction
 (               getAccounts
         :<|>    getAccount
         :<|>    getAccountTransactionsDto
-        :<|>    submitTransaction) =
+        :<|>    submitTransaction
+        ) =
     client api
 
 getAccountsList :: Asset -> ClientM [Account]

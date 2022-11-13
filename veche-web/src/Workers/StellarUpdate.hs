@@ -154,11 +154,9 @@ getAmount Asset{code, issuer} balances =
     asum
         [ readMaybe @Scientific $ Text.unpack balance
         | Balance{balance, asset_code, asset_issuer} <- balances
-        , maybe isNative (== code) asset_code
-        , asset_issuer == (Stellar.Address <$> issuer)
+        , asset_code == Just code
+        , asset_issuer == issuer
         ]
-  where
-    isNative = isNothing issuer
 
 updateEscrow :: App -> IO ()
 updateEscrow app@App{appEscrow, appSettings = AppSettings{appEscrowFile}} = do
