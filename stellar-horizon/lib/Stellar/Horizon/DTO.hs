@@ -30,6 +30,7 @@ import Data.Aeson qualified as Aeson
 import Data.Aeson.KeyMap qualified as Aeson
 import Data.Aeson.TH (deriveJSON)
 import Data.Aeson.Types qualified as Aeson
+import Data.Functor ((<&>))
 import Data.List (dropWhileEnd)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
@@ -171,18 +172,18 @@ newtype TxId = TxId Text
         , ToJSON
         )
 
-concat
-    <$> traverse
-            (   deriveJSON
-                    defaultOptions
-                        { constructorTagModifier    = camelTo2 '_'
-                        , fieldLabelModifier        = dropWhileEnd (== '_')
-                        }
-            )
-            [ ''Account
-            , ''Balance
-            , ''FeeStats
-            , ''Signer
-            , ''SignerType
-            , ''Transaction
-            ]
+traverse
+    (   deriveJSON
+            defaultOptions
+                { constructorTagModifier    = camelTo2 '_'
+                , fieldLabelModifier        = dropWhileEnd (== '_')
+                }
+    )
+    [ ''Account
+    , ''Balance
+    , ''FeeStats
+    , ''Signer
+    , ''SignerType
+    , ''Transaction
+    ]
+    <&> concat

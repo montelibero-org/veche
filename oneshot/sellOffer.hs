@@ -29,11 +29,10 @@ main = do
     client <-
         getPublicClient ! #responseTimeout (responseTimeoutMicro 60_000_000)
     tx <-
-        client
-        & transactionBuilder distibutor
+        transactionBuilder distibutor
         & tx_feePerOp 1_000
         & op_manageSellOffer (#selling vecheToken) (#buying eurmtl) 146e7 1
-        & build
+        & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = signWithSecret secret tx
     putStrLn "envelope:"

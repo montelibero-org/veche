@@ -49,14 +49,15 @@ main = do
     pPrint signersDiff
 
     tx <-
-        client
-        & transactionBuilder account
+        transactionBuilder account
+        & tx_feePerOp_guess
         & op_setSigners signersDiff
         & op_setThresholds (#low threshold) (#med threshold) (#high threshold)
-        & build
+        & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = signWithSecret secret tx
     Text.putStrLn $ envelope & xdrSerializeBase64T
+
   where
     issuer = "GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"
     token = mkAsset "VECHE" issuer

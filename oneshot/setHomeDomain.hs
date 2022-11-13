@@ -12,10 +12,9 @@ main :: IO ()
 main = do
     client <- getPublicClient ! defaults
     tx <-
-        client
-        & transactionBuilder account
+        transactionBuilder account
         & op_setHomeDomain "veche.montelibero.org"
-        & build
+        & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = signWithSecret secret tx
     Text.putStrLn $ envelope & xdrSerializeBase64T

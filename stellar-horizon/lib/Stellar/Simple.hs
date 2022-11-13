@@ -5,6 +5,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Stellar.Simple (
@@ -26,6 +27,7 @@ module Stellar.Simple (
     op_manageData,
     op_manageSellOffer,
     tx_feePerOp,
+    tx_feePerOp_guess,
     tx_memoText,
     build,
     signWithSecret,
@@ -60,7 +62,7 @@ import Network.HTTP.Client (ResponseTimeout, managerResponseTimeout,
                             responseTimeoutDefault)
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
 import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
-import Text.Read (readEither)
+import Text.Read (readEither, readMaybe)
 
 -- stellar-sdk
 import Network.ONCRPC.XDR (XDR, xdrSerialize)
@@ -76,9 +78,9 @@ import WithCallStack (throwWithCallStackIO)
 
 -- component
 import Stellar.Horizon.API (TxText (TxText))
-import Stellar.Horizon.Client (decodeUtf8Throw, getAccount, publicServerBase,
-                               submitTransaction, xlm)
-import Stellar.Horizon.DTO (Address (Address), TxId)
+import Stellar.Horizon.Client (decodeUtf8Throw, getAccount, getFeeStats,
+                               publicServerBase, submitTransaction, xlm)
+import Stellar.Horizon.DTO (Address (Address), FeeStats (FeeStats), TxId)
 import Stellar.Horizon.DTO qualified as DTO
 import Stellar.Simple.Types (Asset (..), Memo (..), Operation (..),
                              Transaction (..), TransactionOnChain (..))
@@ -90,10 +92,11 @@ identity = Prelude.id
 mkAsset :: Text -> Text -> Asset
 mkAsset code issuer = Asset{code, issuer = Just issuer}
 
+data Guess a = Already a | Guess
+
 data TransactionBuilder = TransactionBuilder
     { account       :: Address
-    , clientEnv     :: ClientEnv
-    , feePerOp      :: Word32
+    , feePerOp      :: Guess Word32
     , memo          :: Memo
     , operations    :: Seq XDR.Operation
     }
@@ -108,27 +111,36 @@ getPublicClient (ArgF responseTimeout) = do
             }
     pure $ mkClientEnv manager publicServerBase
 
-transactionBuilder :: Address -> ClientEnv -> TransactionBuilder
-transactionBuilder account clientEnv =
+transactionBuilder :: Address -> TransactionBuilder
+transactionBuilder account =
     TransactionBuilder
     { account
-    , clientEnv
-    , feePerOp = defaultFeePerOp
+    , feePerOp = Already defaultFeePerOp
     , memo = MemoNone
     , operations = mempty
     }
 
+tx_feePerOp_guess :: TransactionBuilder -> TransactionBuilder
+tx_feePerOp_guess b = b{feePerOp = Guess}
+
 tx_feePerOp :: Word32 -> TransactionBuilder -> TransactionBuilder
-tx_feePerOp feePerOp b = b{feePerOp}
+tx_feePerOp feePerOp b = b{feePerOp = Already feePerOp}
 
 tx_memoText :: Text -> TransactionBuilder -> TransactionBuilder
 tx_memoText t b = b{memo = MemoText t}
 
-build :: HasCallStack => TransactionBuilder -> IO XDR.TransactionEnvelope
-build TransactionBuilder{account, clientEnv, feePerOp, memo, operations} = do
+build ::
+    HasCallStack =>
+    ClientEnv -> TransactionBuilder -> IO XDR.TransactionEnvelope
+build clientEnv TransactionBuilder{account, feePerOp, memo, operations} = do
     DTO.Account{sequence = sequenceText} <-
         runClientThrow (getAccount account) clientEnv
+    feePerOp' <-
+        case feePerOp of
+            Already f -> pure f
+            Guess -> guessFee
     let seqNum = either error identity $ readEither $ Text.unpack sequenceText
+        transaction'fee = feePerOp' * fromIntegral (length operations)
         tx =
             XDR.Transaction
             { transaction'cond
@@ -143,16 +155,26 @@ build TransactionBuilder{account, clientEnv, feePerOp, memo, operations} = do
         XDR.TransactionEnvelope'ENVELOPE_TYPE_TX $
         XDR.TransactionV1Envelope tx XDR.emptyBoundedLengthArray
   where
+
     transaction'cond = XDR.Preconditions'PRECOND_NONE
-    transaction'fee = feePerOp * fromIntegral (length operations)
+
     transaction'memo =
         case memo of
             MemoNone    -> XDR.Memo'MEMO_NONE
             MemoText t  -> XDR.Memo'MEMO_TEXT $ XDR.lengthArray' $ encodeUtf8 t
             MemoOther{} -> undefined
+
     transaction'operations = XDR.boundLengthArrayFromList $ toList operations
+
     transaction'sourceAccount =
         XDR.MuxedAccount'KEY_TYPE_ED25519 $ addressToXdr account
+
+    guessFee = do
+        FeeStats{fee_charged} <- runClientThrow getFeeStats clientEnv
+        pure $
+            fromMaybe defaultFeePerOp do
+                t <- Map.lookup "min" fee_charged
+                readMaybe $ Text.unpack t
 
 addressToXdr :: Address -> Uint256
 addressToXdr (Address address) =
