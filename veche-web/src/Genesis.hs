@@ -76,3 +76,7 @@ showKnownAsset :: Asset -> Text
 showKnownAsset a@Asset{code}
     | a `elem` knownAssets  = code
     | otherwise             = assetToText a
+
+mtlKeyRateAccount :: Stellar.Address
+mtlKeyRateAccount =
+    Stellar.Address "GDGGHSIA62WGNMN2VOIBW3X66ATOBW5J2FU7CSJZ6XVHI2ZOXZCRRATE"
