@@ -53,9 +53,12 @@ import Database.Persist qualified as Persist
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
+-- project
+import Stellar.Simple (Asset)
+
 -- component
 import Genesis (forums)
-import Model (Comment (Comment), Escrow, Issue (..), IssueId,
+import Model (Comment (Comment), Issue (..), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               User, UserId, Vote (Vote))
 import Model qualified
@@ -85,7 +88,7 @@ data VoteMaterialized = VoteMaterialized
 data IssueMaterialized = IssueMaterialized
     { body                  :: Text
     , comments              :: Forest CommentMaterialized
-    , escrows               :: [Escrow]
+    , escrow                :: Map Asset Scientific
     , forum                 :: Forum
     , isCloseReopenAllowed  :: Bool
     , isCommentAllowed      :: Bool
@@ -194,14 +197,10 @@ load :: IssueId -> Handler IssueMaterialized
 load issueId = do
     (mUserId, roles) <- maybeAuthzRoles
     let authenticated = isJust mUserId
-    escrows <- Escrow.getActive issueId
+    escrow <- Escrow.getIssueBalance issueId
     runDB do
         issue <- get404 issueId
-        let Issue   { author    = authorId
-                    , created
-                    , curVersion
-                    , forum     = forumId
-                    } =
+        let Issue{author = authorId, created, curVersion, forum = forumId} =
                 issue
         forumE@(_, forum) <- Forum.getJustEntity forumId
 
@@ -241,7 +240,7 @@ load issueId = do
             IssueMaterialized
                 { body
                 , comments
-                , escrows
+                , escrow
                 , forum
                 , isCloseReopenAllowed
                 , isCommentAllowed

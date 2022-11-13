@@ -34,7 +34,7 @@ import Yesod.Persist qualified
 import Yesod.Static (Static)
 
 -- component
-import Model (Escrow, IssueId)
+import Model (EscrowStat, IssueId)
 
 -- | 'Static' variant for `.well-known` directory
 newtype WKStatic = WKStatic Static
@@ -81,8 +81,7 @@ data App = App
     -- static subsites
     , appStatic     :: Static
     , appWellKnown  :: WKStatic
-    -- Stellar cache
-    , appEscrowActive :: IORef (Map IssueId [Escrow])
+    , appEscrow     :: IORef EscrowStat
     }
 
 -- This is where we define all of the routes in our application. For a full

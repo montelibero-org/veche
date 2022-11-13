@@ -1,4 +1,3 @@
 config/client_session_key.aes
-escrow-active.json
-escrow-extra.yaml
+escrow.json
 static/tmp/

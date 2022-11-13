@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -17,95 +18,79 @@ module Handler.Admin (
 
 {- HLINT ignore "Fuse on/on" -}
 
+-- prelude
 import Import hiding (Value)
 
+-- global
+import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Data.Typeable (TypeRep, typeOf)
-import Data.Yaml qualified as Yaml
 import Database.Esqueleto.Experimental (SqlExpr, SqlQuery, Value (Value), desc,
                                         from, innerJoin, on, orderBy, select,
                                         table, (:&) ((:&)), (==.), (^.))
 import Database.Persist (get, selectList)
-import Stellar.Simple (Transaction (Transaction),
-                       TransactionOnChain (TransactionOnChain), TxId)
-import Stellar.Simple qualified
-import Web.HttpApiData (toUrlPiece)
 import Yesod.Core (liftHandler)
 import Yesod.Persist (runDB)
 
+-- project
+import Stellar.Simple (Asset, TransactionOnChain (TransactionOnChain))
+import Stellar.Simple qualified
+
+-- component
 import Genesis (showKnownAsset)
 import Model.Comment (Comment (Comment))
 import Model.Comment qualified as Comment
-import Model.Escrow (Escrow (Escrow))
+import Model.Escrow (EscrowStat (EscrowStat))
 import Model.Escrow qualified
 import Model.Issue (Issue (Issue), IssueId)
 import Model.Issue qualified
 import Model.Request (Request (Request))
 import Model.Request qualified
 import Model.User (User, UserId)
-import Model.User qualified as User
 import Model.UserRole qualified as UserRole
 import Model.Vote qualified as Vote
 import Templates.Comment (commentAnchor)
-import Templates.User (userNameText, userNameWidget)
+import Templates.User (userNameText)
 
 getAdminEscrowR :: Handler Html
 getAdminEscrowR = do
     roleE <- UserRole.get Admin ?|> permissionDenied ""
     requireAuthz $ AdminOp roleE
 
-    App{appEscrowActive, appSettings = AppSettings{appEscrowExtraFile}} <-
-        getYesod
+    App{appEscrow} <- getYesod
 
-    active <- readIORef appEscrowActive
-    extra <-
-        addCallStack $
-        Yaml.decodeFileThrow @_ @[TransactionOnChain] appEscrowExtraFile
+    EscrowStat{balances, unknownOps, unknownTxs} <-
+        readIORef appEscrow
     defaultLayout $(widgetFile "admin/escrow")
 
-  where
+balancesHead :: Widget
+balancesHead =
+    [whamlet|
+        <th>issue
+        <th>amount
+    |]
 
-    activeHead =
-        [whamlet|
-            <th>amount
-            <th>issue
-            <th>sponsor
-            <th>time
-            <th>transaction
-        |]
+balancesRow :: (IssueId, Map Asset Scientific) -> Widget
+balancesRow (issueId, amounts) = do
+    mIssue <- liftHandler $ runDB $ get issueId
+    let issueIsClosed = any (\Issue{..} -> not open) mIssue
+    [whamlet|
+        <td>
+            <a href=@{IssueR issueId}>#{toPathPiece issueId}
+            $if issueIsClosed
+                <span .badge.bg-danger>closed
+        <td>
+            $forall (asset, amount) <- Map.assocs amounts
+                #{show amount} #{showKnownAsset asset} <br>
+    |]
 
-    activeRows =
-        traverse_ \Escrow{amount, asset, issueId, sponsor, time, txId} -> do
-            sponsorUser <-
-                liftHandler $
-                fmap entityVal <$> User.getByStellarAddress sponsor
-            mIssue <- liftHandler $ runDB $ get issueId
-            let issueIsClosed = any (\Issue{..} -> not open) mIssue
-            let sponsorWidget =
-                    case sponsorUser of
-                        Nothing   -> toHtml $ elide 0 4 $ toUrlPiece sponsor
-                        Just user -> userNameWidget user
-            [whamlet|
-                $newline never
-                <tr>
-                    <td>#{show amount} #{showKnownAsset asset}
-                    <td>
-                        <a href=@{IssueR issueId}>#{toPathPiece issueId}
-                        $if issueIsClosed
-                            <span .badge.bg-danger>closed
-                    <td>#{sponsorWidget}
-                    <td>#{show time}
-                    <td>
-                        <a href=#{stellarExpertTx txId}>
-                            #{elide 4 4 $ toUrlPiece txId}
-            |]
+-- elide :: Int -> Int -> Text -> Text
+-- elide a b t = Text.take a t <> "…" <> Text.takeEnd b t
 
-elide :: Int -> Int -> Text -> Text
-elide a b t = Text.take a t <> "…" <> Text.takeEnd b t
-
-stellarExpertTx :: TxId -> Text
-stellarExpertTx txid =
-    "https://stellar.expert/explorer/public/tx/" <> toPathPiece txid
+-- stellarExpertTx :: TxId -> Widget
+-- stellarExpertTx txId = [whamlet|<a href=#{href}>#{shortTxId}|] where
+--     href = "https://stellar.expert/explorer/public/tx/" <> toPathPiece txId
+--     shortTxId = elide 4 4 $ toUrlPiece txId
 
 data Event = Event
     { author            :: Entity User

@@ -1,24 +1,32 @@
 <h1>Escrow
 
-<h2>by issue
+<h2>balances
 <table .table.table-striped.table-hover>
-    <thead>^{activeHead}
-    <tbody>^{activeRows $ fold active}
-
-<h2>extra transactions
-<table .table.table-striped.table-hover>
-    <thead>
-        <th>id
-        <th>time
-        <th>memo
-        <th>operation
+    <thead>^{balancesHead}
     <tbody>
-        $forall TransactionOnChain{id, time, tx = Transaction{memo, operations}} <- extra
-            <tr>
-                <td>
-                    <a href=#{stellarExpertTx id}>#{elide 4 4 $ toUrlPiece id}
-                <td>#{show time}
-                <td>#{show memo}
-                <td>
-                    $forall operation <- operations
-                        <p>#{either show show operation}
+        $forall tx <- Map.assocs balances
+            <tr>^{balancesRow tx}
+
+$if not $ null unknownOps
+    <h2>unknown operations
+    <table .table.table-striped.table-hover>
+        <thead>
+            <th>operation
+        <tbody>
+            $forall op <- unknownOps
+                <tr>
+                    <td>#{show op}
+
+$if not $ null unknownTxs
+    <h2>unknown transactions
+    <table .table.table-striped.table-hover>
+        <thead>
+            <th>tx id
+            <th>time
+            <th>transaction
+        <tbody>
+            $forall TransactionOnChain{id, time, tx} <- unknownTxs
+                <tr>
+                    <td>#{show id}
+                    <td>#{show time}
+                    <td>#{show tx}

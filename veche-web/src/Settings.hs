@@ -19,18 +19,17 @@ module Settings where
 import ClassyPrelude
 
 -- global
+import GHC.Stack (HasCallStack)
 import Control.Exception qualified as Exception
 import Data.Aeson (FromJSON, Result (Error, Success), Value, fromJSON,
                    parseJSON, withObject, (.!=), (.:), (.:?))
 import Data.Default (def)
 import Data.FileEmbed (embedFile)
-import Data.Map.Strict qualified as Map
 import Data.Yaml (decodeEither')
 import Database.Persist.Sqlite (SqliteConf)
 import Language.Haskell.TH.Syntax (Exp, Name, Q)
 import Network.Wai.Handler.Warp (HostPreference)
-import Stellar.Simple (TxId)
-import Yesod (Route)
+import Yesod.Core (Route)
 import Yesod.Default.Config2 (applyEnvValue, configSettingsYml)
 import Yesod.Default.Util (WidgetFileSettings, widgetFileNoReload,
                            widgetFileReload)
@@ -41,7 +40,7 @@ import Yesod.Static (CombineSettings, Static, combineScripts',
 import WithCallStack (impureThrowWithCallStack)
 
 -- component
-import Model (IssueId)
+import Model (Corrections)
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -90,8 +89,8 @@ data AppSettings = AppSettings
     -- ^ Allowed logins to deliver. For testing.
     -- When empty (default), everybody is allowed.
 
-    , appEscrowActiveFile   :: FilePath
-    , appEscrowExtraFile    :: FilePath
+    , appEscrowFile :: FilePath
+    -- ^ This file contains JSON-encoded 'EscrowFile'
     }
 
 instance FromJSON AppSettings where
@@ -122,8 +121,7 @@ instance FromJSON AppSettings where
             appTelegramBotNotifyWhitelist <-
                 o .:? "telegram-bot-notify-whitelist" .!= []
 
-            appEscrowActiveFile <- o .: "escrow-active-file"
-            appEscrowExtraFile  <- o .: "escrow-extra-file"
+            appEscrowFile <- o .: "escrow-file"
 
             return AppSettings{..}
 
@@ -184,27 +182,7 @@ combineScripts :: Name -> [Route Static] -> Q Exp
 combineScripts =
     combineScripts' (appSkipCombining compileTimeAppSettings) combineSettings
 
-data EscrowCorrection
-    = AddWithIssueId
-        { badIncoming   :: TxId
-        , issueId       :: IssueId
-        }
-    | Return
-        { badIncoming   :: TxId
-        , outgoing      :: TxId
-        }
-    deriving (FromJSON, Generic)
-
-escrowCorrections :: Map TxId EscrowCorrection
+escrowCorrections :: HasCallStack => Corrections
 escrowCorrections =
-    Map.fromList
-        [   ( case ec of
-                Return{badIncoming}         -> badIncoming
-                AddWithIssueId{badIncoming} -> badIncoming
-            , ec
-            )
-        | ec <-
-            either impureThrowWithCallStack id $
-            decodeEither' @[EscrowCorrection]
-                $(embedFile "config/escrow-corrections.yaml")
-        ]
+    either impureThrowWithCallStack id $
+    decodeEither' $(embedFile "config/escrow-corrections.yaml")

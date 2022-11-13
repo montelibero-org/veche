@@ -17,31 +17,26 @@ import Import
 import Control.Concurrent (threadDelay)
 import Data.Aeson qualified as Aeson
 import Data.Map.Strict qualified as Map
-import Data.Set qualified as Set
 import Data.Text qualified as Text
-import Data.Yaml qualified as Yaml
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
+import Database.Persist.Sql (runSqlPool)
+import Servant.Client (ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 
 -- project
 import Stellar.Horizon.Client (Account (Account), Asset (Asset),
-                               Memo (MemoText), Operation (OperationPayment),
+                               Operation (OperationPayment),
                                Transaction (Transaction),
                                TransactionOnChain (TransactionOnChain),
                                getAccount, getAccountTransactionsList,
                                getAccountsList)
 import Stellar.Horizon.Client qualified as Stellar
-import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey),
-                            TxId)
+import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.DTO qualified
 
 -- component
 import Genesis (escrowAddress, mtlAsset, mtlFund)
-import Model.Escrow (Escrow (Escrow))
 import Model.Escrow qualified as Escrow
-import Model.Issue (IssueId)
 import Model.Issue qualified as Issue
 import Model.StellarHolder (StellarHolder (StellarHolder))
 import Model.StellarHolder qualified as StellarHolder
@@ -49,37 +44,33 @@ import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
 
 stellarDataUpdater :: App -> IO ()
-stellarDataUpdater app = do
-    let clientEnv = mkClientEnv appHttpManager appStellarHorizon
+stellarDataUpdater app =
     forever do
         do  putStrLn "stellarDataUpdater: Updating Escrow"
-            updateEscrow app clientEnv
+            updateEscrow app
             putStrLn "stellarDataUpdater: Updated Escrow"
         randomDelay
         do  putStrLn "stellarDataUpdater: Updating MTL signers"
-            n <- updateSignersCache clientEnv appConnPool mtlFund
+            n <- updateSignersCache app
             putStrLn $
                 "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
         randomDelay
         do  putStrLn "stellarDataUpdater: Updating MTL holders"
-            n <- updateHoldersCache clientEnv appConnPool mtlAsset
+            n <- updateHoldersCache app
             putStrLn $
                 "stellarDataUpdater: Updated " <> tshow n <> " MTL holders"
         randomDelay
   where
-    App{appConnPool, appHttpManager, appStellarHorizon} = app
     randomDelay = do
         delayMinutes <- randomRIO (1, 10)
         threadDelay $ delayMinutes * 60 * 1_000_000
 
 updateSignersCache ::
-    ClientEnv ->
-    ConnectionPool ->
-    StellarMultiSigAddress ->
+    App ->
     -- | Actual number of signers
     IO Int
-updateSignersCache clientEnv connPool target = do
-    Account{signers} <- runClientM' clientEnv $ getAccount address
+updateSignersCache app@App{appConnPool} = do
+    Account{signers} <- runHorizonClient app $ getAccount address
     let actual =
             Map.fromList
                 [ (Stellar.Address key, weight)
@@ -87,7 +78,7 @@ updateSignersCache clientEnv connPool target = do
                     signers
                 , weight > 0
                 ]
-    (`runSqlPool` connPool) do
+    (`runSqlPool` appConnPool) do
         cached' <- StellarSigner.dbGetAll target
         let cached =
                 Map.fromList
@@ -106,6 +97,8 @@ updateSignersCache clientEnv connPool target = do
     pure $ length actual
   where
 
+    target = mtlFund
+
     StellarMultiSigAddress address = target
 
     handleDeleted = traverse_ $ StellarSigner.dbDelete target
@@ -115,13 +108,11 @@ updateSignersCache clientEnv connPool target = do
     handleModified = traverse_ $ uncurry $ StellarSigner.dbSetWeight target
 
 updateHoldersCache ::
-    ClientEnv ->
-    ConnectionPool ->
-    Asset ->
+    App ->
     -- | Actual number of holders
     IO Int
-updateHoldersCache clientEnv connPool asset = do
-    holders <- runClientM' clientEnv $ getAccountsList asset
+updateHoldersCache app@App{appConnPool} = do
+    holders <- runHorizonClient app $ getAccountsList asset
     let actual =
             Map.fromList
                 [ (account_id, realToFrac amount)
@@ -129,7 +120,7 @@ updateHoldersCache clientEnv connPool asset = do
                 , let amount = getAmount asset balances
                 , amount > 0
                 ]
-    (`runSqlPool` connPool) do
+    (`runSqlPool` appConnPool) do
         cached' <- StellarHolder.dbGetAll asset
         let cached =
                 Map.fromList
@@ -147,78 +138,50 @@ updateHoldersCache clientEnv connPool asset = do
         when (cached /= actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
+    asset = mtlAsset
     handleDeleted = traverse_ $ StellarHolder.dbDelete asset
     handleAdded = StellarHolder.dbInsertMany asset . Map.assocs
     handleModified = traverse_ $ uncurry $ StellarHolder.dbSetShare asset
 
-runClientM' :: ClientEnv -> ClientM a -> IO a
-runClientM' clientEnv action =
-    runClientM action clientEnv >>= either throwIO pure
+runHorizonClient :: App -> ClientM a -> IO a
+runHorizonClient App{appHttpManager, appStellarHorizon} action =
+    runClientM action (mkClientEnv appHttpManager appStellarHorizon)
+    >>= either throwIO pure
 
 getAmount :: Asset -> [Balance] -> Scientific
 getAmount Asset{code, issuer} balances =
     fromMaybe 0 $
     asum
         [ readMaybe @Scientific $ Text.unpack balance
-        | Balance
-                { balance
-                , asset_code
-                , asset_issuer
-                } <-
-            balances
+        | Balance{balance, asset_code, asset_issuer} <- balances
         , maybe isNative (== code) asset_code
         , asset_issuer == (Stellar.Address <$> issuer)
         ]
   where
     isNative = isNothing issuer
 
-updateEscrow :: App -> ClientEnv -> IO ()
-updateEscrow app clientEnv = do
-    txs <- runClientM' clientEnv $ getAccountTransactionsList escrowAddress
-    let (extra, active) = partitionEithers $ concatMap makeEscrows txs
-    Aeson.encodeFile appEscrowActiveFile active
-    Yaml.encodeFile  appEscrowExtraFile  extra
-    atomicWriteIORef appEscrowActive $ Escrow.buildIndex active
-  where
-    App{appEscrowActive, appSettings} = app
-    AppSettings{appEscrowActiveFile, appEscrowExtraFile} = appSettings
-
-parseEscrowIssueIdFromMemo :: Text -> Maybe IssueId
-parseEscrowIssueIdFromMemo memo = do
-    issueIdText <- stripPrefix "E" memo
-    fromPathPiece issueIdText
-
-returnedOutgoingTxIds :: Set TxId
-returnedOutgoingTxIds =
-    Set.fromList [outgoing | Return{outgoing} <- toList escrowCorrections]
-
-makeEscrows :: TransactionOnChain -> [Either TransactionOnChain Escrow]
-makeEscrows toc@TransactionOnChain{id = txId, time, tx} = do
-    guard $ txId `notElem` returnedOutgoingTxIds
-    operation <- operations
-    case operation of
-        Right OperationPayment{amount, asset, destination, source = opSource}
-            | destination == escrowAddress  -> incoming amount asset source'
-            | source'     == escrowAddress  -> saveExtra operation
-            | otherwise                     -> []
-          where
-            source' = fromMaybe txSource opSource
-        Right _ -> []
-        _ -> saveExtra operation
+updateEscrow :: App -> IO ()
+updateEscrow app@App{appEscrow, appSettings = AppSettings{appEscrowFile}} = do
+    txs <- runHorizonClient app $ getAccountTransactionsList escrowAddress
+    let payments = filterPaymentTxs txs
+    Aeson.encodeFile appEscrowFile payments
+    let escrow = Escrow.buildEscrow escrowCorrections payments
+    atomicWriteIORef appEscrow escrow
   where
 
-    Transaction{memo, operations, source = txSource} = tx
+    filterPaymentTxs txs =
+        [ toc{Stellar.tx = tx{Stellar.operations = operations'}}
+        | toc <- txs
+        , let
+            TransactionOnChain{tx} = toc
+            Transaction{source = txSource, operations} = tx
+            operations' = filterPaymentOps txSource operations
+        , not $ null operations'
+        ]
 
-    currentCorrection = Map.lookup txId escrowCorrections
-
-    saveExtra operation =
-        pure $ Left toc{Stellar.tx = tx{Stellar.operations = [operation]}}
-
-    incoming amount asset sponsor
-        | Just AddWithIssueId{issueId} <- currentCorrection = ok issueId
-        | Just Return{} <- currentCorrection = []
-        | MemoText memoText <- memo =
-            foldMap ok $ parseEscrowIssueIdFromMemo memoText
-        | otherwise = []
-      where
-        ok issueId = [Right Escrow{amount, asset, issueId, sponsor, time, txId}]
+    filterPaymentOps txSource ops =
+        [ op
+        | op@(Right OperationPayment{source = opSource, destination}) <- ops
+        , let source = fromMaybe txSource opSource
+        , destination == escrowAddress || source == escrowAddress
+        ]

@@ -39,5 +39,4 @@ stellar-horizon-url: https://horizon.stellar.org
 telegram-bot-name: mtl_veche_bot
 telegram-bot-token: "_env:VECHE_TELEGRAM_TOKEN:bot123:pass"
 
-escrow-active-file: /var/www/escrow-active.json
-escrow-extra-file:  /var/www/escrow-extra.yaml
+escrow-file: /var/www/escrow.json

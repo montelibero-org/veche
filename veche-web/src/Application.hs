@@ -28,7 +28,7 @@ module Application
 import Import
 
 -- global
-import Control.Monad.Fail (fail)
+import Control.Monad.Fail (MonadFail, fail)
 import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
                              toLogStr)
 import Data.Aeson qualified as Aeson
@@ -76,6 +76,7 @@ import Handler.Stellar (getStellarFederationR)
 import Handler.Telegram (getTelegramBindR, postTelegramUnbindR)
 import Handler.User (getUserR, putUserR)
 import Model (migrateAll)
+import Model.Escrow (EscrowFile)
 import Model.Escrow qualified as Escrow
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
@@ -101,19 +102,17 @@ makeFoundation appSettings = do
     let makeWKSubsite
             | appMutableStatic  = fmap WKStatic . staticDevel
             | otherwise         = fmap WKStatic . static
-    appStatic       <- makeStaticSubsite    appStaticDir
-    appWellKnown    <- makeWKSubsite $      appStaticDir </> ".well-known"
+    appStatic    <- makeStaticSubsite appStaticDir
+    appWellKnown <- makeWKSubsite $   appStaticDir </> ".well-known"
 
     appStellarHorizon <- parseBaseUrl $ Text.unpack appStellarHorizonUrl
 
-    appEscrowActive <- do
-        escrows <-
+    appEscrow <- do
+        txs :: EscrowFile <-
             addCallStack $
-                (   Aeson.eitherDecodeFileStrict' appEscrowActiveFile
-                    >>= either fail pure
-                )
+                liftEither (Aeson.eitherDecodeFileStrict' appEscrowFile)
                 & handleJust (guard . isDoesNotExistError) (\() -> pure [])
-        newIORef $ Escrow.buildIndex escrows
+        newIORef $ Escrow.buildEscrow escrowCorrections txs
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -122,7 +121,7 @@ makeFoundation appSettings = do
     -- from there, and then create the real foundation.
     let mkFoundation appConnPool =
             App { appConnPool
-                , appEscrowActive
+                , appEscrow
                 , appHttpManager
                 , appLogger
                 , appSettings
@@ -162,7 +161,7 @@ makeFoundation appSettings = do
   where
     AppSettings
         { appDatabaseConf
-        , appEscrowActiveFile
+        , appEscrowFile
         , appMutableStatic
         , appStaticDir
         , appStellarHorizonUrl
@@ -170,6 +169,9 @@ makeFoundation appSettings = do
             appSettings
     database = sqlDatabase appDatabaseConf
     poolSize = sqlPoolSize appDatabaseConf
+
+liftEither :: MonadFail m => m (Either String b) -> m b
+liftEither m = m >>= either fail pure
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
