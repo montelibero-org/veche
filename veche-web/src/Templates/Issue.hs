@@ -98,11 +98,11 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                     <a href=@{ForumR forumId}>#{forumTitle}
         |]
 
-    (previousBody
-            , previousContacts
-            , previousPoll
-            , previousPriceOffer
-            , previousTitle
+    (           previousBody
+            ,   previousContacts
+            ,   previousPoll
+            ,   previousPriceOffer
+            ,   previousTitle
             ) =
         case previousContent of
             Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
@@ -110,7 +110,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 ( Just $ Textarea body
                 , Textarea <$> contacts
                 , Just poll
-                , Textarea <$> priceOffer
+                , Textarea <$> priceOffer :: Maybe Textarea
                 , Just title
                 )
 
@@ -130,12 +130,11 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 previousBody
         priceOffer <-
             whenMay enablePriceOffer $
-                Just . unTextarea
-                <$> areq
+                fmap unTextarea
+                <$> aopt
                         textareaField
-                        (bfs MsgIssuePriceOffer)
-                            {fsName = Just "priceOffer"}
-                        previousPriceOffer
+                        (bfs MsgIssuePriceOffer){fsName = Just "priceOffer"}
+                        (Just previousPriceOffer)
         contacts <-
             whenMay enableContacts $
                 Just . unTextarea

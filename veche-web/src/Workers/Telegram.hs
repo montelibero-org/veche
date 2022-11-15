@@ -1,11 +1,14 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Workers.Telegram (telegramBot) where
 
@@ -23,28 +26,75 @@ import Servant.Client qualified
 import System.Random (randomRIO)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Web.Telegram.API.Bot (ChatId (ChatId), ParseMode (HTML), TelegramClient,
-                             Token (Token), message_parse_mode, sendMessageM,
+                             Token (Token), getUpdatesM, getUpdatesRequest,
+                             message_parse_mode, sendMessageM,
                              sendMessageRequest)
 import Web.Telegram.API.Bot qualified as Telegram
+import Yesod.Core (messageLoggerSource, renderMessage)
 
 -- component
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
-import Model.Telegram (Telegram (Telegram))
+import Model.Telegram (Telegram (Telegram), TelegramState (TelegramState),
+                       dbGetState, dbSetOffset)
 import Model.Telegram qualified
 import Model.User qualified as User
 
 telegramBot :: App -> IO ()
-telegramBot app = do
-    putStrLn "Started Telegram bot"
-    forever do
-        events <- runDB Event.dbGetUndelivered
-        for_ events deliver
-        randomDelay
+telegramBot app =
+    runLogger do
+        $logInfo "Started Telegram bot"
+        forever do
+            getAndHandleTelegramUpdates
+            deliverEvents
+            randomDelay
 
   where
 
-    deliver :: SomeEvent -> IO ()
+    runLogger = (`runLoggingT` messageLoggerSource app appLogger)
+
+    getAndHandleTelegramUpdates = do
+        offset <- runDB dbGetState <&> \TelegramState{..} -> offset
+        Telegram.Response{result = updates} <-
+            runTelegramClientThrow $
+            getUpdatesM
+                getUpdatesRequest{Telegram.updates_offset = succ <$> offset}
+        for_ updates \update@Telegram.Update{update_id} -> do
+            handleUpdate update
+            runDB $ dbSetOffset update_id
+
+    handleUpdate update@Telegram.Update{message}
+        | Just m <- message = handleMessage m
+        | otherwise = $logError $ "unhandled " <> tshow update
+
+    handleMessage msg@Telegram.Message{chat, from, text}
+        | Just t <- text = handleMessageText lang (ChatId chat_id) t
+        | otherwise = $logError $ "unhandled " <> tshow msg
+      where
+        Telegram.Chat{chat_id} = chat
+        lang = do
+            Telegram.User{user_language_code} <- from
+            Telegram.LanguageCode code <- user_language_code
+            pure code
+
+    handleMessageText lang chatId = \case
+        "/help"     -> sendHelp
+        "/start"    -> sendHelp
+        _           -> sendMsg MsgTelegramBotNotUnderstood
+      where
+        sendHelp = sendMsg $ MsgTelegramBotHelp appRoot
+        sendMsg msg =
+            void $
+            runTelegramClientThrow $
+            sendMessageM $ sendMessageRequest chatId $ tr lang msg
+
+    tr = renderMessage app . maybeToList
+
+    deliverEvents = do
+        events <- runDB Event.dbGetUndelivered
+        for_ events deliver
+
+    deliver :: SomeEvent -> LoggingT IO ()
     deliver (SomeEvent eventE@(Entity id event)) = do
         users <- runDB $ Event.dbGetUsersToDeliver event
         notifyAll eventE $ filterWhitelist users
@@ -55,15 +105,19 @@ telegramBot app = do
         | otherwise         =
             filter \(_, Telegram{username}) -> username `elem` whitelist
 
-    App{appConnPool, appSettings, appHttpManager} = app
+    App{appConnPool, appHttpManager, appLogger, appSettings} = app
 
     AppSettings
-            {appTelegramBotToken, appTelegramBotNotifyWhitelist = whitelist} =
+            { appRoot
+            , appTelegramBotToken
+            , appTelegramBotNotifyWhitelist = whitelist
+            } =
         appSettings
 
-    randomDelay = do
-        delaySeconds <- randomRIO (1, 10)
-        threadDelay $ delaySeconds * 1_000_000
+    randomDelay =
+        liftIO do
+            delaySeconds <- randomRIO (1, 10)
+            threadDelay $ delaySeconds * 1_000_000
 
     runDB = (`runSqlPool` appConnPool)
 
@@ -71,7 +125,7 @@ telegramBot app = do
         for_ users \(userId, telegram) -> do
             msg <- runDB $ Event.makeMessage app event
             result <-
-                runTelegramClient' $ notify telegram $ toStrict $ renderHtml msg
+                runTelegramClient $ notify telegram $ toStrict $ renderHtml msg
             case result of
                 Left (FailureResponse _ Response{responseStatusCode})
                     | responseStatusCode == forbidden403 ->
@@ -79,10 +133,14 @@ telegramBot app = do
                 Left e -> throwIO $ userError $ show (e, event, renderHtml msg)
                 Right () -> pure ()
 
-    runTelegramClient' =
-        Telegram.runTelegramClient
+    runTelegramClient =
+        liftIO
+        . Telegram.runTelegramClient
             (Token $ "bot" <> appTelegramBotToken)
             appHttpManager
+
+    runTelegramClientThrow =
+        runTelegramClient >=> either throwWithCallStackIO pure
 
 notify :: Telegram -> Text -> TelegramClient ()
 notify Telegram{chatid} text =

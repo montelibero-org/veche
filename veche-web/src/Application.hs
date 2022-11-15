@@ -29,8 +29,7 @@ import Import
 
 -- global
 import Control.Monad.Fail (MonadFail, fail)
-import Control.Monad.Logger (LogLevel (LevelError), liftLoc, runLoggingT,
-                             toLogStr)
+import Control.Monad.Logger (LogLevel (LevelError), liftLoc, toLogStr)
 import Data.Aeson qualified as Aeson
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),

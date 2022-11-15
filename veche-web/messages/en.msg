@@ -63,6 +63,10 @@ PollDisabled: Disabled
 PollMtlShare: Proportionally to MTL share
 PollMtlSignerWeight: Proportionally to Stellar signer weight
 
+# telegram bot
+TelegramBotHelp site@Text: This bot is a part of the Veche service #{site}. Available commands: /help
+TelegramBotNotUnderstood: I didn't understand your message. Try /help
+
 # user profile
 UserProfile: User profile
 Name: Name

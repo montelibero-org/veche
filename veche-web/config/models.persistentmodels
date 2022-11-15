@@ -110,6 +110,10 @@ Telegram
     deriving Show
 
 
+TelegramState
+    offset  Int Maybe
+
+
 Verifier
     userIdent   Stellar.Address
     key         Text

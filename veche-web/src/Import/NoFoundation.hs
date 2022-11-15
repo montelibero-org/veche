@@ -15,6 +15,8 @@ import ClassyPrelude as X hiding (Handler, delete, for_, id, link, link2, on,
 import CMarkGFM (commonmarkToHtml, extAutolink, extStrikethrough, extTable,
                  extTagfilter, optHardBreaks, optSmart)
 import Control.Arrow as X ((>>>))
+import Control.Monad.Logger as X (LoggingT, MonadLoggerIO, logError, logInfo,
+                                  logWarn, runLoggingT)
 import Data.Aeson as X (FromJSON, ToJSON, Value, object, (.=))
 import Data.Default as X (def)
 import Data.Foldable as X (for_)

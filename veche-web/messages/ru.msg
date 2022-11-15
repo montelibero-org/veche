@@ -62,6 +62,10 @@ PollDisabled: Выключено
 PollMtlShare: Пропорционально количеству MTL
 PollMtlSignerWeight: Пропорционально весу подписи Stella
 
+# telegram bot
+TelegramBotHelp site@Text: Этот бот — часть Веча #{site}. Команды: /help
+TelegramBotNotUnderstood: Ничего не понял. Попробуйте /help
+
 # user profile
 UserProfile: Профиль пользователя
 Name: Имя
