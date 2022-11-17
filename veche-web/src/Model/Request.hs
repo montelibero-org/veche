@@ -2,7 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -15,13 +15,12 @@ module Model.Request (
 ) where
 
 {- HLINT ignore "Fuse on/on" -}
-{- HLINT ignore "Redundant ^." -}
 
 import Import.NoFoundation
 
 import Database.Esqueleto.Experimental (Value (Value), from, innerJoin, not_,
                                         on, select, table, val, where_, (&&.),
-                                        (:&) ((:&)), (==.), (^.))
+                                        (:&) ((:&)), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, runDB)
 
@@ -54,14 +53,14 @@ selectActiveByUser userId = do
             request :& issue :& comment :& user <- from $
                 table @Request
                 `innerJoin` table @Issue `on` (\(request :& issue) ->
-                    request ^. #issue ==. issue ^. #id)
+                    request.issue ==. issue.id)
                 `innerJoin` table @Comment `on` (\(request :& _ :& comment) ->
-                    request ^. #comment ==. comment ^. #id)
+                    request.comment ==. comment.id)
                 `innerJoin` table @User `on` \(request :& _ :& _ :& user) ->
-                    request ^. #user ==. user ^. #id
-                    &&. request ^. #user ==. val userId
-            where_ $ not_ (request ^. #fulfilled)
-            pure (request ^. #id, issue, comment, user)
+                    request.user ==. user.id
+                    &&. request.user ==. val userId
+            where_ $ not_ request.fulfilled
+            pure (request.id, issue, comment, user)
     pure
         [ RequestMaterialized{id, issue, comment, requestor}
         | (Value id, issue, comment, requestor) <- requests
@@ -75,14 +74,12 @@ selectActiveByIssueAndRequestedUser issueId requestedUserId = do
             request :& comment :& user <- from $
                 table @Request
                 `innerJoin` table @Comment `on` (\(request :& comment) ->
-                    request ^. #comment ==. comment ^. #id)
+                    request.comment ==. comment.id)
                 `innerJoin` table @User `on` \(request :& comment :& user) ->
-                    comment ^. #author ==. user ^. #id
-                    &&. request ^. #user ==. val requestedUserId
-            where_ $
-                not_ (request ^. #fulfilled)
-                &&. request ^. #issue ==. val issueId
-            pure (request ^. #id, comment, user)
+                    comment.author ==. user.id
+                    &&. request.user ==. val requestedUserId
+            where_ $ not_ request.fulfilled &&. request.issue ==. val issueId
+            pure (request.id, comment, user)
     pure
         [ IssueRequestMaterialized{id, comment, requestor}
         | (Value id, comment, requestor) <- requests

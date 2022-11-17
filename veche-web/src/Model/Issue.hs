@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -45,7 +46,7 @@ import Data.Map.Strict qualified as Map
 import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
                                         innerJoin, isNothing, just, leftJoin,
                                         not_, on, select, table, val, where_,
-                                        (&&.), (:&) ((:&)), (==.), (?.), (^.))
+                                        (&&.), (:&) ((:&)), (==.))
 import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
                          getEntity, getJust, insert, insert_, selectList,
                          update, (!=.), (=.))
@@ -111,9 +112,9 @@ countOpenAndClosed forum = do
         runDB $
             select do
                 issue <- from $ table @Issue
-                where_ $ issue ^. #forum ==. val forum
-                groupBy $ issue ^. #open
-                pure (issue ^. #open, countRows @Int)
+                where_ $ issue.forum ==. val forum
+                groupBy issue.open
+                pure (issue.open, countRows @Int)
             <&> coerce
     pure
         ( findWithDefault 0 True  counts
@@ -132,8 +133,8 @@ loadComments issueId =
         select do
             comment :& user <- from $
                 table @Comment `innerJoin` table @User
-                `on` \(comment :& user) -> comment ^. #author ==. user ^. #id
-            where_ $ comment ^. #issue ==. val issueId
+                `on` \(comment :& user) -> comment.author ==. user.id
+            where_ $ comment.issue ==. val issueId
             pure (comment, user)
 
     loadRawRequests ::
@@ -142,8 +143,8 @@ loadComments issueId =
         select do
             request :& user <- from $
                 table @Request `innerJoin` table @User
-                `on` \(request :& user) -> request ^. #user ==. user ^. #id
-            where_ $ request ^. #issue ==. val issueId
+                `on` \(request :& user) -> request.user ==. user.id
+            where_ $ request.issue ==. val issueId
             pure (request, user)
 
 materializeComments ::
@@ -185,8 +186,8 @@ loadVotes issueId = do
         select do
             vote :& user <- from $
                 table @Vote `innerJoin` table @User
-                `on` \(vote :& user) -> vote ^. #user ==. user ^. #id
-            where_ $ vote ^. #issue ==. val issueId
+                `on` \(vote :& user) -> vote.user ==. user.id
+            where_ $ vote.issue ==. val issueId
             pure (vote, user)
     pure
         [ VoteMaterialized{choice, voter}
@@ -306,12 +307,12 @@ selectWithoutVoteFromUser = do
                 issue :& vote <- from $
                     table @Issue `leftJoin` table @Vote
                     `on` \(issue :& vote) ->
-                        just (issue ^. #id) ==. vote ?. #issue
-                        &&. vote ?. #user ==. val (Just userId)
+                        just issue.id ==. vote.issue
+                        &&. vote.user ==. val (Just userId)
                 where_ $
-                    (issue ^. #open)
-                    &&. not_ (isNothing $ issue ^. #poll)
-                    &&. isNothing (vote ?. #id)
+                    issue.open
+                    &&. not_ (isNothing issue.poll)
+                    &&. isNothing vote.id
                 pure issue
         pure $
             issues

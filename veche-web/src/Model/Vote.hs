@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -19,7 +20,7 @@ import Import hiding (Value)
 import Data.Map.Strict qualified as Map
 import Database.Esqueleto.Experimental (from, just, leftJoin, on, select, table,
                                         unValue, val, where_, (:&) ((:&)),
-                                        (==.), (?.), (^.))
+                                        (==.))
 import Database.Persist (getJustEntity, insert_, selectList, update, (=.))
 import Database.Persist qualified as Persist
 import Yesod.Persist (runDB)
@@ -101,10 +102,9 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
                         signer :& user <- from $
                             table @StellarSigner `leftJoin` table @User
                             `on` \(signer :& user) ->
-                                just (signer ^. #key)
-                                ==. user ?. #stellarAddress
-                        where_ $ signer ^. #target ==. val mtlFund
-                        pure (signer ^. #weight, user ?. #id)
+                                just signer.key ==. user.stellarAddress
+                        where_ $ signer.target ==. val mtlFund
+                        pure (signer.weight, user.id)
                     <&> map (bimap (fromIntegral . unValue) unValue)
             Just ByMtlAmount ->
                 addCallStack $
@@ -112,8 +112,7 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
                         holder :& user <- from $
                             table @StellarHolder `leftJoin` table @User
                             `on` \(holder :& user) ->
-                                just (holder ^. #key)
-                                ==. user ?. #stellarAddress
-                        where_ $ holder ^. #asset ==. val mtlAsset
-                        pure (holder ^. #amount, user ?. #id)
+                                just holder.key ==. user.stellarAddress
+                        where_ $ holder.asset ==. val mtlAsset
+                        pure (holder.amount, user.id)
                     <&> map (bimap (realToFrac . unValue) unValue)

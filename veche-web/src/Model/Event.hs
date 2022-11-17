@@ -9,6 +9,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,7 +26,7 @@ module Model.Event (
 import Import hiding (Value)
 
 import Database.Esqueleto.Experimental (asc, from, not_, orderBy, select, table,
-                                        unValue, where_, (^.))
+                                        unValue, where_)
 import Database.Persist (EntityField, PersistEntity, PersistEntityBackend,
                          SymbolToField, get, getJust, selectList, update, (=.),
                          (==.))
@@ -173,9 +174,9 @@ dbGetUndelivered =
     selectUndelivered =
         select do
             r <- from $ table @r
-            where_ $ not_ $ r ^. #eventDelivered
-            orderBy [asc $ r ^. #created]
-            pure (r ^. #created, r)
+            where_ $ not_ r.eventDelivered
+            orderBy [asc r.created]
+            pure (r.created, r)
         <&> map (bimap unValue SomeEvent)
 
 updateSetTrue ::

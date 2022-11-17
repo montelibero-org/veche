@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -25,7 +26,7 @@ import Data.Text qualified as Text
 import Data.Typeable (TypeRep, typeOf)
 import Database.Esqueleto.Experimental (SqlExpr, SqlQuery, Value (Value), desc,
                                         from, innerJoin, on, orderBy, select,
-                                        table, (:&) ((:&)), (==.), (^.))
+                                        table, (:&) ((:&)), (==.))
 import Database.Persist (selectList)
 import Yesod.Persist (runDB)
 
@@ -69,10 +70,10 @@ loadComments = do
     comment :& userAuthor :& issue <- from $
         table @Comment
         `innerJoin` table @User `on` (\(comment :& user) ->
-            comment ^. #author ==. user ^. #id)
+            comment.author ==. user.id)
         `innerJoin` table @Issue `on` \(comment :& _ :& issue) ->
-            comment ^. #issue ==. issue ^. #id
-    orderBy [desc $ comment ^. #created]
+            comment.issue ==. issue.id
+    orderBy [desc comment.created]
     pure (comment, userAuthor, issue)
 
 commentToEvent :: (Entity Comment, Entity User, Entity Issue) -> Event
@@ -97,8 +98,8 @@ loadIssues :: SqlQuery (SqlExpr (Entity Issue), SqlExpr (Entity User))
 loadIssues = do
     issue :& user <- from $
         table @Issue `innerJoin` table @User `on` \(issue :& user) ->
-            issue ^. #author ==. user ^. #id
-    orderBy [desc $ issue ^. #created]
+            issue.author ==. user.id
+    orderBy [desc issue.created]
     pure (issue, user)
 
 issueToEvent :: (Entity Issue, Entity User) -> Event
@@ -127,13 +128,13 @@ loadRequests = do
     request :& comment :& userAuthor :& issue <- from $
         table @Request
         `innerJoin` table @Comment `on` (\(request :& comment) ->
-            request ^. #comment ==. comment ^. #id)
+            request.comment ==. comment.id)
         `innerJoin` table @User `on` (\(_ :& comment :& user) ->
-            comment ^. #author ==. user ^. #id)
+            comment.author ==. user.id)
         `innerJoin` table @Issue `on` \(request :& _ :& _ :& issue) ->
-            request ^. #issue ==. issue ^. #id
-    orderBy [desc $ request ^. #created]
-    pure (request, comment ^. #message, userAuthor, issue)
+            request.issue ==. issue.id
+    orderBy [desc request.created]
+    pure (request, comment.message, userAuthor, issue)
 
 requestToEvent ::
     (Entity Request, Value Text, Entity User, Entity Issue) -> Event
