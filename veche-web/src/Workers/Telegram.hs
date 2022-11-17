@@ -34,11 +34,12 @@ import Yesod.Core (messageLoggerSource, renderMessage, yesodRender)
 
 -- component
 import Authentication.Telegram qualified as Authn
-import Model.Event (SomeEvent (SomeEvent))
+import Model.Event (Event, SomeEvent (SomeEvent))
 import Model.Event qualified as Event
 import Model.Telegram (Telegram (Telegram), TelegramState (TelegramState),
                        dbGetState, dbSetOffset)
 import Model.Telegram qualified
+import Model.User (UserId)
 import Model.User qualified as User
 
 telegramBot :: App -> IO ()
@@ -87,7 +88,7 @@ telegramBot app =
         _           -> sendMsg MsgTelegramBotNotUnderstood
       where
         sendHelp = do
-            authUrl <- (`runReaderT` app) $ renderUrl $ AuthR Authn.pluginRoute
+            authUrl <- renderUrl $ AuthR Authn.pluginRoute
             void $
                 runTelegramClientThrow $
                 sendMessageM
@@ -134,28 +135,32 @@ telegramBot app =
     AppSettings{appRoot, appTelegramBotNotifyWhitelist = whitelist} =
         appSettings
 
-    randomDelay =
-        liftIO do
-            delaySeconds <- randomRIO (1, 10)
-            threadDelay $ delaySeconds * 1_000_000
+randomDelay :: MonadIO m => m ()
+randomDelay =
+    liftIO do
+        delaySeconds <- randomRIO (1, 10)
+        threadDelay $ delaySeconds * 1_000_000
 
-    runDB :: (MonadReader App m, MonadUnliftIO m) => SqlPersistT m a -> m a
-    runDB action = do
-        App{appConnPool} <- ask
-        (`runSqlPool` appConnPool) action
+runDB :: (MonadReader App m, MonadUnliftIO m) => SqlPersistT m a -> m a
+runDB action = do
+    App{appConnPool} <- ask
+    (`runSqlPool` appConnPool) action
 
-    notifyAll event users =
-        for_ users \(userId, telegram) -> do
-            msg <- runDB $ Event.makeMessage app event
-            result <-
-                (`runReaderT` app) $
-                runTelegramClient $ notify telegram $ toStrict $ renderHtml msg
-            case result of
-                Left (FailureResponse _ Response{responseStatusCode})
-                    | responseStatusCode == forbidden403 ->
-                        runDB $ User.dbDeleteTelegram userId
-                Left e -> throwIO $ userError $ show (e, event, renderHtml msg)
-                Right () -> pure ()
+notifyAll ::
+    (MonadReader App m, MonadUnliftIO m, Event e) =>
+    Entity e -> [(UserId, Telegram)] -> m ()
+notifyAll event users = do
+    app <- ask
+    for_ users \(userId, telegram) -> do
+        msg <- runDB $ Event.makeMessage app event
+        result <-
+            runTelegramClient $ notify telegram $ toStrict $ renderHtml msg
+        case result of
+            Left (FailureResponse _ Response{responseStatusCode})
+                | responseStatusCode == forbidden403 ->
+                    runDB $ User.dbDeleteTelegram userId
+            Left e -> throwIO $ userError $ show (e, event, renderHtml msg)
+            Right () -> pure ()
 
 runTelegramClient ::
     (MonadReader App m, MonadIO m) =>
