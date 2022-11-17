@@ -8,19 +8,16 @@ module Handler.Telegram (getTelegramBindR, postTelegramUnbindR) where
 -- prelude
 import Import
 
--- global
-import Yesod.Form (runInputGet)
-
 -- component
 import Model.User qualified as User
-import Telegram.AuthWidget (AuthWidgetResponse (AuthWidgetResponse),
-                            authWidgetResponse)
-import Telegram.AuthWidget qualified
+import Telegram.Auth (AuthorizationData (AuthorizationData),
+                      receiveAuthorizationData)
+import Telegram.Auth qualified
 
 getTelegramBindR :: Handler Void
 getTelegramBindR = do
     uid <- requireAuthId
-    AuthWidgetResponse{id, username} <- runInputGet authWidgetResponse
+    AuthorizationData{id, username} <- receiveAuthorizationData
     User.setTelegram uid id username
     redirect UserR
 

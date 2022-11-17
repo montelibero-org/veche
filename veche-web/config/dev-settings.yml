@@ -1,4 +1,4 @@
-approot: http://localhost.localdomain:3000
+approot: https://e35e-109-228-117-123.eu.ngrok.io
 database:
   database: veche.sqlite3
 database-migrate: false

@@ -65,6 +65,7 @@ PollMtlSignerWeight: Proportionally to Stellar signer weight
 
 # telegram bot
 TelegramBotHelp site@Text: This bot is a part of the Veche service #{site}. Available commands: /help
+TelegramBotLoginButton: Log in to the website
 TelegramBotNotUnderstood: I didn't understand your message. Try /help
 
 # user profile

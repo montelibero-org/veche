@@ -25,14 +25,14 @@ packages:
 - completed:
     name: telegram-api
     pantry-tree:
-      sha256: 9962b8e14b3d58f5413a882f208ca0b48f9068d5acf4e537e3e9f309d0cb90e2
+      sha256: 0431b806fc67dc90332dfd9fe421f9d721529b4e1ab3648eb88677787256c99e
       size: 2903
-    sha256: 33f85c8d0ecefeb4906eebb62c16ad342dec0502cd3b3b29a3fa48adb47cc30f
-    size: 1349719
-    url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
-    version: 0.7.1.0
+    sha256: 601f1bbae80a3fc49628bcad5245cf4f763188b50eca0a219bf5a47937f9b553
+    size: 1350624
+    url: https://github.com/cblp/haskell-telegram-api/archive/ad5876d510e6d934725b7405e12e68bb8ae5eee9.tar.gz
+    version: 0.7.2.0
   original:
-    url: https://github.com/cblp/haskell-telegram-api/archive/8c369af6a560cb3cf842068ab7c291dea8d5e2b8.tar.gz
+    url: https://github.com/cblp/haskell-telegram-api/archive/ad5876d510e6d934725b7405e12e68bb8ae5eee9.tar.gz
 - completed:
     name: stellar-sdk
     pantry-tree:

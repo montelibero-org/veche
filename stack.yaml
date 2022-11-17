@@ -17,7 +17,7 @@ extra-deps:
     - DRBG-0.5.5
   # veche-web
     - github: cblp/haskell-telegram-api
-      commit: 8c369af6a560cb3cf842068ab7c291dea8d5e2b8
+      commit: ad5876d510e6d934725b7405e12e68bb8ae5eee9
       # https://github.com/klappvisor/haskell-telegram-api/pull/133
   # yesod-auth-stellar
     - github: cblp/haskell-stellar-sdk

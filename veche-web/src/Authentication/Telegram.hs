@@ -8,19 +8,16 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Authentication.Telegram (authTelegram) where
+module Authentication.Telegram (authTelegram, pluginName, pluginRoute) where
 
 -- prelude
 import Foundation.Base
-import Import.NoFoundation
-
--- global
-import Yesod.Form (runInputGet)
+import Import.NoFoundation hiding (hash)
 
 -- component
-import Telegram.AuthWidget (AuthWidgetResponse (AuthWidgetResponse),
-                            authWidgetResponse)
-import Telegram.AuthWidget qualified
+import Telegram.Auth (AuthorizationData (AuthorizationData),
+                      receiveAuthorizationData)
+import Telegram.Auth qualified
 
 type Method = Text
 
@@ -56,11 +53,11 @@ login routeToMaster = do
 
 dispatch :: Method -> [Piece] -> AuthHandler App TypedContent
 dispatch _method _path = do
-    awr <- runInputGet authWidgetResponse
-    setCredsRedirect $ makeCreds awr
+    ad <- receiveAuthorizationData
+    setCredsRedirect $ makeCreds ad
 
-makeCreds :: AuthWidgetResponse -> Creds app
-makeCreds AuthWidgetResponse{id, username} =
+makeCreds :: AuthorizationData -> Creds app
+makeCreds AuthorizationData{id, username} =
     Creds
         { credsPlugin   = pluginName
         , credsIdent    = tshow id

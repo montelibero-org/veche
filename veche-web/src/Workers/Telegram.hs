@@ -27,12 +27,13 @@ import System.Random (randomRIO)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Web.Telegram.API.Bot (ChatId (ChatId), ParseMode (HTML), TelegramClient,
                              Token (Token), getUpdatesM, getUpdatesRequest,
-                             message_parse_mode, sendMessageM,
-                             sendMessageRequest)
+                             inlineKeyboardButton, loginUrl, message_parse_mode,
+                             sendMessageM, sendMessageRequest)
 import Web.Telegram.API.Bot qualified as Telegram
-import Yesod.Core (messageLoggerSource, renderMessage)
+import Yesod.Core (messageLoggerSource, renderMessage, yesodRender)
 
 -- component
+import Authentication.Telegram qualified as Authn
 import Model.Event (SomeEvent (SomeEvent))
 import Model.Event qualified as Event
 import Model.Telegram (Telegram (Telegram), TelegramState (TelegramState),
@@ -82,7 +83,27 @@ telegramBot app =
         "/start"    -> sendHelp
         _           -> sendMsg MsgTelegramBotNotUnderstood
       where
-        sendHelp = sendMsg $ MsgTelegramBotHelp appRoot
+        sendHelp =
+            void $
+            runTelegramClientThrow $
+            sendMessageM
+                ( sendMessageRequest chatId $
+                    tr lang $ MsgTelegramBotHelp appRoot
+                )
+                { Telegram.message_reply_markup =
+                    Just $
+                    Telegram.ReplyInlineKeyboardMarkup
+                        [   [   ( inlineKeyboardButton $
+                                    tr lang MsgTelegramBotLoginButton
+                                )
+                                { Telegram.ikb_login_url =
+                                    Just $
+                                    loginUrl $
+                                    renderUrl $ AuthR Authn.pluginRoute
+                                }
+                            ]
+                        ]
+                }
         sendMsg msg =
             void $
             runTelegramClientThrow $
@@ -141,6 +162,8 @@ telegramBot app =
 
     runTelegramClientThrow =
         runTelegramClient >=> either throwWithCallStackIO pure
+
+    renderUrl route = yesodRender app appRoot route []
 
 notify :: Telegram -> Text -> TelegramClient ()
 notify Telegram{chatid} text =

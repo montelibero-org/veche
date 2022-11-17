@@ -52,7 +52,7 @@ library
     Paths_veche
     Settings
     Settings.StaticFiles
-    Telegram.AuthWidget
+    Telegram.Auth
     Templates.Comment
     Templates.DefaultLayout
     Templates.Issue
@@ -64,11 +64,13 @@ library
   build-depends:
       aeson
     , base               >=4.9.1.0 && <5
+    , base16-bytestring
     , blaze-html
     , case-insensitive
     , classy-prelude
     , cmark-gfm
     , containers
+    , cryptohash-sha256
     , data-default
     , esqueleto
     , fast-logger
