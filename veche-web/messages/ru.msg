@@ -66,6 +66,7 @@ PollMtlSignerWeight: Пропорционально весу подписи Stel
 TelegramBotHelp site@Text: Этот бот — часть Веча #{site}. Команды: /help
 TelegramBotLoginButton: Войти на сайт
 TelegramBotNotUnderstood: Ничего не понял. Попробуйте /help
+TelegramBotSettingsButton: Настройки аккаунта
 
 # user profile
 UserProfile: Профиль пользователя

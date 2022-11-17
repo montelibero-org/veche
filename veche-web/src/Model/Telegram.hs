@@ -1,5 +1,6 @@
 module Model.Telegram (
     -- * Telegram account binding
+    EntityField (Telegram_chatid),
     Key (TelegramKey),
     Telegram (..),
     TelegramId,
@@ -16,8 +17,8 @@ import Import.NoFoundation
 import Database.Persist (selectFirst, updateWhere, (=.))
 
 -- component
-import Model (EntityField (TelegramState_offset), Key (TelegramKey),
-              Telegram (..), TelegramId, TelegramState (..))
+import Model (EntityField (..), Key (TelegramKey), Telegram (..), TelegramId,
+              TelegramState (..))
 
 emptyState :: TelegramState
 emptyState = TelegramState{offset = Nothing}
