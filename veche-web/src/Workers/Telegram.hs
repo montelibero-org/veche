@@ -114,26 +114,24 @@ telegramBot app =
 
     tr = renderMessage app . maybeToList
 
-    deliverEvents :: (MonadReader App m, MonadUnliftIO m) => m ()
-    deliverEvents = do
-        events <- runDB Event.dbGetUndelivered
-        for_ events deliver
+    App{appLogger, appSettings = AppSettings{appRoot}} = app
 
-    deliver :: (MonadReader App m, MonadUnliftIO m) => SomeEvent -> m ()
-    deliver (SomeEvent eventE@(Entity id event)) = do
-        users <- runDB $ Event.dbGetUsersToDeliver event
-        notifyAll eventE $ filterWhitelist users
-        runDB $ Event.dbSetDelivered id
+deliverEvents :: (MonadReader App m, MonadUnliftIO m) => m ()
+deliverEvents = do
+    events <- runDB Event.dbGetUndelivered
+    for_ events deliver
 
-    filterWhitelist
-        | [] <- whitelist   = identity
-        | otherwise         =
-            filter \(_, Telegram{username}) -> username `elem` whitelist
-
-    App{appLogger, appSettings} = app
-
-    AppSettings{appRoot, appTelegramBotNotifyWhitelist = whitelist} =
-        appSettings
+deliver :: (MonadReader App m, MonadUnliftIO m) => SomeEvent -> m ()
+deliver (SomeEvent eventE@(Entity id event)) = do
+    App{appSettings} <- ask
+    let AppSettings{appTelegramBotNotifyWhitelist = whitelist} = appSettings
+    let filterWhitelist
+            | [] <- whitelist = identity
+            | otherwise =
+                filter \(_, Telegram{username}) -> username `elem` whitelist
+    users <- runDB $ Event.dbGetUsersToDeliver event
+    notifyAll eventE $ filterWhitelist users
+    runDB $ Event.dbSetDelivered id
 
 randomDelay :: MonadIO m => m ()
 randomDelay =
