@@ -1,11 +1,11 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Stellar.Simple (
@@ -127,7 +127,7 @@ tx_feePerOp :: Word32 -> TransactionBuilder -> TransactionBuilder
 tx_feePerOp feePerOp b = b{feePerOp = Already feePerOp}
 
 tx_memoText :: Text -> TransactionBuilder -> TransactionBuilder
-tx_memoText t b = b{memo = MemoText t}
+tx_memoText t TransactionBuilder{..} = TransactionBuilder{memo = MemoText t, ..}
 
 build ::
     HasCallStack =>
@@ -210,11 +210,13 @@ op_manageData key mvalue =
         (XDR.lengthArray' . encodeUtf8 <$> mvalue)
 
 addOperation :: XDR.OperationBody -> TransactionBuilder -> TransactionBuilder
-addOperation operation'body b@TransactionBuilder{operations} =
-    b   { operations =
-            operations
-            |> XDR.Operation{operation'sourceAccount = Nothing, operation'body}
-        }
+addOperation operation'body TransactionBuilder{..} =
+    TransactionBuilder
+    { operations =
+        operations
+        |> XDR.Operation{operation'sourceAccount = Nothing, operation'body}
+    , ..
+    }
 
 type Price = Ratio Int32
 

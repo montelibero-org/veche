@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -21,10 +22,12 @@ getUserR :: Handler Html
 getUserR = userPage
 
 newtype UserEditRequest = UserEditRequest{name :: Text}
-    deriving (FromJSON, Generic)
+    deriving anyclass (FromJSON)
+    deriving stock (Generic)
 
 newtype UserEditResponse = UserEditResponse{editError :: Maybe Text}
-    deriving (Generic, ToJSON)
+    deriving anyclass (ToJSON)
+    deriving stock (Generic)
 
 putUserR :: Handler Value
 putUserR = do

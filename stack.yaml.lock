@@ -5,16 +5,16 @@
 
 packages:
 - completed:
-    name: servant-cli
+    name: cipher-aes128
     pantry-tree:
-      sha256: aa8102fb0f3ed5c91990e21b5796301dc6242e37c0ebd4fde145e38729165323
-      size: 910
-    sha256: a0c14b987ded19b6f486e795c5e2127f26cc47d21972382a0150053eeec702c2
-    size: 18608
-    url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
-    version: 0.1.0.2
+      sha256: 5bbac7c6721847b0b7459f430b4ca487ad86c1dc0f4b0e4967c035ccaf7e3830
+      size: 1557
+    sha256: 2c8692f8b18c69edb6f835da31d355274e8e78612c0009567a0e38b822ec8f41
+    size: 28037
+    url: https://github.com/TomMD/cipher-aes128/archive/4f30d283de04a65cde5aab4500dd7d7b409602d5.tar.gz
+    version: 0.7.0.6
   original:
-    url: https://github.com/cblp/servant-cli/archive/929da900e2a6526450e846e7182b3df6bc989209.tar.gz
+    url: https://github.com/TomMD/cipher-aes128/archive/4f30d283de04a65cde5aab4500dd7d7b409602d5.tar.gz
 - completed:
     hackage: DRBG-0.5.5@sha256:3b8040bed356e2b63927a27fb6d5adbd19d70c9e1d1bb66111bbeb33e56900eb,2259
     pantry-tree:
@@ -46,7 +46,7 @@ packages:
     url: https://github.com/cblp/haskell-stellar-sdk/archive/958c11f0ecafc5e80751c76c656964dc1ef42b6e.tar.gz
 snapshots:
 - completed:
-    sha256: 9a74d76d250a455d9cd11e74f157e087787fa9aa3c4264e69c94703d1e71aede
-    size: 619200
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/30.yaml
-  original: lts-19.30
+    sha256: a2cbcd2f37010a64c4ef74c21fd7e55982a07b49840d2bed306f9bac9981a9c3
+    size: 648420
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/0.yaml
+  original: lts-20.0

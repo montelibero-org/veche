@@ -1,4 +1,4 @@
-resolver: lts-19.30
+resolver: lts-20.0
 
 packages:
   - oneshot
@@ -9,11 +9,9 @@ packages:
   - yesod-form-bootstrap5
 
 extra-deps:
-  # stellar-horizon:exe
-    - github: cblp/servant-cli
-      commit: 929da900e2a6526450e846e7182b3df6bc989209
-      # https://github.com/mstksg/servant-cli/pull/3
   # stellar-sdk
+    - github: TomMD/cipher-aes128
+      commit: 4f30d283de04a65cde5aab4500dd7d7b409602d5
     - DRBG-0.5.5
   # veche-web
     - github: cblp/haskell-telegram-api
