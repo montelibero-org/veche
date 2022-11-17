@@ -265,6 +265,7 @@ isAuthorized = \case
     IssueR{}                -> authorized
     RobotsR                 -> authorized
     RootR                   -> authorized
+    SettingsLanguageR{}     -> authorized
     StaticR{}               -> authorized
     StellarFederationR{}    -> authorized
     WellKnownR{}            -> authorized
