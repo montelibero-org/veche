@@ -43,6 +43,7 @@ import Model.User qualified as User
 
 telegramBot :: App -> IO ()
 telegramBot app =
+    (`runReaderT` app) $
     runLogger do
         $logInfo "Started Telegram bot"
         forever do
@@ -64,6 +65,8 @@ telegramBot app =
             handleUpdate update
             runDB $ dbSetOffset update_id
 
+    handleUpdate ::
+        (MonadIO m, MonadLogger m, MonadReader App m) => Telegram.Update -> m ()
     handleUpdate update@Telegram.Update{message}
         | Just m <- message = handleMessage m
         | otherwise = $logError $ "unhandled " <> tshow update
@@ -83,27 +86,26 @@ telegramBot app =
         "/start"    -> sendHelp
         _           -> sendMsg MsgTelegramBotNotUnderstood
       where
-        sendHelp =
+        sendHelp = do
+            authUrl <- (`runReaderT` app) $ renderUrl $ AuthR Authn.pluginRoute
             void $
-            runTelegramClientThrow $
-            sendMessageM
-                ( sendMessageRequest chatId $
-                    tr lang $ MsgTelegramBotHelp appRoot
-                )
-                { Telegram.message_reply_markup =
-                    Just $
-                    Telegram.ReplyInlineKeyboardMarkup
-                        [   [   ( inlineKeyboardButton $
-                                    tr lang MsgTelegramBotLoginButton
-                                )
-                                { Telegram.ikb_login_url =
-                                    Just $
-                                    loginUrl $
-                                    renderUrl $ AuthR Authn.pluginRoute
-                                }
+                runTelegramClientThrow $
+                sendMessageM
+                    ( sendMessageRequest chatId $
+                        tr lang $ MsgTelegramBotHelp appRoot
+                    )
+                    { Telegram.message_reply_markup =
+                        Just $
+                        Telegram.ReplyInlineKeyboardMarkup
+                            [   [   ( inlineKeyboardButton $
+                                        tr lang MsgTelegramBotLoginButton
+                                    )
+                                    { Telegram.ikb_login_url =
+                                        Just $ loginUrl authUrl
+                                    }
+                                ]
                             ]
-                        ]
-                }
+                    }
         sendMsg msg =
             void $
             runTelegramClientThrow $
@@ -111,11 +113,12 @@ telegramBot app =
 
     tr = renderMessage app . maybeToList
 
+    deliverEvents :: (MonadReader App m, MonadUnliftIO m) => m ()
     deliverEvents = do
         events <- runDB Event.dbGetUndelivered
         for_ events deliver
 
-    deliver :: SomeEvent -> LoggingT IO ()
+    deliver :: (MonadReader App m, MonadUnliftIO m) => SomeEvent -> m ()
     deliver (SomeEvent eventE@(Entity id event)) = do
         users <- runDB $ Event.dbGetUsersToDeliver event
         notifyAll eventE $ filterWhitelist users
@@ -126,13 +129,9 @@ telegramBot app =
         | otherwise         =
             filter \(_, Telegram{username}) -> username `elem` whitelist
 
-    App{appConnPool, appHttpManager, appLogger, appSettings} = app
+    App{appLogger, appSettings} = app
 
-    AppSettings
-            { appRoot
-            , appTelegramBotToken
-            , appTelegramBotNotifyWhitelist = whitelist
-            } =
+    AppSettings{appRoot, appTelegramBotNotifyWhitelist = whitelist} =
         appSettings
 
     randomDelay =
@@ -140,12 +139,16 @@ telegramBot app =
             delaySeconds <- randomRIO (1, 10)
             threadDelay $ delaySeconds * 1_000_000
 
-    runDB = (`runSqlPool` appConnPool)
+    runDB :: (MonadReader App m, MonadUnliftIO m) => SqlPersistT m a -> m a
+    runDB action = do
+        App{appConnPool} <- ask
+        (`runSqlPool` appConnPool) action
 
     notifyAll event users =
         for_ users \(userId, telegram) -> do
             msg <- runDB $ Event.makeMessage app event
             result <-
+                (`runReaderT` app) $
                 runTelegramClient $ notify telegram $ toStrict $ renderHtml msg
             case result of
                 Left (FailureResponse _ Response{responseStatusCode})
@@ -154,16 +157,26 @@ telegramBot app =
                 Left e -> throwIO $ userError $ show (e, event, renderHtml msg)
                 Right () -> pure ()
 
-    runTelegramClient =
-        liftIO
-        . Telegram.runTelegramClient
+runTelegramClient ::
+    (MonadReader App m, MonadIO m) =>
+    TelegramClient a -> m (Either ClientError a)
+runTelegramClient action = do
+    App{appHttpManager, appSettings = AppSettings{appTelegramBotToken}} <- ask
+    liftIO $
+        Telegram.runTelegramClient
             (Token $ "bot" <> appTelegramBotToken)
             appHttpManager
+            action
 
-    runTelegramClientThrow =
-        runTelegramClient >=> either throwWithCallStackIO pure
+runTelegramClientThrow ::
+    (MonadIO m, MonadReader App m) => TelegramClient a -> m a
+runTelegramClientThrow =
+    runTelegramClient >=> either throwWithCallStackIO pure
 
-    renderUrl route = yesodRender app appRoot route []
+renderUrl :: MonadReader App m => Route App -> m Text
+renderUrl route = do
+    app@App{appSettings = AppSettings{appRoot}} <- ask
+    pure $ yesodRender app appRoot route []
 
 notify :: Telegram -> Text -> TelegramClient ()
 notify Telegram{chatid} text =
