@@ -196,9 +196,12 @@ instance YesodAuth App where
         authLayout do
             setTitleI LoginTitle
             master <- getYesod
+            let visiblePlugins =
+                    filter (\AuthPlugin{apName} -> apName /= "telegram") $
+                    authPlugins master
             [whamlet|
                 <div .d-grid .gap-2>
-                    $forall AuthPlugin{apName, apLogin} <- authPlugins master
+                    $forall AuthPlugin{apName, apLogin} <- visiblePlugins
                         <div .row>
                             <label .col-form-label .col-sm-4 .fw-bold
                                     .text-sm-end>
