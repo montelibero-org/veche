@@ -1,7 +1,6 @@
-cabal-version: 1.12
+cabal-version: 3.4
 name:          veche
 version:       2022.11.17.1
-build-type:    Simple
 
 library
   default-extensions:
@@ -62,7 +61,7 @@ library
 
   hs-source-dirs:     src
   build-depends:
-      aeson
+    , aeson
     , base               >=4.9.1.0 && <5
     , base16-bytestring
     , blaze-html
@@ -109,7 +108,7 @@ library
 
   -- project
   build-depends:
-      stellar-horizon
+    , stellar-horizon
     , yesod-auth-stellar
     , yesod-form-bootstrap5
 
@@ -122,7 +121,7 @@ executable veche
   hs-source-dirs: app
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
-      base           >=4.9.1.0 && <5
+    , base           >=4.9.1.0 && <5
     , foreign-store
     , warp           >=3.0     && <3.4
 
@@ -145,7 +144,7 @@ test-suite veche-test
   hs-source-dirs: test
   ghc-options:    -Wall
   build-depends:
-      aeson
+    , aeson
     , base               >=4.9.1.0 && <5
     , base64-bytestring
     , blaze-html
