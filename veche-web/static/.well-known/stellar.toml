@@ -8,4 +8,7 @@ issuer="GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"
 # anchor_asset_type="other"
 # is_asset_anchored=false
 # name="VECHE"
-# desc="VECHE is a token that giмes its owner the power over the Veche enterprise."
+# desc="VECHE is a token that gives its owner the power over the Veche enterprise."
+
+[DOCUMENTATION]
+ORG_NAME="Veche/Veće/Вече/Веће"
