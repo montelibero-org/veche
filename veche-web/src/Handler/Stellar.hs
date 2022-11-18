@@ -11,6 +11,7 @@ getStellarFederationR :: Handler Value
 getStellarFederationR = do
     queryType <- lookupGetParam "type"
     case queryType of
+        Just "id"   -> notFound
         Just "name" -> getName
         Just _      -> invalidArgs ["type=name expected"]
         Nothing     -> invalidArgs ["type expected"]

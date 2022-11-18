@@ -18,7 +18,7 @@ spec =
                 statusIs 200
                 assertHeader "Access-Control-Allow-Origin" "*"
 
-        describe "Federation" $
+        describe "Federation" do
             it "works" do
                 get ( StellarFederationR
                     , [("type", "name"), ("q", "E12*veche.montelibero.org")]
@@ -34,3 +34,14 @@ spec =
                         , "memo": "E12"
                         }
                     |]
+
+            it "404 for id" do
+                get ( StellarFederationR
+                    ,   [   ("type", "id")
+                        ,   (   "q"
+                            ,   "GAC4FGOB2RDIVUWSVS5XSVZWB5XP27E2G5NT76SVCUFJJC\
+                                \GEJ5SAD4NR"
+                            )
+                        ]
+                    )
+                statusIs 404
