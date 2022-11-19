@@ -20,11 +20,9 @@
         <div .col-sm-10 .user_stellar_address>#{stellarAddress}
     <div .row>
         <div .col-sm-2>_{MsgRoles}
-        <div .col-sm-10 >
-            $if isSigner
-                <span .badge.rounded-pill.text-bg-secondary>Signer
-            $if isHolder
-                <span .badge.rounded-pill.text-bg-secondary>Holder
+        <div .col-sm-10>
+            $forall role <- roles
+                <span .badge.rounded-pill.text-bg-secondary>#{show role}
     <div .row>
         <div .col-sm-2 .col-form-label>Telegram
         <div .col-sm-10>

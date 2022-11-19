@@ -2,6 +2,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,7 +22,8 @@ import Import
 
 -- global
 import Yesod.Core (getMessageRender)
-import Yesod.Form (radioFieldList)
+import Yesod.Form (Option (Option), mkOptionList, radioField)
+import Yesod.Form qualified
 import Yesod.Form.Bootstrap5 (bfs)
 
 -- component
@@ -144,16 +146,38 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
         poll <-
             whenMay enablePoll $
             areq
-                (radioFieldList pollOptions)
+                (radioField $ mkOptionList <$> pollOptions)
                 (fieldSettingsLabel MsgIssuePoll){fsName = Just "poll"}
                 previousPoll
         pure IssueContent{body, contacts, poll, priceOffer, title}
 
-    pollOptions =
-        [ (MsgPollDisabled       , Nothing            )
-        , (MsgPollMtlShare       , Just ByMtlAmount   )
-        , (MsgPollMtlSignerWeight, Just BySignerWeight)
-        ]
+    pollOptions = do
+        mr <- getMessageRender
+        pure $
+            Option
+                { optionDisplay = mr MsgPollDisabled
+                , optionInternalValue = Nothing
+                , optionExternalValue = "null"
+                }
+            :   [ Option
+                    { optionDisplay = mr $ display opt
+                    , optionInternalValue = Just opt
+                    , optionExternalValue = apiValue opt
+                    }
+                | opt <- [minBound ..]
+                ]
+
+    display = \case
+        ByAmountOfFcm   -> MsgPollByAmountOfFcm
+        ByAmountOfVeche -> MsgPollByAmountOfVeche
+        ByMtlAmount     -> MsgPollMtlShare
+        BySignerWeight  -> MsgPollMtlSignerWeight
+
+    apiValue = \case
+        ByAmountOfFcm   -> "FCM"
+        ByAmountOfVeche -> "VECHE"
+        ByMtlAmount     -> "MTL"
+        BySignerWeight  -> "MTL_FUND_SIGNER_WEIGHT"
 
     whenMay cond action
         | cond      = action

@@ -28,8 +28,8 @@ import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
 
 -- component
-import Genesis (escrowAddress, escrowFederatedHost, mtlAsset, mtlFund,
-                mtlIssuer, showKnownAsset)
+import Genesis (escrowAddress, escrowFederatedHost, fcmAsset, mtlAsset, mtlFund,
+                mtlIssuer, showKnownAsset, vecheAsset)
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
@@ -96,20 +96,24 @@ makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =
   where
 
     getWeights = \case
-        BySignerWeight -> do
+        ByAmountOfFcm   -> getWeightsByAmountOfAsset fcmAsset
+        ByAmountOfVeche -> getWeightsByAmountOfAsset vecheAsset
+        ByMtlAmount     -> getWeightsByAmountOfAsset mtlAsset
+        BySignerWeight  -> do
             accounts <- StellarSigner.getAll mtlFund
             pure $
                 Map.fromList
                     [ (key, fromIntegral weight :: Double)
                     | Entity _ StellarSigner{key, weight} <- accounts
                     ]
-        ByMtlAmount -> do
-            accounts <- StellarHolder.getAll mtlAsset
-            pure $
-                Map.fromList
-                    [ (key, realToFrac amount :: Double)
-                    | Entity _ StellarHolder{key, amount} <- accounts
-                    ]
+
+    getWeightsByAmountOfAsset asset = do
+        accounts <- StellarHolder.getAll asset
+        pure $
+            Map.fromList
+                [ (key, realToFrac amount :: Double)
+                | Entity _ StellarHolder{key, amount} <- accounts
+                ]
 
     getVoteResults weights =
         [ (choice, percentage, share, toList users :: [User])

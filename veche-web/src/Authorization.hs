@@ -15,8 +15,7 @@ import Yesod.Persist (Entity (Entity))
 -- component
 import Model (Issue (Issue), UserId, UserRole (UserRole))
 import Model qualified
-import Model.Types (EntityForum, Forum (Forum), Poll (..),
-                    Role (Admin, Audit, MtlHolder, MtlSigner), Roles)
+import Model.Types (EntityForum, Forum (Forum), Poll (..), Role (..), Roles)
 import Model.Types qualified
 
 -- | Use 'Entity' or 'Key' ({entity}Id)
@@ -54,9 +53,11 @@ checkForumRoles (_, Forum{requireRole}) roles = all (`elem` roles) requireRole
 checkVote :: Maybe Poll -> Roles -> Bool
 checkVote mPoll roles =
     case mPoll of
-        Nothing             -> False
-        Just BySignerWeight -> MtlSigner `elem` roles
-        Just ByMtlAmount    -> MtlHolder `elem` roles
+        Nothing              -> False
+        Just ByAmountOfFcm   -> HolderOfFcm   `elem` roles
+        Just ByAmountOfVeche -> HolderOfVeche `elem` roles
+        Just ByMtlAmount     -> MtlHolder     `elem` roles
+        Just BySignerWeight  -> MtlSigner     `elem` roles
 
 requireAuthz :: MonadHandler m => AuthzRequest -> m ()
 requireAuthz req = unless (isAllowed req) $ permissionDenied ""

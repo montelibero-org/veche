@@ -1,11 +1,11 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -46,14 +46,15 @@ import Import.NoFoundation
 import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
                          selectFirst, selectList, update, (=.), (==.))
-import Stellar.Horizon.Client qualified as Stellar
+import Stellar.Simple (Asset)
+import Stellar.Simple qualified as Stellar
 import Yesod.Core (HandlerSite, liftHandler, notAuthenticated)
 import Yesod.Persist (runDB)
 
 -- component
-import Genesis (mtlAsset, mtlFund)
-import Model (Key (TelegramKey), StellarHolder, StellarHolderId, StellarSigner,
-              StellarSignerId, Telegram (Telegram),
+import Genesis (fcmAsset, mtlAsset, mtlFund, vecheAsset)
+import Model (Key (TelegramKey), StellarHolder (StellarHolder), StellarHolderId,
+              StellarSigner, StellarSignerId, Telegram (Telegram),
               Unique (UniqueHolder, UniqueSigner, UniqueUser), User (User),
               UserId)
 import Model qualified
@@ -117,19 +118,20 @@ isSigner User{stellarAddress} =
     runDB $
     exists @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. stellarAddress]
 
-isHolder :: PersistSql app => User -> HandlerFor app Bool
-isHolder User{stellarAddress} =
+isHolder :: PersistSql app => User -> Asset -> HandlerFor app Bool
+isHolder User{stellarAddress} asset =
     runDB $
-    exists @_ @_ @StellarHolder [#asset ==. mtlAsset, #key ==. stellarAddress]
+    exists @_ @_ @StellarHolder [#asset ==. asset, #key ==. stellarAddress]
 
 getSignerId :: PersistSql app => User -> HandlerFor app (Maybe StellarSignerId)
 getSignerId User{stellarAddress} = do
     mEntity <- runDB $ getBy $ UniqueSigner mtlFund stellarAddress
     pure $ entityKey <$> mEntity
 
-getHolderId :: PersistSql app => User -> HandlerFor app (Maybe StellarHolderId)
-getHolderId User{stellarAddress} = do
-    mEntity <- runDB $ getBy $ UniqueHolder mtlAsset stellarAddress
+getHolderId ::
+    PersistSql app => User -> Asset -> HandlerFor app (Maybe StellarHolderId)
+getHolderId User{stellarAddress} asset = do
+    mEntity <- runDB $ getBy $ UniqueHolder asset stellarAddress
     pure $ entityKey <$> mEntity
 
 maybeAuthzRoles ::
@@ -150,14 +152,19 @@ maybeAuthzRoles = do
                     exists
                         @_ @_ @StellarSigner
                         [#target ==. mtlFund, #key ==. stellarAddress]
-                holder <-
-                    exists
-                        @_ @_ @StellarHolder
-                        [#asset ==. mtlAsset, #key ==. stellarAddress]
+                assets <-
+                    selectList
+                        @StellarHolder
+                        [#key ==. stellarAddress]
+                        []
+                    <&> map \(Entity _ StellarHolder{..}) -> asset
                 pure
                     ( Just id
                     , Set.fromList $
-                        [MtlSigner | signer] ++ [MtlHolder | holder]
+                        [MtlSigner | signer]
+                        ++ [MtlHolder     | mtlAsset   `elem` assets]
+                        ++ [HolderOfFcm   | fcmAsset   `elem` assets]
+                        ++ [HolderOfVeche | vecheAsset `elem` assets]
                     )
 
 requireAuthzRoles ::

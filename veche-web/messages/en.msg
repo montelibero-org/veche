@@ -60,6 +60,8 @@ IssueAddComment: Add comment
 
 # poll type
 PollDisabled: Disabled
+PollByAmountOfFcm: Proportionally to FCM share
+PollByAmountOfVeche: Proportionally to VECHE share
 PollMtlShare: Proportionally to MTL share
 PollMtlSignerWeight: Proportionally to Stellar signer weight
 

@@ -89,11 +89,21 @@ newtype StellarMultiSigAddress = StellarMultiSigAddress Stellar.Address
     deriving stock Show
 
 -- | Type of poll
-data Poll = BySignerWeight | ByMtlAmount
-    deriving (Eq, Read, Show)
+data Poll
+    = ByAmountOfFcm
+    | ByAmountOfVeche
+    | ByMtlAmount
+    | BySignerWeight
+    deriving (Bounded, Enum, Eq, Read, Show)
 derivePersistField "Poll"
 
-data Role = Admin | Audit | MtlHolder | MtlSigner
+data Role
+    = Admin
+    | Audit
+    | HolderOfFcm
+    | HolderOfVeche
+    | MtlHolder
+    | MtlSigner
     deriving (Eq, Ord, Read, Show)
 deriveJSON defaultOptions ''Role
 derivePersistField "Role"

@@ -70,7 +70,7 @@ escrowFederatedHost :: Text
 escrowFederatedHost = "veche.montelibero.org"
 
 knownAssets :: Set Asset
-knownAssets = Set.fromList [mtlAsset, eurmtl]
+knownAssets = Set.fromList [mtlAsset, eurmtl, fcmAsset, vecheAsset]
 
 showKnownAsset :: Asset -> Text
 showKnownAsset a@Asset{code}
@@ -80,3 +80,11 @@ showKnownAsset a@Asset{code}
 mtlKeyRateAccount :: Stellar.Address
 mtlKeyRateAccount =
     Stellar.Address "GDGGHSIA62WGNMN2VOIBW3X66ATOBW5J2FU7CSJZ6XVHI2ZOXZCRRATE"
+
+fcmAsset :: Asset
+fcmAsset =
+    mkAsset "FCM" "GDIE253MSIYMFUS3VHRGEQPIBG7VAIPSMATWLTBF73UPOLBUH5RV2FCM"
+
+vecheAsset :: Asset
+vecheAsset =
+    mkAsset "VECHE" "GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"

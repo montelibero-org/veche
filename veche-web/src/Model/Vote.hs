@@ -25,7 +25,7 @@ import Database.Persist (getJustEntity, insert_, selectList, update, (=.))
 import Database.Persist qualified as Persist
 import Yesod.Persist (runDB)
 
-import Genesis (mtlAsset, mtlFund)
+import Genesis (fcmAsset, mtlAsset, mtlFund, vecheAsset)
 import Model (Comment (Comment), Issue (Issue), IssueId, StellarHolder,
               StellarSigner, User, UserId, Vote (Vote))
 import Model qualified
@@ -96,6 +96,9 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
     getWeights =
         case poll of
             Nothing -> pure []
+            Just ByAmountOfFcm   -> getWeightsByAmountOfAsset fcmAsset
+            Just ByAmountOfVeche -> getWeightsByAmountOfAsset vecheAsset
+            Just ByMtlAmount     -> getWeightsByAmountOfAsset mtlAsset
             Just BySignerWeight ->
                 addCallStack $
                     select do
@@ -106,13 +109,13 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
                         where_ $ signer.target ==. val mtlFund
                         pure (signer.weight, user.id)
                     <&> map (bimap (fromIntegral . unValue) unValue)
-            Just ByMtlAmount ->
-                addCallStack $
-                    select do
-                        holder :& user <- from $
-                            table @StellarHolder `leftJoin` table @User
-                            `on` \(holder :& user) ->
-                                just holder.key ==. user.stellarAddress
-                        where_ $ holder.asset ==. val mtlAsset
-                        pure (holder.amount, user.id)
-                    <&> map (bimap (realToFrac . unValue) unValue)
+
+    getWeightsByAmountOfAsset asset =
+        addCallStack $
+            select do
+                holder :& user <- from $
+                    table @StellarHolder `leftJoin` table @User `on`
+                    \(holder :& user) -> just holder.key ==. user.stellarAddress
+                where_ $ holder.asset ==. val asset
+                pure (holder.amount, user.id)
+            <&> map (bimap (realToFrac . unValue) unValue)

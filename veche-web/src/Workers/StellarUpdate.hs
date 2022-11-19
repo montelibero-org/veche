@@ -5,6 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -16,12 +17,14 @@ import Import
 -- global
 import Control.Concurrent (threadDelay)
 import Data.Aeson qualified as Aeson
+import Data.List (cycle)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Database.Persist.Sql (runSqlPool)
 import Servant.Client (ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
+import Yesod.Core (messageLoggerSource)
 
 -- project
 import Stellar.Horizon.Client (Account (Account), Asset (Asset),
@@ -35,7 +38,8 @@ import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.DTO qualified
 
 -- component
-import Genesis (escrowAddress, mtlAsset, mtlFund)
+import Genesis (escrowAddress, fcmAsset, mtlAsset, mtlFund, showKnownAsset,
+                vecheAsset)
 import Model.Escrow qualified as Escrow
 import Model.Issue qualified as Issue
 import Model.StellarHolder (StellarHolder (StellarHolder))
@@ -44,26 +48,50 @@ import Model.StellarSigner (StellarSigner (StellarSigner))
 import Model.StellarSigner qualified as StellarSigner
 
 stellarDataUpdater :: App -> IO ()
-stellarDataUpdater app =
-    forever do
-        do  putStrLn "stellarDataUpdater: Updating Escrow"
-            updateEscrow app
-            putStrLn "stellarDataUpdater: Updated Escrow"
-        randomDelay
-        do  putStrLn "stellarDataUpdater: Updating MTL signers"
-            n <- updateSignersCache app
-            putStrLn $
-                "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
-        randomDelay
-        do  putStrLn "stellarDataUpdater: Updating MTL holders"
-            n <- updateHoldersCache app
-            putStrLn $
-                "stellarDataUpdater: Updated " <> tshow n <> " MTL holders"
+stellarDataUpdater app@App{appLogger} =
+    runLogger $
+    for_ (cycle actions) \action -> do
+        action
         randomDelay
   where
-    randomDelay = do
-        delayMinutes <- randomRIO (1, 10)
-        threadDelay $ delayMinutes * 60 * 1_000_000
+
+    runLogger = (`runLoggingT` messageLoggerSource app appLogger)
+
+    actions =
+        [ do
+            $logInfo "stellarDataUpdater: Updating Escrow"
+            liftIO $ updateEscrow app
+            $logInfo "stellarDataUpdater: Updated Escrow"
+        , do
+            $logInfo "stellarDataUpdater: Updating MTL signers"
+            n <- liftIO $ updateSignersCache app
+            $logInfo $
+                "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
+        , updateHoldersCache' fcmAsset
+        , updateHoldersCache' mtlAsset
+        , updateHoldersCache' vecheAsset
+        ]
+
+    updateHoldersCache' asset = do
+        $logInfo $
+            unwords
+                [ "stellarDataUpdater: Updating"
+                , showKnownAsset asset
+                , "holders"
+                ]
+        n <- liftIO $ updateHoldersCache app asset
+        $logInfo $
+            unwords
+                [ "stellarDataUpdater: Updated"
+                , tshow n
+                , showKnownAsset asset
+                , "holders"
+                ]
+
+    randomDelay =
+        liftIO do
+            delaySeconds <- randomRIO (1, 60)
+            threadDelay $ delaySeconds * 1_000_000
 
 updateSignersCache ::
     App ->
@@ -109,9 +137,10 @@ updateSignersCache app@App{appConnPool} = do
 
 updateHoldersCache ::
     App ->
+    Asset ->
     -- | Actual number of holders
     IO Int
-updateHoldersCache app@App{appConnPool} = do
+updateHoldersCache app@App{appConnPool} asset = do
     holders <- runHorizonClient app $ getAccountsList asset
     let actual =
             Map.fromList
@@ -138,7 +167,6 @@ updateHoldersCache app@App{appConnPool} = do
         when (cached /= actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
-    asset = mtlAsset
     handleDeleted = traverse_ $ StellarHolder.dbDelete asset
     handleAdded = StellarHolder.dbInsertMany asset . Map.assocs
     handleModified = traverse_ $ uncurry $ StellarHolder.dbSetShare asset

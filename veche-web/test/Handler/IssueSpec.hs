@@ -46,7 +46,7 @@ spec =
                 addTokenFromCookie
                 addPostParam "title" "Flight ate"
                 addPostParam "body" "Slide weight graph. Such bowl baby."
-                addPostParam "poll" "2"
+                addPostParam "poll" "MTL"
             statusIs 303
 
             issues <- runDB $ selectList [] []
