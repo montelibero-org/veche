@@ -33,13 +33,31 @@ mtlFund =
 forums :: Map ForumId Forum
 forums =
     Map.fromList
-        [   ( ForumKey "MTL-HOLDERS"
+        [   ( ForumKey "FCM-HOLDERS"
+            , Forum
+                { enableContacts    = False
+                , enablePoll        = True
+                , enablePriceOffer  = False
+                , requireRole       = Just HolderOfFcm
+                , title             = "FCM holders"
+                }
+            )
+        ,   ( ForumKey "MTL-HOLDERS"
             , Forum
                 { enableContacts    = False
                 , enablePoll        = True
                 , enablePriceOffer  = False
                 , requireRole       = Just MtlHolder
                 , title             = "MTL holders"
+                }
+            )
+        ,   ( ForumKey "VECHE-HOLDERS"
+            , Forum
+                { enableContacts    = False
+                , enablePoll        = True
+                , enablePriceOffer  = False
+                , requireRole       = Just HolderOfVeche
+                , title             = "VECHE holders"
                 }
             )
         ,   ( ForumKey "OFFTOPIC"
