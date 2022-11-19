@@ -121,11 +121,11 @@ instance PathPiece Role where
 type Roles = Set Role
 
 data Forum = Forum
-    { title             :: Text
-    , requireRole       :: Maybe Role
-    , enablePoll        :: Bool
-    , enableContacts    :: Bool
+    { enableContacts    :: Bool
     , enablePriceOffer  :: Bool
+    , pollOptions       :: [Poll]
+    , requireRole       :: Maybe Role
+    , title             :: Text
     }
     deriving (Show)
 

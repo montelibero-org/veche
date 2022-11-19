@@ -36,8 +36,8 @@ forums =
         [   ( ForumKey "FCM-HOLDERS"
             , Forum
                 { enableContacts    = False
-                , enablePoll        = True
                 , enablePriceOffer  = False
+                , pollOptions       = [ByAmountOfFcm]
                 , requireRole       = Just HolderOfFcm
                 , title             = "FCM holders"
                 }
@@ -45,8 +45,8 @@ forums =
         ,   ( ForumKey "MTL-HOLDERS"
             , Forum
                 { enableContacts    = False
-                , enablePoll        = True
                 , enablePriceOffer  = False
+                , pollOptions       = [ByMtlAmount, BySignerWeight]
                 , requireRole       = Just MtlHolder
                 , title             = "MTL holders"
                 }
@@ -54,8 +54,8 @@ forums =
         ,   ( ForumKey "VECHE-HOLDERS"
             , Forum
                 { enableContacts    = False
-                , enablePoll        = True
                 , enablePriceOffer  = False
+                , pollOptions       = [ByAmountOfVeche]
                 , requireRole       = Just HolderOfVeche
                 , title             = "VECHE holders"
                 }
@@ -63,8 +63,8 @@ forums =
         ,   ( ForumKey "OFFTOPIC"
             , Forum
                 { enableContacts    = False
-                , enablePoll        = False
                 , enablePriceOffer  = False
+                , pollOptions       = []
                 , requireRole       = Nothing
                 , title             = "Offtopic"
                 }
@@ -72,8 +72,8 @@ forums =
         ,   ( ForumKey "FREELANCE"
             , Forum
                 { enableContacts    = True
-                , enablePoll        = False
                 , enablePriceOffer  = True
+                , pollOptions       = []
                 , requireRole       = Nothing
                 , title             = "Freelance: one-time work offers"
                 }

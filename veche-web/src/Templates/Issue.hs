@@ -88,7 +88,11 @@ voteButtons isEnabled issueId currentChoice =
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
 issueForm (forumId, forum) previousContent = (bform aform){header} where
 
-    Forum{enableContacts, enablePoll, enablePriceOffer, title = forumTitle} =
+    Forum   { enableContacts
+            , enablePriceOffer
+            , pollOptions = enabledPollOptions
+            , title = forumTitle
+            } =
         forum
 
     header =
@@ -144,7 +148,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                         (bfs MsgIssueContacts){fsName = Just "contacts"}
                         previousContacts
         poll <-
-            whenMay enablePoll $
+            whenMay (not $ null enabledPollOptions) $
             areq
                 (radioField $ mkOptionList <$> pollOptions)
                 (fieldSettingsLabel MsgIssuePoll){fsName = Just "poll"}
@@ -164,7 +168,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                     , optionInternalValue = Just opt
                     , optionExternalValue = apiValue opt
                     }
-                | opt <- [minBound ..]
+                | opt <- enabledPollOptions
                 ]
 
     display = \case
