@@ -20,11 +20,12 @@ import Database.Persist (selectFirst, updateWhere, (=.))
 import Model (EntityField (..), Key (TelegramKey), Telegram (..), TelegramId,
               TelegramState (..))
 
-emptyState :: TelegramState
-emptyState = TelegramState{offset = Nothing}
-
 dbGetState :: MonadIO m => SqlPersistT m TelegramState
-dbGetState = selectFirst [] [] <&> maybe emptyState entityVal
+dbGetState = do
+    mresult <- selectFirst [] []
+    case mresult of
+        Nothing -> error "state must be initialized with migration"
+        Just (Entity _ entityVal) -> pure entityVal
 
 dbSetOffset :: MonadIO m => Int -> SqlPersistT m ()
 dbSetOffset offset = updateWhere [] [TelegramState_offset =. Just offset]
