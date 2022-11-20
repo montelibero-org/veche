@@ -45,6 +45,7 @@ import Yesod.Auth.Stellar qualified
 
 -- component
 import Authentication.Telegram (authTelegram)
+import Authentication.MyMtlWalletBot (authMyMtlWalletBot)
 import Model.Forum qualified as Forum
 import Model.Telegram (Key (TelegramKey), Telegram (Telegram))
 import Model.Telegram qualified
@@ -187,36 +188,30 @@ instance YesodAuth App where
     authPlugins app@App{appSettings} =
         authStellar (authStellarConfig app)
         : authTelegram
+        : authMyMtlWalletBot
         : [authDummy | appAuthDummyLogin]
       where
         AppSettings{appAuthDummyLogin} = appSettings
 
     loginHandler = do
         routeToParent <- getRouteToParent
+        mmwb <- lookupGetParam "mmwb"
         authLayout do
             setTitleI LoginTitle
             master <- getYesod
             let visiblePlugins =
-                    filter (\AuthPlugin{apName} -> apName /= "telegram") $
-                    authPlugins master
+                    filter
+                        (\AuthPlugin{apName} ->
+                            apName /= "telegram"
+                            && (not (null mmwb) || apName /= "mymtlwalletbot")
+                        )
+                        (authPlugins master)
             [whamlet|
-                <div .d-grid .gap-2>
-                    $forall AuthPlugin{apName, apLogin} <- visiblePlugins
-                        <div .row>
-                            <label .col-form-label .col-sm-4 .fw-bold
-                                    .text-sm-end>
-                                $maybe label <- lookup apName labels
-                                    _{label}
-                                $nothing
-                                    #{apName}
-                            <div .col-sm-8>
-                                ^{apLogin routeToParent}
+                <h1 .text-center>_{MsgCreateAccountOrLogIn}
+                $forall AuthPlugin{apLogin} <- visiblePlugins
+                    <div .mb-1 .text-center>
+                        ^{apLogin routeToParent}
             |]
-      where
-        labels =
-            [ ("stellar" , MsgAuthnViaStellar )
-            , ("telegram", MsgAuthnViaTelegram)
-            ]
 
 authenticateStellar ::
     (MonadHandler m, HandlerSite m ~ App) =>

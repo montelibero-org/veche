@@ -39,6 +39,7 @@ import Network.Stellar.Builder qualified as Stellar
 import Network.Stellar.Keypair (decodePublicKey)
 import Network.Stellar.Network (publicNetwork, testNetwork)
 import Network.Stellar.Network qualified as Stellar
+import Network.Stellar.Signature qualified as Stellar
 import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Memo (Memo'MEMO_TEXT),
                                        MuxedAccount (MuxedAccount'KEY_TYPE_ED25519, MuxedAccount'KEY_TYPE_MUXED_ED25519),
@@ -159,7 +160,7 @@ login :: (Route Auth -> Route app) -> WidgetFor app ()
 login routeToMaster =
     [whamlet|
         <a href=@{start} role=button .btn.btn-primary>
-            Create account or log in
+            Stellar Laboratory
     |]
   where
     start = routeToMaster pluginRoute
@@ -301,37 +302,39 @@ verifyResponse envelopeXdrBase64 = do
 
 -- | Verify source address signature
 verifySource :: Stellar.Network -> XDR.TransactionEnvelope -> Bool
-verifySource net = \case
-    TransactionEnvelope'ENVELOPE_TYPE_TX_V0
-            (TransactionV0Envelope
-                tx@TransactionV0{transactionV0'sourceAccountEd25519} signatures
-            ) ->
-        all (Stellar.verify
-                net
-                tx
-                (Stellar.viewAccount $
-                    PublicKey'PUBLIC_KEY_TYPE_ED25519
-                        transactionV0'sourceAccountEd25519
+verifySource net envelope =
+    case envelope of
+        TransactionEnvelope'ENVELOPE_TYPE_TX_V0
+                (TransactionV0Envelope
+                    TransactionV0{transactionV0'sourceAccountEd25519} signatures
+                ) ->
+            all (Stellar.verifyTx
+                    net
+                    envelope
+                    (Stellar.viewAccount $
+                        PublicKey'PUBLIC_KEY_TYPE_ED25519
+                            transactionV0'sourceAccountEd25519
+                    )
                 )
-            )
-            (unLengthArray signatures)
-    TransactionEnvelope'ENVELOPE_TYPE_TX
-            (TransactionV1Envelope
-                tx@XDR.Transaction{transaction'sourceAccount} signatures
-            ) ->
-        all (Stellar.verify
-                net
-                tx
-                (Stellar.viewAccount $
-                    PublicKey'PUBLIC_KEY_TYPE_ED25519
-                        case transaction'sourceAccount of
-                            MuxedAccount'KEY_TYPE_ED25519         addr -> addr
-                            MuxedAccount'KEY_TYPE_MUXED_ED25519 _ addr -> addr
+                (unLengthArray signatures)
+        TransactionEnvelope'ENVELOPE_TYPE_TX
+                (TransactionV1Envelope
+                    XDR.Transaction{transaction'sourceAccount} signatures
+                ) ->
+            all (Stellar.verifyTx
+                    net
+                    envelope
+                    (Stellar.viewAccount $
+                        PublicKey'PUBLIC_KEY_TYPE_ED25519
+                            case transaction'sourceAccount of
+                                MuxedAccount'KEY_TYPE_ED25519 addr -> addr
+                                MuxedAccount'KEY_TYPE_MUXED_ED25519 _ addr ->
+                                    addr
+                    )
                 )
-            )
-            (unLengthArray signatures)
-    TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP{} ->
-        False -- this kind of transaction cannot be here
+                (unLengthArray signatures)
+        TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP{} ->
+            False -- this kind of transaction cannot be here
 
 -- | Throws an exception on error
 verifyAccount :: MonadHandler m => Config app -> Stellar.Address -> m ()

@@ -18,9 +18,9 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Monad.Except (throwError)
 import Data.ByteString.Base64 qualified as Base64
 import Network.ONCRPC.XDR (xdrDeserialize, xdrSerialize)
-import Network.Stellar.Builder qualified as Stellar
 import Network.Stellar.Keypair qualified as Stellar
 import Network.Stellar.Network qualified as Stellar
+import Network.Stellar.Signature qualified as Stellar
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant.Server (Server, err404, err500, serve)
@@ -96,7 +96,8 @@ testAuthenticationOk keyPair network = do
         htmlQuery ".stellar_challenge"
     envelopeXdrRaw <- assertRight $ Base64.decode $ encodeUtf8 envelopeXdrBase64
     envelope <- assertRight $ xdrDeserialize envelopeXdrRaw
-    envelopeSigned <- assertRightShow $ Stellar.sign network envelope [keyPair]
+    envelopeSigned <-
+        assertRightShow $ Stellar.signTx network envelope [keyPair]
     let envelopeSignedXdrBase64 =
             decodeUtf8Throw $ Base64.encode $ xdrSerialize envelopeSigned
 

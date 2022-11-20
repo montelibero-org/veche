@@ -16,7 +16,8 @@ Unauthorized: Для получения доступа к странице тр�
 # log in
 AuthnViaStellar: Через Stellar
 AuthnViaTelegram: Через Telegram (только если уже есть аккаунт на Вече)
-CreateAccountOrLogIn: Создать аккаунт или войти
+CreateAccountOrLogIn: Создание аккаунта и вход
+LoginViaMMWB: @MyMtlWalletBot
 
 # about
 Veche: Вече

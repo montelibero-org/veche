@@ -48,7 +48,7 @@ import Yesod.Core.Types as X (loggerSet)
 import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
                         FieldSettings (..), FormResult (FormSuccess), MForm,
                         Textarea (..), aopt, areq, fieldSettingsLabel,
-                        generateFormPost, hiddenField, intField, ireq,
+                        generateFormPost, hiddenField, intField, iopt, ireq,
                         runFormPost, textField, textareaField)
 
 -- project

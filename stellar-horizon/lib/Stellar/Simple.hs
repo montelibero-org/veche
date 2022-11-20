@@ -67,9 +67,9 @@ import Text.Read (readEither, readMaybe)
 -- stellar-sdk
 import Network.ONCRPC.XDR (XDR, xdrSerialize)
 import Network.ONCRPC.XDR qualified as XDR
-import Network.Stellar.Builder qualified as XdrBuilder
 import Network.Stellar.Keypair qualified as StellarKey
 import Network.Stellar.Network (publicNetwork)
+import Network.Stellar.Signature qualified as StellarSignature
 import Network.Stellar.TransactionXdr (Uint256)
 import Network.Stellar.TransactionXdr qualified as XDR
 
@@ -268,7 +268,7 @@ signWithSecret ::
     XDR.TransactionEnvelope
 signWithSecret secret tx =
     either (error . show) identity $
-    XdrBuilder.sign publicNetwork tx [StellarKey.fromPrivateKey' secret]
+    StellarSignature.signTx publicNetwork tx [StellarKey.fromPrivateKey' secret]
 
 xdrSerializeBase64T :: XDR a => a -> Text
 xdrSerializeBase64T = decodeUtf8Throw . Base64.encode . xdrSerialize

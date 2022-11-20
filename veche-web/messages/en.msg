@@ -17,6 +17,7 @@ Unauthorized: You must log in to access this page
 AuthnViaStellar: Via Stellar
 AuthnViaTelegram: Via Telegram (existing Veche accounts only)
 CreateAccountOrLogIn: Create account or log in
+LoginViaMMWB: @MyMtlWalletBot
 
 # about
 Veche: Veche

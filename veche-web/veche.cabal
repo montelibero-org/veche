@@ -9,6 +9,7 @@ library
 
   exposed-modules:
     Application
+    Authentication.MyMtlWalletBot
     Authentication.Telegram
     Authorization
     Database.Persist.Extra
@@ -64,6 +65,7 @@ library
     , aeson
     , base               >=4.9.1.0 && <5
     , base16-bytestring
+    , base64-bytestring
     , blaze-html
     , case-insensitive
     , classy-prelude
@@ -89,6 +91,7 @@ library
     , scientific
     , servant-client
     , shakespeare        >=2.0     && <2.1
+    , stellar-sdk
     , telegram-api
     , template-haskell
     , text               >=0.11    && <2.0
