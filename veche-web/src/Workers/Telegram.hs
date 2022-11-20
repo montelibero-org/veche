@@ -79,6 +79,7 @@ handleMessage ::
     (MonadUnliftIO m, MonadLogger m, ?app :: App) => Tg.Message -> m ()
 handleMessage msg@Tg.Message{chat, from, text} = do
     let ?chatId = chat_id
+        ?fromUser = from
         ?lang = do
             Tg.User{user_language_code} <- from
             Tg.LanguageCode code <- user_language_code
@@ -91,12 +92,18 @@ handleMessage msg@Tg.Message{chat, from, text} = do
     Tg.Chat{chat_id} = chat
 
 handleMessageText ::
-    (MonadUnliftIO m, ?app :: App, ?lang :: Maybe Lang, ?chatId :: Int64) =>
+    ( ?app :: App
+    , ?chatId :: Int64
+    , ?fromUser :: Maybe Tg.User
+    , ?lang :: Maybe Lang
+    , MonadLogger m, MonadUnliftIO m
+    ) =>
     Text -> m ()
-handleMessageText = \case
-    "/help"     -> replyHelp
-    "/start"    -> replyHelp
-    _           -> replyNotUnderstood
+handleMessageText text =
+    case text of
+        "/help"     -> replyHelp
+        "/start"    -> replyHelp
+        _           -> replyNotUnderstood
   where
 
     App{appConnPool, appSettings = AppSettings{appRoot}} = ?app
@@ -130,10 +137,17 @@ handleMessageText = \case
             (Tg.inlineKeyboardButton $ tr MsgTelegramBotSettingsButton)
             {Tg.ikb_url = Just userR}
 
-    replyNotUnderstood =
+    replyNotUnderstood = do
+        $logWarn $
+            unlines
+                [ "Message from"
+                , tshow ?fromUser
+                , "not understood: "
+                , tshow text
+                ]
         sendMsg $
-        Tg.sendMessageRequest (Tg.ChatId ?chatId) $
-        tr MsgTelegramBotNotUnderstood
+            Tg.sendMessageRequest (Tg.ChatId ?chatId) $
+            tr MsgTelegramBotNotUnderstood
 
     sendMsg = void . runTelegramClientThrow . Tg.sendMessageM
 
