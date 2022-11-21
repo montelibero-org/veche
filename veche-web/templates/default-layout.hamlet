@@ -25,9 +25,6 @@
 <!-- Page Contents -->
 
 <div .container.mt-4>
-    <div .alert.alert-warning>
-        ^{msgBeta}
-
     $# $if not $ Just HomeR == mcurrentRoute
     $#     <ul .breadcrumb>
     $#         $forall bc <- parents
@@ -49,9 +46,10 @@
         <a .btn .btn-primary href=@{AuthR LoginR}>_{MsgLogIn}
 
 <!-- Footer -->
-<footer .footer .mt-3>
-    <div .container .d-grid .gap-2 .d-sm-flex .justify-content-between
-            .text-muted>
+<footer .container .footer .mt-3>
+    <div .mb-2 .text-center .text-muted>
+        ^{msgBeta}
+    <div .d-grid .gap-2 .d-sm-flex .justify-content-between .text-muted>
         <div>
             #{appCopyright $ appSettings master}
         <div .justify-content-between .dropdown>
