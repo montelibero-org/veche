@@ -29,6 +29,7 @@ module Stellar.Simple (
     tx_feePerOp,
     tx_feePerOp_guess,
     tx_memoText,
+    tx_seqNum,
     build,
     signWithSecret,
     xdrSerializeBase64T,
@@ -36,6 +37,7 @@ module Stellar.Simple (
     runClientThrow,
     getPublicClient,
     submit,
+    retryOnTimeout,
 ) where
 
 -- prelude
@@ -43,6 +45,7 @@ import Prelude hiding (id)
 import Prelude qualified
 
 -- global
+import Control.Exception (SomeException (SomeException), catchJust)
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Int (Int32, Int64)
@@ -55,13 +58,20 @@ import Data.Sequence (Seq, (|>))
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding (encodeUtf8)
+import Data.Typeable (cast)
 import Data.Word (Word32, Word8)
 import GHC.Stack (HasCallStack)
 import Named (NamedF (Arg, ArgF), (:!), (:?))
-import Network.HTTP.Client (ResponseTimeout, managerResponseTimeout,
+import Network.HTTP.Client (HttpException (HttpExceptionRequest),
+                            HttpExceptionContent (ResponseTimeout),
+                            ResponseTimeout, managerResponseTimeout,
                             responseTimeoutDefault)
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
-import Servant.Client (ClientEnv, ClientM, mkClientEnv, runClientM)
+import Network.HTTP.Types (gatewayTimeout504)
+import Servant.Client (ClientEnv,
+                       ClientError (ConnectionError, FailureResponse), ClientM,
+                       ResponseF (Response), mkClientEnv, runClientM)
+import Servant.Client qualified
 import Text.Read (readEither, readMaybe)
 
 -- stellar-sdk
@@ -74,7 +84,8 @@ import Network.Stellar.TransactionXdr (Uint256)
 import Network.Stellar.TransactionXdr qualified as XDR
 
 -- project
-import WithCallStack (throwWithCallStackIO)
+import WithCallStack (WithCallStack (WithCallStack), throwWithCallStackIO)
+import WithCallStack qualified
 
 -- component
 import Stellar.Horizon.API (TxText (TxText))
@@ -99,6 +110,7 @@ data TransactionBuilder = TransactionBuilder
     , feePerOp      :: Guess Word32
     , memo          :: Memo
     , operations    :: Seq XDR.Operation
+    , seqNum        :: Guess Int64
     }
 
 getPublicClient :: "responseTimeout" :? ResponseTimeout -> IO ClientEnv
@@ -118,6 +130,7 @@ transactionBuilder account =
     , feePerOp = Already defaultFeePerOp
     , memo = MemoNone
     , operations = mempty
+    , seqNum = Guess
     }
 
 tx_feePerOp_guess :: TransactionBuilder -> TransactionBuilder
@@ -129,25 +142,31 @@ tx_feePerOp feePerOp b = b{feePerOp = Already feePerOp}
 tx_memoText :: Text -> TransactionBuilder -> TransactionBuilder
 tx_memoText t TransactionBuilder{..} = TransactionBuilder{memo = MemoText t, ..}
 
+tx_seqNum :: Int64 -> TransactionBuilder -> TransactionBuilder
+tx_seqNum n b = b{seqNum = Already n}
+
 build ::
     HasCallStack =>
     ClientEnv -> TransactionBuilder -> IO XDR.TransactionEnvelope
-build clientEnv TransactionBuilder{account, feePerOp, memo, operations} = do
-    DTO.Account{sequence = sequenceText} <-
-        runClientThrow (getAccount account) clientEnv
+build   clientEnv
+        TransactionBuilder{account, feePerOp, memo, operations, seqNum}
+        = do
     feePerOp' <-
         case feePerOp of
-            Already f -> pure f
-            Guess -> guessFee
-    let seqNum = either error identity $ readEither $ Text.unpack sequenceText
-        transaction'fee = feePerOp' * fromIntegral (length operations)
+            Already f   -> pure f
+            Guess       -> guessFee
+    transaction'seqNum <-
+        case seqNum of
+            Already n   -> pure n
+            Guess       -> succ <$> fetchSeqNum
+    let transaction'fee = feePerOp' * fromIntegral (length operations)
         tx =
             XDR.Transaction
             { transaction'cond
             , transaction'fee
             , transaction'memo
             , transaction'operations
-            , transaction'seqNum = seqNum + 1
+            , transaction'seqNum -- = seqNum + 1
             , transaction'sourceAccount
             , transaction'v = 0
             }
@@ -175,6 +194,11 @@ build clientEnv TransactionBuilder{account, feePerOp, memo, operations} = do
             fromMaybe defaultFeePerOp do
                 t <- Map.lookup "min" fee_charged
                 readMaybe $ Text.unpack t
+
+    fetchSeqNum = do
+        DTO.Account{sequence = sequenceText} <-
+            runClientThrow (getAccount account) clientEnv
+        either fail pure $ readEither $ Text.unpack sequenceText
 
 addressToXdr :: Address -> Uint256
 addressToXdr (Address address) =
@@ -328,3 +352,21 @@ op_setThresholds (ArgF low) (ArgF med) (ArgF high) =
 
 submit :: XDR.TransactionEnvelope -> ClientEnv -> IO DTO.Transaction
 submit = runClientThrow . submitTransaction . TxText . xdrSerializeBase64T
+
+retryOnTimeout :: IO a -> IO a
+retryOnTimeout action =
+    catchJust guardTimeout action $ const $ retryOnTimeout action
+  where
+    guardTimeout = \case
+        e1@WithCallStack{parent = SomeException e2}
+            | Just (ConnectionError (SomeException e3)) <- cast e2
+            , Just (HttpExceptionRequest _req ResponseTimeout) <- cast e3
+            ->
+                Just e1
+        e1@WithCallStack{parent = SomeException e2}
+            | Just (FailureResponse _req Response{responseStatusCode}) <-
+                cast e2
+            , responseStatusCode == gatewayTimeout504
+            ->
+                Just e1
+        _ -> Nothing

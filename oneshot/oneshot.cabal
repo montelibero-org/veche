@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 3.4
 name:          oneshot
 version:       0.1
 build-type:    Simple
@@ -20,20 +20,22 @@ common common
     OverloadedStrings
     ScopedTypeVariables
 
-  default-language:   Haskell2010
+  default-language:   GHC2021
 
 executable escrow-award
   import:  common
   main-is: escrow-award.hs
 
+executable pay
+  import:        common
+  build-depends: time
+  main-is:       pay.hs
+
 executable sellOffer
   import:        common
   build-depends:
     , http-client
-    , http-types
-    , servant-client
     , time
-    , withcallstack
 
   main-is:       sellOffer.hs
 

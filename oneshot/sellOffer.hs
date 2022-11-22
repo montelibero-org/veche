@@ -3,27 +3,19 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NumDecimals #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import Control.Exception
 import Data.Function
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Data.Time
-import Data.Typeable
 import Named
 import Network.HTTP.Client
-import Network.HTTP.Types (gatewayTimeout504)
-import Servant.Client (ClientError (ConnectionError, FailureResponse),
-                       ResponseF (Response))
-import Servant.Client qualified
 import Stellar.Simple
-import WithCallStack
 
 main = do
     client <-
@@ -38,6 +30,7 @@ main = do
     putStrLn "envelope:"
     Text.putStrLn $ xdrSerializeBase64T envelope
     retryOnTimeout do
+        print =<< getCurrentTime
         putStrLn "submitting..."
         submit envelope client >>= print
 
@@ -48,26 +41,3 @@ vecheToken =
 
 eurmtl =
     mkAsset "EURMTL" "GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
-
-retryOnTimeout :: IO a -> IO a
-retryOnTimeout action = catchJust guardTimeout action next where
-
-    guardTimeout = \case
-        e1@WithCallStack{parent = SomeException e2}
-            | Just (ConnectionError (SomeException e3)) <- cast e2
-            , Just (HttpExceptionRequest _req ResponseTimeout) <- cast e3
-            ->
-                Just e1
-        e1@WithCallStack{parent = SomeException e2}
-            | Just (FailureResponse _req Response{responseStatusCode}) <-
-                cast e2
-            , responseStatusCode == gatewayTimeout504
-            ->
-                Just e1
-        _ -> Nothing
-
-    next e = do
-        print =<< getCurrentTime
-        putStrLn $ displayException e
-        putStrLn "retrying..."
-        retryOnTimeout action
