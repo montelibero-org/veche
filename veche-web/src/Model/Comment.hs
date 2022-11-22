@@ -17,13 +17,16 @@ module Model.Comment (
     updateIssueCommentNum,
 ) where
 
-import Import.NoFoundation
+-- prelude
+import Import
 
+-- global
 import Database.Persist (count, insert, insertMany_, update, updateWhere, (<-.),
                          (=.), (==.))
 import Database.Persist.Sql (SqlBackend)
 import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
 
+-- component
 import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
               Request (Request), RequestId, User, UserId)
 import Model qualified
@@ -48,8 +51,8 @@ data CommentMaterialized = CommentMaterialized
     deriving (Show)
 
 addText ::
-    (PersistSql app, AuthId app ~ UserId, AuthEntity app ~ User) =>
-    CommentInput -> HandlerFor app CommentId
+    (AuthId App ~ UserId, AuthEntity App ~ User) =>
+    CommentInput -> Handler CommentId
 addText commentInput = do
     author <- requireAuthId
     now <- liftIO getCurrentTime

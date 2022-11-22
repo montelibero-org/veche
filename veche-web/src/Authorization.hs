@@ -2,14 +2,17 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Authorization where
 
+-- prelude
+import Foundation.Base
+
 -- global
 import Control.Monad (unless)
-import Yesod.Core (MonadHandler, permissionDenied)
+import Yesod.Core (HandlerSite, MonadHandler, permissionDeniedI)
 import Yesod.Persist (Entity (Entity))
 
 -- component
@@ -59,5 +62,5 @@ checkVote mPoll roles =
         Just ByMtlAmount     -> MtlHolder     `elem` roles
         Just BySignerWeight  -> MtlSigner     `elem` roles
 
-requireAuthz :: MonadHandler m => AuthzRequest -> m ()
-requireAuthz req = unless (isAllowed req) $ permissionDenied ""
+requireAuthz :: (MonadHandler m, HandlerSite m ~ App) => AuthzRequest -> m ()
+requireAuthz req = unless (isAllowed req) $ permissionDeniedI MsgUnauthorized

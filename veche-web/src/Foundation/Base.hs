@@ -3,7 +3,6 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -13,17 +12,19 @@
 
 module Foundation.Base where
 
-import Import.NoFoundation hiding (action)
-
 -- global
-import Database.Persist.Sql (ConnectionPool, SqlBackend, runSqlPool)
+import Data.IORef (IORef)
+import Data.Text (Text)
+import Database.Persist.Sql (ConnectionPool, SqlBackend, SqlPersistT,
+                             runSqlPool)
 import Network.HTTP.Client (HasHttpManager, Manager)
 import Network.HTTP.Client qualified
 import Network.Wai qualified as Wai
 import Servant.Client (BaseUrl)
-import Yesod.Core (Lang, ParseRoute, RenderMessage, RenderRoute,
-                   YesodSubDispatch, mkMessage, mkYesodData, parseRoute,
-                   parseRoutesFile, renderRoute, yesodSubDispatch)
+import Yesod.Auth (Auth, getAuth)
+import Yesod.Core (Lang, ParseRoute, RenderMessage, RenderRoute, Route,
+                   YesodSubDispatch, getYesod, mkMessage, mkYesodData,
+                   parseRoute, parseRoutesFile, renderRoute, yesodSubDispatch)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger, YesodSubRunnerEnv (YesodSubRunnerEnv))
 import Yesod.Core.Types qualified
@@ -35,6 +36,8 @@ import Yesod.Static (Static)
 
 -- component
 import Model (EscrowStat, IssueId)
+import Model.Types (Choice, ForumId)
+import Settings (AppSettings)
 
 -- | 'Static' variant for `.well-known` directory
 newtype WKStatic = WKStatic Static

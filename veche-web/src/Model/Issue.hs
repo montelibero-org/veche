@@ -51,8 +51,7 @@ import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
                          getEntity, getJust, insert, insert_, selectList,
                          update, (!=.), (=.))
 import Database.Persist qualified as Persist
-import Database.Persist.Sql (SqlBackend)
-import Yesod.Persist (YesodPersist, YesodPersistBackend, get404, runDB)
+import Yesod.Persist (get404, runDB)
 
 -- project
 import Stellar.Simple (Asset)
@@ -104,9 +103,7 @@ data IssueMaterialized = IssueMaterialized
 data StateAction = Close | Reopen
     deriving (Eq)
 
-countOpenAndClosed ::
-    (YesodPersist app, YesodPersistBackend app ~ SqlBackend) =>
-    ForumId -> HandlerFor app (Int, Int)
+countOpenAndClosed :: ForumId -> Handler (Int, Int)
 countOpenAndClosed forum = do
     counts :: [(Bool, Int)] <-
         runDB $
@@ -279,13 +276,7 @@ collectChoices votes =
         | VoteMaterialized{choice, voter = Entity uid user} <- votes
         ]
 
-listForumIssues ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    EntityForum -> Maybe Bool -> HandlerFor app [Entity Issue]
+listForumIssues :: EntityForum -> Maybe Bool -> Handler [Entity Issue]
 listForumIssues forumE@(forumId, _) mIsOpen = do
     (_, roles) <- maybeAuthzRoles
     requireAuthz $ ReadForum forumE roles
@@ -295,9 +286,7 @@ listForumIssues forumE@(forumId, _) mIsOpen = do
         (#forum Persist.==. forumId)
         : [#open Persist.==. isOpen | Just isOpen <- [mIsOpen]]
 
-selectWithoutVoteFromUser ::
-    (PersistSql app, AuthEntity app ~ User, AuthId app ~ UserId) =>
-    HandlerFor app [Entity Issue]
+selectWithoutVoteFromUser :: Handler [Entity Issue]
 selectWithoutVoteFromUser = do
     (userId, roles) <- requireAuthzRoles
     runDB do
@@ -319,12 +308,7 @@ selectWithoutVoteFromUser = do
             & filter \(Entity _ Issue{forum}) ->
                 isAllowed $ ReadForum (forum, forums ! forum) roles
 
-getContentForEdit ::
-    ( AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    IssueId -> HandlerFor app (EntityForum, IssueContent)
+getContentForEdit :: IssueId -> Handler (EntityForum, IssueContent)
 getContentForEdit issueId =
     runDB do
         userId <- requireAuthId
@@ -350,13 +334,7 @@ getContentForEdit issueId =
             , IssueContent{title, body, poll, contacts, priceOffer}
             )
 
-create ::
-    ( AuthEntity app ~ User
-    , AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    EntityForum -> IssueContent -> HandlerFor app IssueId
+create :: EntityForum -> IssueContent -> Handler IssueId
 create forumE@(forumId, _) content = do
     (userId, roles) <- requireAuthzRoles
     requireAuthz $ AddForumIssue forumE roles
@@ -391,12 +369,7 @@ dbCreate forumId issueContent userId = do
   where
     IssueContent{body, contacts, poll, priceOffer, title} = issueContent
 
-edit ::
-    ( AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    IssueId -> IssueContent -> HandlerFor app ()
+edit :: IssueId -> IssueContent -> Handler ()
 edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
@@ -456,12 +429,7 @@ edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
             issueId
             [#contacts =. contacts, #priceOffer =. priceOffer, #title =. title]
 
-closeReopen ::
-    ( AuthId app ~ UserId
-    , YesodAuthPersist app
-    , YesodPersistBackend app ~ SqlBackend
-    ) =>
-    IssueId -> StateAction -> HandlerFor app ()
+closeReopen :: IssueId -> StateAction -> Handler ()
 closeReopen issueId stateAction = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
