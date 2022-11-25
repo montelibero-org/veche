@@ -178,9 +178,6 @@ addressForm =
             {fsName = Just "stellar_address"}
         Nothing
 
--- toQueryParam :: Text -> Text
--- toQueryParam = decodeUtf8 . urlEncode True . encodeUtf8
-
 makeResponseForm ::
     RenderMessage app FormMessage =>
     (Route Auth -> Route app) -> Text -> WidgetFor app ()

@@ -7,7 +7,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Model.Verifier (getKey, checkAndRemoveKey) where
+module Model.Verifier (
+    -- * Scenario for a known address
+    getKey,
+    checkAndRemoveKey,
+    -- * Scenario without address known
+    getKeyNoAddress,
+    getAndRemoveKey,
+) where
 
 -- prelude
 import Foundation.Base
@@ -43,6 +50,16 @@ lookupNonce = lookupSession sessionNonceKey
 deleteNonce :: MonadHandler m => m ()
 deleteNonce = deleteSession sessionNonceKey
 
+getKeyNoAddress :: Handler Text
+getKeyNoAddress = do
+    mSessionNonce <- lookupNonce
+    case mSessionNonce of
+        Just nonce -> pure nonce
+        _ -> do
+            nonce <- nonce128urlT nonceGenerator
+            setNonce nonce
+            pure nonce
+
 getKey :: Stellar.Address -> Handler Text
 getKey userIdent =
     liftHandler . runDB $ do
@@ -76,3 +93,9 @@ checkAndRemoveKey verifierUserIdent verifierKey =
                 now <- liftIO getCurrentTime
                 pure $ now <= expires
             Nothing -> pure False
+
+getAndRemoveKey :: Handler (Maybe Text)
+getAndRemoveKey = do
+    mSessionNonce <- lookupNonce
+    for_ mSessionNonce $ const deleteNonce
+    pure mSessionNonce
