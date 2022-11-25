@@ -11,12 +11,11 @@ module Authentication.MyMtlWalletBot (authMyMtlWalletBot) where
 
 -- prelude
 import Foundation.Base
-import Import.NoFoundation hiding (ap)
+import Import.NoFoundation
 
 -- global
 import Data.ByteString.Base64 qualified as Base64
 import Data.Text qualified as Text
-import Network.HTTP.Types (urlEncode)
 import Network.Stellar.Keypair (decodePublicKey)
 import Network.Stellar.Signature (verifyBlob)
 import Yesod.Core (liftHandler)
@@ -36,16 +35,12 @@ authMyMtlWalletBot :: AuthPlugin App
 authMyMtlWalletBot =
     AuthPlugin{apName = pluginName, apLogin = login, apDispatch = dispatch}
 
-toQueryParam :: Text -> Text
-toQueryParam = decodeUtf8 . urlEncode True . encodeUtf8
-
 login :: (Route Auth -> Route App) -> Widget
 login _ = do
     nonce <- liftHandler Verifier.getKeyNoAddress
-    let query = "login_to_veche?nonce=" <> nonce
     [whamlet|
         <a .btn.btn-primary
-                href="https://t.me/MyMTLWalletBot?start=#{toQueryParam query}"
+                href="https://t.me/MyMTLWalletBot?start=veche_#{nonce}"
                 role=button>
             _{MsgLoginViaMMWB}
     |]
