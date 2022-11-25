@@ -1,15 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -184,11 +178,20 @@ addressForm =
             {fsName = Just "stellar_address"}
         Nothing
 
+-- toQueryParam :: Text -> Text
+-- toQueryParam = decodeUtf8 . urlEncode True . encodeUtf8
+
 makeResponseForm ::
     RenderMessage app FormMessage =>
     (Route Auth -> Route app) -> Text -> WidgetFor app ()
 makeResponseForm routeToMaster challenge = do
     (widget, enctype) <- generateFormPost responseForm
+    -- let challengeHref =
+    --         mconcat
+    --             [ "web+stellar:tx?xdr=", toQueryParam challenge
+    --             , "&callback="
+    --             , toQueryParam $ renderUrl $ routeToMaster pluginRoute
+    --             ]
     [whamlet|
         $newline never
         <p>
@@ -220,7 +223,9 @@ makeResponseForm routeToMaster challenge = do
                     role=button target=_blank>
                 <strong>2.
                 \ Sign in Lab
-        <form method=post action=@{routeToMaster pluginRoute} enctype=#{enctype} id=auth_stellar_response_form>
+        <form   #auth_stellar_response_form
+                action=@{routeToMaster pluginRoute} enctype=#{enctype}
+                method=post>
             ^{widget}
             <button type=submit .btn .btn-primary .mt-3>
                 <strong>4.
