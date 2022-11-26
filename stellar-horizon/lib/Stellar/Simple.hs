@@ -38,6 +38,8 @@ module Stellar.Simple (
     getPublicClient,
     submit,
     retryOnTimeout,
+    -- * Verification
+    verifyTx,
 ) where
 
 -- prelude
@@ -46,6 +48,7 @@ import Prelude qualified
 
 -- global
 import Control.Exception (SomeException (SomeException), catchJust)
+import Crypto.Sign.Ed25519 qualified as Ed25519
 import Data.ByteString.Base64 qualified as Base64
 import Data.Foldable (toList)
 import Data.Int (Int32, Int64)
@@ -78,7 +81,7 @@ import Text.Read (readEither, readMaybe)
 import Network.ONCRPC.XDR (XDR, xdrSerialize)
 import Network.ONCRPC.XDR qualified as XDR
 import Network.Stellar.Keypair qualified as StellarKey
-import Network.Stellar.Network (publicNetwork)
+import Network.Stellar.Network (Network, publicNetwork)
 import Network.Stellar.Signature qualified as StellarSignature
 import Network.Stellar.TransactionXdr (Uint256)
 import Network.Stellar.TransactionXdr qualified as XDR
@@ -93,8 +96,9 @@ import Stellar.Horizon.Client (decodeUtf8Throw, getAccount, getFeeStats,
                                publicServerBase, submitTransaction, xlm)
 import Stellar.Horizon.DTO (Address (Address), FeeStats (FeeStats), TxId)
 import Stellar.Horizon.DTO qualified as DTO
-import Stellar.Simple.Types (Asset (..), Memo (..), Operation (..),
-                             Transaction (..), TransactionOnChain (..))
+import Stellar.Simple.Types (Asset (..), DecoratedSignature (..), Memo (..),
+                             Operation (..), Transaction (..),
+                             TransactionOnChain (..))
 
 identity :: a -> a
 identity = Prelude.id
@@ -370,3 +374,15 @@ retryOnTimeout action =
             ->
                 Just e1
         _ -> Nothing
+
+verifyTx
+    :: Network
+    -> XDR.TransactionEnvelope
+    -> Address
+    -> DecoratedSignature
+    -> Bool
+verifyTx net envelope (Address publicKey) (DecoratedSignature _ signature) =
+    Ed25519.dverify
+        (StellarKey.decodePublicKey' publicKey)
+        (StellarSignature.transactionHash net envelope)
+        (Ed25519.Signature signature)

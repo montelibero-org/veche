@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- |
@@ -27,7 +28,7 @@ module Stellar.Horizon.Client (
     Transaction (..),
     TransactionOnChain (..),
     transactionFromDto,
-    transactionFromEnvelopeXdr,
+    transactionFromXdrEnvelope,
     TxId (..),
     -- * Endpoints
     publicServerBase,
@@ -78,8 +79,9 @@ import Stellar.Horizon.DTO (Account (..), Address (..), FeeStats,
                             Record (Record), Records (Records), Signer (..),
                             TxId (..))
 import Stellar.Horizon.DTO qualified as DTO
-import Stellar.Simple.Types (Asset (..), Memo (..), Operation (..),
-                             PaymentType (DirectPayment, PathPayment), Shown,
+import Stellar.Simple.Types (Asset (..), DecoratedSignature (..), Memo (..),
+                             Operation (..),
+                             PaymentType (DirectPayment, PathPayment),
                              Transaction (..), TransactionOnChain (..),
                              assetFromText, assetToText, shown)
 
@@ -138,65 +140,61 @@ recordsToList endpoint = go Nothing where
 transactionFromDto :: HasCallStack => DTO.Transaction -> TransactionOnChain
 transactionFromDto DTO.Transaction{created_at, envelope_xdr, id} =
     TransactionOnChain
-        {id, time = created_at, tx = transactionFromEnvelopeXdr envelope}
+        {id, time = created_at, tx = transactionFromXdrEnvelope envelope}
   where
     envelopeXdrRaw =
         either error identity $ Base64.decode $ encodeUtf8 envelope_xdr
     envelope = either error identity $ xdrDeserialize envelopeXdrRaw
 
-transactionFromEnvelopeXdr :: XDR.TransactionEnvelope -> Transaction
-transactionFromEnvelopeXdr = \case
+transactionFromXdrEnvelope :: XDR.TransactionEnvelope -> Transaction
+transactionFromXdrEnvelope = \case
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_V0       e -> fromV0 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX          e -> fromV1 e
     XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP e -> fromFB e
   where
 
-    fromV0  (XDR.TransactionV0Envelope
-                XDR.TransactionV0
-                    { transactionV0'memo
-                    , transactionV0'operations
-                    , transactionV0'sourceAccountEd25519
-                    }
-                _signatures
-            ) =
+    fromV0 (XDR.TransactionV0Envelope XDR.TransactionV0{..} signatures) =
         Transaction
             { memo          = memoFromXdr transactionV0'memo
             , operations    = operationsFromXdr transactionV0'operations
+            , signatures    = signaturesFromXdr signatures
             , source =
                 Address $
                 StellarKey.encodePublic $
                 XDR.unLengthArray transactionV0'sourceAccountEd25519
             }
 
-    fromV1  (XDR.TransactionV1Envelope
-                XDR.Transaction
-                    { transaction'memo
-                    , transaction'operations
-                    , transaction'sourceAccount
-                    }
-                _signatures
-            ) =
+    fromV1 (XDR.TransactionV1Envelope XDR.Transaction{..} signatures) =
         Transaction
             { memo          = memoFromXdr transaction'memo
             , operations    = operationsFromXdr transaction'operations
+            , signatures    = signaturesFromXdr signatures
             , source        = addressFromXdrMuxed transaction'sourceAccount
             }
 
     fromFB  (XDR.FeeBumpTransactionEnvelope
-                XDR.FeeBumpTransaction{feeBumpTransaction'feeSource} _signatures
+                XDR.FeeBumpTransaction{..} signatures
             ) =
         Transaction
             { memo          = MemoNone
             , operations    = []
+            , signatures    = signaturesFromXdr signatures
             , source        = addressFromXdrMuxed feeBumpTransaction'feeSource
             }
 
-    operationsFromXdr ::
-        XDR.Array n XDR.Operation -> [Either (Shown XDR.Operation) Operation]
     operationsFromXdr =
         map (\xop -> maybe (Left $ shown xop) Right $ operationFromXdr xop)
         . toList
         . XDR.unLengthArray
+
+    signaturesFromXdr = map signatureFromXdr . toList . XDR.unLengthArray
+
+signatureFromXdr :: XDR.DecoratedSignature -> DecoratedSignature
+signatureFromXdr XDR.DecoratedSignature{..} =
+    DecoratedSignature
+    { hint      = XDR.unLengthArray decoratedSignature'hint
+    , signature = XDR.unLengthArray decoratedSignature'signature
+    }
 
 memoFromXdr :: XDR.Memo -> Memo
 memoFromXdr = \case

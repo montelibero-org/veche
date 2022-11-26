@@ -1,15 +1,16 @@
-cabal-version: >=1.10
+cabal-version: 3.4
 name:          stellar-horizon
 version:       0
 build-type:    Simple
 
 library
   build-depends:
-      aeson
+    , aeson
     , base
     , base64-bytestring
     , bytestring
     , containers
+    , ed25519
     , http-client
     , http-client-tls
     , http-media
@@ -25,7 +26,7 @@ library
     , time
     , withcallstack
 
-  default-language: Haskell2010
+  default-language: GHC2021
   exposed-modules:
     Stellar.Horizon.API
     Stellar.Horizon.Client
@@ -41,7 +42,7 @@ executable horizon
 
   -- global
   build-depends:
-      base
+    , base
     , http-client-tls
     , pretty-simple
     , servant-cli
@@ -49,6 +50,6 @@ executable horizon
 
   -- package
   build-depends:    stellar-horizon
-  default-language: Haskell2010
+  default-language: GHC2021
   hs-source-dirs:   exe
   main-is:          Main.hs

@@ -54,6 +54,8 @@ data Account = Account
     }
     deriving (Show)
 
+-- TODO(2022-110-26, cblp) rename to Account;
+-- introduce Address = Account | Muxed | Federal
 newtype Address = Address Text
     deriving newtype
         (Eq, FromHttpApiData, FromJSON, Ord, Read, Show, ToHttpApiData, ToJSON)

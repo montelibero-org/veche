@@ -38,8 +38,7 @@ authTelegram =
         }
 
 login :: (Route Auth -> Route App) -> Widget
-login routeToMaster = do
-    App{appSettings = AppSettings{appTelegramBotName}} <- getYesod
+login _routeToMaster =
     [whamlet|
         <a .btn.btn-primary href="http://t.me/mtl_veche_bot?start=login">
             @mtl_veche_bot
