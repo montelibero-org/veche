@@ -100,10 +100,10 @@ handleMessageText ::
     ) =>
     Text -> m ()
 handleMessageText text =
-    case text of
-        "/help"     -> replyHelp
-        "/start"    -> replyHelp
-        _           -> replyNotUnderstood
+    case words text of
+        "/help"  : _ -> replyHelp
+        "/start" : _ -> replyHelp
+        _            -> replyNotUnderstood
   where
 
     App{appConnPool, appSettings = AppSettings{appRoot}} = ?app

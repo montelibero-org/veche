@@ -202,8 +202,7 @@ instance YesodAuth App where
             let visiblePlugins =
                     filter
                         (\AuthPlugin{apName} ->
-                            apName /= "telegram"
-                            && (not (null mmwb) || apName /= "mymtlwalletbot")
+                            not (null mmwb) || apName /= "mymtlwalletbot"
                         )
                         (authPlugins master)
             [whamlet|
