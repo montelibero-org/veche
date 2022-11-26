@@ -178,10 +178,11 @@ instance YesodAuth App where
         => Creds App -> m (AuthenticationResult App)
     authenticate Creds{credsPlugin, credsIdent, credsExtra} =
         case credsPlugin of
-            "dummy"     -> authenticateStellar credsIdent
-            "stellar"   -> authenticateStellar credsIdent
-            "telegram"  -> authenticateTelegram credsIdent credsExtra
-            _           -> pure $ ServerError "Unknown auth plugin"
+            "dummy"          -> authenticateStellar  credsIdent
+            "stellar"        -> authenticateStellar  credsIdent
+            "mymtlwalletbot" -> authenticateStellar  credsIdent
+            "telegram"       -> authenticateTelegram credsIdent credsExtra
+            _                -> pure $ ServerError "Unknown auth plugin"
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
