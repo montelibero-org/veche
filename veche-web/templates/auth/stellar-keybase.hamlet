@@ -1,27 +1,19 @@
-<p>
-    For the purpose of authentications in Veche,
-    \ a special "request" transaction is made.
-    \ Run this command in your command line to sign this transaction,
-    \ but do not submit it, instead, paste the code below:
+<p>_{MsgAuthnStellarIntro} _{MsgAuthnStellarIntroRun}
 <div .alert.alert-secondary>
     <tt .stellar_challenge #stellar_challenge
             style="overflow-wrap: break-word;">
         keybase wallet sign --xdr=#{challenge}
-<p>
-    This is an almost empty, intentionally invalid transaction.
-    \ It is costructed for the test network,
-    \ has zero fee and zero sequence number,
-    \ specifically to make sure it cannot be sent to the real network.
+<p>_{MsgAuthnStellarDesc}
 <div .mb-3>
     <button .btn.btn-primary onclick="copy_tx()">
         <strong>1.
-        \ Copy command
+        \ _{MsgAuthnStellarCopyCommand}
     \
     <a .btn.btn-secondary
             href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
             role=button target=_blank>
-        View in Lab
+        _{MsgAuthnStellarViewInLab}
     \
     <div .mt-3>
-        <strong>2. Start Keybase and run the command on your computer
+        <strong>2. _{MsgAuthnStellarRun}
 ^{widget}

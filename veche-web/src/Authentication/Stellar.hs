@@ -39,10 +39,9 @@ import Network.Stellar.TransactionXdr qualified as XDR
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
-import Yesod.Core (HandlerSite, RenderMessage, WidgetFor, badMethod,
-                   getRouteToParent, liftHandler, logErrorS, notAuthenticated,
-                   toTypedContent)
-import Yesod.Form (FormMessage, runInputGet)
+import Yesod.Core (HandlerSite, badMethod, getRouteToParent, liftHandler,
+                   logErrorS, notAuthenticated, toTypedContent)
+import Yesod.Form (runInputGet)
 import Yesod.Form.Bootstrap5 (bfs)
 
 -- project
@@ -95,15 +94,15 @@ responseForm action =
         unTextarea
         <$> areq
                 textareaField
-                (bfs ("3. Paste the signed piece here:" :: Text))
-                    {fsName = Just "response"}
-                Nothing)
+                (bfs MsgAuthnStellar3PasteSigned){fsName = Just "response"}
+                Nothing
+    )
     { action = Just action
     , footer =
         [whamlet|
             <button type=submit .btn .btn-primary .mt-3>
                 <strong>4.
-                \ Log in
+                \ _{MsgLogIn}
         |]
     , id = Just "auth_stellar_response_form"
     }
@@ -121,7 +120,7 @@ dispatch config method _path =
         _       -> badMethod
 
 makeChallengeForm :: Config -> AuthHandler App Html
-makeChallengeForm Config{flavor, getVerifyKey} = do
+makeChallengeForm Config{getVerifyKey} = do
     routeToMaster <- getRouteToParent
     flavorT <- runInputGet $ ireq textField "flavor"
     flavor <- fromPathPiece flavorT ?| invalidArgs ["Bad flavor"]
@@ -231,6 +230,7 @@ makeChallenge address nonce0 = do
 loggingIntoVeche :: IsString s => s
 loggingIntoVeche = "Logging into Veche"
 
+(?) :: MonadHandler m => Either e a -> Text -> m a
 e ? msg = either (const $ invalidArgs [msg]) pure e
 
 verifyResponse :: MonadHandler m => Text -> m VerificationData

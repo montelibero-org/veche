@@ -23,7 +23,6 @@ import Data.Text qualified as Text
 import Database.Persist.Sql (runSqlPool)
 import Servant.Client (ClientM, mkClientEnv, runClientM)
 import System.Random (randomRIO)
-import Text.Read (readMaybe)
 import Yesod.Core (messageLoggerSource)
 
 -- project

@@ -22,6 +22,18 @@ LogInViaMMWB: Log in via @MyMtlWalletBot
 LogInViaStellarLaboratory: Log in via Stellar Laboratory
 LabelStellarPublicAddress: Stellar public key (also known as address, starts with G):
 
+# log in via Stellar Laboratory and Keybase
+AuthnStellarIntro: For the purpose of authentications in Veche a special "request" transaction is made.
+AuthnStellarIntroRun: Run this command in your command line to sign this transaction, but do not submit it, instead, paste the code below:
+AuthnStellarIntroLab: Sign this transaction, but do not submit it, instead, paste the code below:
+AuthnStellarDesc: This is an almost empty, intentionally invalid transaction. It has zero fee and zero sequence number, specifically to make sure it cannot be sent to the real network.
+AuthnStellarCopyCommand: Copy the command
+AuthnStellarCopyTx: Copy the transaction
+AuthnStellarViewInLab: View in Lab
+AuthnStellarSignInLab: Sign in Lab
+AuthnStellarRun: Start Keybase and run the command on your computer
+AuthnStellar3PasteSigned: 3. Paste the signed piece here:
+
 # about
 Veche: Veche
 AboutDescription: This is a tool for organizing work in the Montelibero community.

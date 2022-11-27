@@ -22,6 +22,18 @@ LogInViaMMWB: Войти через @MyMtlWalletBot
 LogInViaStellarLaboratory: Войти через Stellar Laboratory
 LabelStellarPublicAddress: Публичный ключ Stellar (он же адрес, начинается с буквы G):
 
+# log in via Stellar Laboratory and Keybase
+AuthnStellarIntro: Вече подготовило вам особую транзакцию-запрос, предназначенную только для входа.
+AuthnStellarIntroRun: Выполните эту команду в командной строке для подписания. Подписанную транзакцию не отправляйте в сеть, а скопируйте код и вставьте в поле ниже:
+AuthnStellarIntroLab: Подпишите транзакцию, но не отправляйте её в сеть, а скопируйте код и вставьте в поле ниже:
+AuthnStellarDesc: Эта транзакция почти пустая и заведомо некорректная. Она содержит нулевую комиссию и нулевой номер, чтобы гарантировать, что она не попадёт в настоящую сеть.
+AuthnStellarCopyCommand: Скопируйте команду
+AuthnStellarCopyTx: Скопируйте код транзакции
+AuthnStellarViewInLab: Просмотр в Лаборатории
+AuthnStellarSignInLab: Подпишите в Лаборатории
+AuthnStellarRun: Запустите Keybase и выполните команду в командной строке
+AuthnStellar3PasteSigned: 3. Вставьте подписанный код:
+
 # about
 Veche: Вече
 AboutDescription: Это инструмент для организации работы в сообществе Монтелиберо.

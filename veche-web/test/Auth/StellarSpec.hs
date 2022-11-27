@@ -48,23 +48,28 @@ spec =
         describe "initial public key form" $
 
             it "shows public key form" do
-                get stellarR
+                get' (stellarR, [("flavor", "Laboratory")])
                 statusIs 200
                 htmlCount "input[name=stellar_address]" 1
 
         describe "challenge/response form" do
 
             it "shows challenge for address" do
-                get (stellarR, [("stellar_address", testGoodPublicKey)])
+                get'
+                    (   stellarR
+                    ,   [ ("flavor", "Laboratory")
+                        , ("stellar_address", testGoodPublicKey)
+                        ]
+                    )
                 statusIs 200
                 htmlCount ".stellar_challenge" 1
 
             it "shows error for bad address" do
-                get (stellarR, [("stellar_address", "")])
+                get' (stellarR, [("stellar_address", "")])
                 statusIs 400
 
             it "shows error for invalid address" do
-                get (stellarR, [("stellar_address", "foo")])
+                get' (stellarR, [("stellar_address", "foo")])
                 statusIs 400
 
         describe "authentication with tx-response" do
@@ -85,7 +90,7 @@ stellarR = AuthR $ PluginR "stellar" []
 testAuthenticationOk ::
     Stellar.KeyPair -> Stellar.Network -> YesodExample App ()
 testAuthenticationOk keyPair network = do
-    get' (stellarR, [("stellar_address", address)])
+    get' (stellarR, [("flavor", "Laboratory"), ("stellar_address", address)])
     statusIs 200
 
     envelopeXdrBase64 <-

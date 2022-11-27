@@ -24,7 +24,6 @@ import Control.Monad.Logger (LogLevel (LevelWarn), LogSource)
 import Data.Text qualified as Text
 import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
-import Text.Read (readEither)
 import Yesod.Auth.Dummy (authDummy)
 import Yesod.Auth.Message (AuthMessage (LoginTitle))
 import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
