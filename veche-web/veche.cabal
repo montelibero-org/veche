@@ -9,7 +9,9 @@ library
 
   exposed-modules:
     Application
+    -- Authentication.Keybase TODO
     Authentication.MyMtlWalletBot
+    Authentication.Stellar
     Authentication.Telegram
     Authorization
     Database.Persist.Extra
@@ -112,11 +114,9 @@ library
   -- project
   build-depends:
     , stellar-horizon
-    , yesod-auth-stellar
     , yesod-form-bootstrap5
 
   default-language:   GHC2021
-  -- ghc-options:        -O2
 
 executable veche
   main-is:        main.hs

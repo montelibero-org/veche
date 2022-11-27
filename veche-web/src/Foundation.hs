@@ -40,12 +40,12 @@ import Yesod.Static (Route (StaticRoute), base64md5)
 
 -- project
 import Stellar.Horizon.Client qualified as Stellar
-import Yesod.Auth.Stellar (authStellar)
-import Yesod.Auth.Stellar qualified
 
 -- component
-import Authentication.Telegram (authTelegram)
 import Authentication.MyMtlWalletBot (authMyMtlWalletBot)
+import Authentication.Stellar (authnStellar)
+import Authentication.Stellar qualified as AuthnStellar
+import Authentication.Telegram (authTelegram)
 import Model.Forum qualified as Forum
 import Model.Telegram (Key (TelegramKey), Telegram (Telegram))
 import Model.Telegram qualified
@@ -187,7 +187,7 @@ instance YesodAuth App where
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins app@App{appSettings} =
-        authStellar (authStellarConfig app)
+        authnStellar (authnStellarConfig app)
         : authTelegram
         : authMyMtlWalletBot
         : [authDummy | appAuthDummyLogin]
@@ -239,13 +239,13 @@ authenticateTelegram credsIdent credsExtra = do
     telegramId = either error identity $ readEither $ Text.unpack credsIdent
     authenticatedUsername = lookup "username" credsExtra & fromMaybe (error "")
 
-authStellarConfig :: App -> Yesod.Auth.Stellar.Config App
-authStellarConfig App{appStellarHorizon} =
-    Yesod.Auth.Stellar.Config
-        { horizon = appStellarHorizon
-        , getVerifyKey = Verifier.getKey
-        , checkAndRemoveVerifyKey = Verifier.checkAndRemoveKey
-        }
+authnStellarConfig :: App -> AuthnStellar.Config App
+authnStellarConfig App{appStellarHorizon} =
+    AuthnStellar.Config
+    { horizon                   = appStellarHorizon
+    , getVerifyKey              = Verifier.getKey
+    , checkAndRemoveVerifyKey   = Verifier.checkAndRemoveKey
+    }
 
 -- Actually, we check only authentication here.
 -- Authorization requires data from the database,

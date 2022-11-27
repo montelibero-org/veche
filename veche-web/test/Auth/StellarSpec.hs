@@ -76,10 +76,7 @@ spec =
                 testAuthenticationOk testGoodKeyPair Stellar.testNetwork
 
             it "doesn't authenticate when incorrect tx-response" do
-                request do
-                    setMethod "POST"
-                    setUrl stellarR
-                    addPostParam "response" testGoodTxUnsinged
+                post' stellarR [("response", testGoodTxUnsinged)]
                 statusIs 400
 
 stellarR :: Route App
@@ -88,7 +85,7 @@ stellarR = AuthR $ PluginR "stellar" []
 testAuthenticationOk ::
     Stellar.KeyPair -> Stellar.Network -> YesodExample App ()
 testAuthenticationOk keyPair network = do
-    get (stellarR, [("stellar_address", address)])
+    get' (stellarR, [("stellar_address", address)])
     statusIs 200
 
     envelopeXdrBase64 <-

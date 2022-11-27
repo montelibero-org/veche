@@ -5,7 +5,6 @@ packages:
   - stellar-horizon
   - veche-web
   - withcallstack
-  - yesod-auth-stellar
   - yesod-form-bootstrap5
 
 extra-deps:

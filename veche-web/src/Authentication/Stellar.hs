@@ -2,31 +2,27 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Yesod.Auth.Stellar
+module Authentication.Stellar
     (
-    -- * Auth plugin
-      authStellar
+    -- * Authentication plugin
+      authnStellar
     , Config (..)
     ) where
 
-import Debug.Trace
+-- prelude
+import Import.NoFoundation hiding (assert)
 
 -- global
-import Control.Exception (Exception, throwIO)
-import Control.Monad (unless, when)
-import Data.ByteString.Base64 (decodeBase64, encodeBase64)
-import Data.Function ((&))
-import Data.String (IsString)
-import Data.Text (Text, strip)
+import Data.ByteString.Base64 qualified as Base64
 import Data.Text qualified as Text
-import Data.Text.Encoding (encodeUtf8)
 import Network.HTTP.Client.TLS (newTlsManager)
-import Network.HTTP.Types (notFound404)
+import Network.HTTP.Types (notFound404, urlEncode)
 import Network.ONCRPC.XDR (lengthArray, xdrDeserialize, xdrSerialize)
 import Network.Stellar.Builder (buildWithFee, tbMemo, tbOperations,
                                 transactionBuilder)
@@ -38,23 +34,14 @@ import Network.Stellar.TransactionXdr (ManageDataOp (ManageDataOp),
                                        Operation (Operation),
                                        OperationBody (OperationBody'MANAGE_DATA))
 import Network.Stellar.TransactionXdr qualified as XDR
-import Network.URI (escapeURIString, isReserved)
 import Servant.Client (BaseUrl, ClientError (FailureResponse),
                        ResponseF (Response, responseStatusCode), mkClientEnv,
                        runClientM)
-import Yesod.Auth (Auth, AuthHandler, AuthPlugin (AuthPlugin), Creds (Creds),
-                   Route (PluginR), authLayout, setCredsRedirect)
-import Yesod.Auth qualified
-import Yesod.Core (HandlerFor, HandlerSite, Html, MonadHandler, RenderMessage,
-                   TypedContent, WidgetFor, badMethod, getRouteToParent,
-                   invalidArgs, julius, liftHandler, liftIO, logErrorS,
-                   lookupGetParam, notAuthenticated, toTypedContent, toWidget,
-                   whamlet)
-import Yesod.Form (AForm, FormMessage, FormResult (FormSuccess), aopt, areq,
-                   fsName, textField, textareaField, unTextarea)
-import Yesod.Form qualified as Yesod
-import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm), bfs,
-                              renderBootstrap5)
+import Yesod.Core (HandlerSite, RenderMessage, WidgetFor, badMethod,
+                   getRouteToParent, liftHandler, logErrorS, notAuthenticated,
+                   toTypedContent)
+import Yesod.Form (FormMessage)
+import Yesod.Form.Bootstrap5 (bfs)
 
 -- project
 import Stellar.Horizon.Client (Account (Account),
@@ -75,8 +62,8 @@ data Config app = Config
     , checkAndRemoveVerifyKey :: Stellar.Address -> Text -> HandlerFor app Bool
     }
 
-authStellar :: Config app -> AuthPlugin app
-authStellar config =
+authnStellar :: Config app -> AuthPlugin app
+authnStellar config =
     AuthPlugin
         { apName     = pluginName
         , apLogin    = login
@@ -92,14 +79,24 @@ addressField = "stellar_address"
 
 responseForm ::
     (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
-    AForm m Text
-responseForm =
-    unTextarea <$>
-    areq
-        textareaField
-        (bfs ("3. Paste the signed piece here:" :: Text))
-            {fsName = Just "response"}
-        Nothing
+    Route site -> BForm m Text
+responseForm action =
+    (bform $
+        unTextarea
+        <$> areq
+                textareaField
+                (bfs ("3. Paste the signed piece here:" :: Text))
+                    {fsName = Just "response"}
+                Nothing)
+    { action = Just action
+    , footer =
+        [whamlet|
+            <button type=submit .btn .btn-primary .mt-3>
+                <strong>4.
+                \ Log in
+        |]
+    , id = Just "auth_stellar_response_form"
+    }
 
 data VerificationData = VerificationData
     { address   :: Stellar.Address
@@ -120,14 +117,16 @@ makeChallengeForm Config{getVerifyKey} = do
     case mAddress of
         Nothing -> authLayout makeAddressForm
         Just address0 -> do
-            let address = strip address0
+            let address = Text.strip address0
             nonce <- liftHandler $ getVerifyKey $ Stellar.Address address
             challenge <- makeChallenge address nonce
             authLayout $ makeResponseForm routeToMaster challenge
 
 receiveChallengeResponse :: Config app -> AuthHandler app TypedContent
 receiveChallengeResponse config@Config{checkAndRemoveVerifyKey} = do
-    ((result, _formWidget), _formEnctype) <- runFormPost responseForm
+    routeToMaster <- getRouteToParent
+    (result, _formWidget) <-
+        runFormPostB $ responseForm $ routeToMaster pluginRoute
     case result of
         FormSuccess response -> do
             VerificationData{address, nonce} <- verifyResponse response
@@ -153,29 +152,26 @@ login routeToMaster =
     start = routeToMaster pluginRoute
 
 makeAddressForm :: RenderMessage app FormMessage => WidgetFor app ()
-makeAddressForm = do
-    (widget, enctype) <- generateFormGet addressForm
-    [whamlet|
-        <form method=get enctype=#{enctype}>
-            ^{widget}
-            <button type=submit .btn .btn-primary>Next
-    |]
+makeAddressForm = join $ generateFormGetB addressForm
 
 addressForm ::
     (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
-    AForm m (Maybe Text)
+    BForm m (Maybe Text)
 addressForm =
-    aopt
-        textField
-        (bfs ("Stellar public address (starts with G):" :: Text))
-            {fsName = Just "stellar_address"}
-        Nothing
+    (bform $
+        aopt
+            textField
+            (bfs ("Stellar public address (starts with G):" :: Text))
+                {fsName = Just "stellar_address"}
+            Nothing
+    )
+    {footer = [whamlet|<button type=submit .btn .btn-primary>Next|]}
 
 makeResponseForm ::
     RenderMessage app FormMessage =>
     (Route Auth -> Route app) -> Text -> WidgetFor app ()
 makeResponseForm routeToMaster challenge = do
-    (widget, enctype) <- generateFormPost responseForm
+    widget <- generateFormPostB $ responseForm $ routeToMaster pluginRoute
     -- let challengeHref =
     --         mconcat
     --             [ "web+stellar:tx?xdr=", toQueryParam challenge
@@ -213,13 +209,7 @@ makeResponseForm routeToMaster challenge = do
                     role=button target=_blank>
                 <strong>2.
                 \ Sign in Lab
-        <form   #auth_stellar_response_form
-                action=@{routeToMaster pluginRoute} enctype=#{enctype}
-                method=post>
-            ^{widget}
-            <button type=submit .btn .btn-primary .mt-3>
-                <strong>4.
-                \ Log in
+        ^{widget}
     |]
     toWidget
         [julius|
@@ -228,7 +218,7 @@ makeResponseForm routeToMaster challenge = do
             }
         |]
   where
-    challengeE = escapeURIString (not . isReserved) $ Text.unpack challenge
+    challengeE = decodeUtf8Throw $ urlEncode False $ encodeUtf8 challenge
 
 data InternalError = InternalErrorNonceTooLong
     deriving (Exception, Show)
@@ -240,8 +230,6 @@ makeChallenge address nonce0 = do
     pure $ makeChallenge' publicKey nonce
   where
 
-    m ?| e = maybe e pure m
-
     internalErrorNonceTooLong = liftIO $ throwIO InternalErrorNonceTooLong
 
     makeChallenge' publicKey nonce =
@@ -252,7 +240,8 @@ makeChallenge address nonce0 = do
         & buildWithFee 0
         & Stellar.toEnvelope
         & xdrSerialize
-        & encodeBase64
+        & Base64.encode
+        & decodeUtf8Throw
 
     nonceOp value =
         Operation
@@ -267,23 +256,22 @@ loggingIntoVeche = "Logging into Veche"
 verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
     envelope <- decodeEnvelope
-    let tx@Transaction{memo, operations, source, signatures} =
+    let Transaction{memo, operations, source, signatures} =
             Stellar.transactionFromXdrEnvelope envelope
-    traceShowM tx
     verifySignatures source signatures envelope
     verifyMemo memo
     nonce <- getNonce operations
     pure VerificationData{address = source, nonce}
   where
 
-    e ?| msg = either (const $ invalidArgs [msg]) pure e
+    e ? msg = either (const $ invalidArgs [msg]) pure e
 
     decodeEnvelope = do
         envelopeXdrRaw <-
-            decodeBase64 (encodeUtf8 envelopeXdrBase64)
-            ?| "Transaction envelope must be encoded as Base64"
+            Base64.decode (encodeUtf8 envelopeXdrBase64)
+            ? "Transaction envelope must be encoded as Base64"
         xdrDeserialize envelopeXdrRaw
-            ?| "Transaction envelope must be encoded as XDR"
+            ? "Transaction envelope must be encoded as XDR"
 
     verifySignatures source signatures envelope =
         unless
@@ -332,18 +320,3 @@ verifyAccount Config{horizon} address = do
         case signers of
             [Signer{key, weight}]   -> key == rawAddress && weight > 0
             _                       -> False
-
-runFormPost ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    AForm m a -> m ((FormResult a, WidgetFor (HandlerSite m) ()), Yesod.Enctype)
-runFormPost = Yesod.runFormPost . renderBootstrap5 BootstrapBasicForm
-
-generateFormGet ::
-    MonadHandler m =>
-    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormGet = Yesod.generateFormGet' . renderBootstrap5 BootstrapBasicForm
-
-generateFormPost ::
-    (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
-    AForm m a -> m (WidgetFor (HandlerSite m) (), Yesod.Enctype)
-generateFormPost = Yesod.generateFormPost . renderBootstrap5 BootstrapBasicForm

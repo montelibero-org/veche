@@ -7,6 +7,11 @@
 
 module Form where
 
+-- prelude
+import Prelude hiding (id)
+
+-- global
+import Data.Foldable (toList)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Stack (HasCallStack)
@@ -14,8 +19,8 @@ import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
                    FormRender, FormResult, addClass, areq, fsAttrs, fsName,
-                   generateFormPost, renderDivsNoLabels, runFormPostNoToken,
-                   textField)
+                   generateFormGet', generateFormPost, renderDivsNoLabels,
+                   runFormPostNoToken, textField)
 import Yesod.Form qualified
 import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), renderBootstrap5)
@@ -26,6 +31,7 @@ data BForm m a = BForm
     , aform             :: AForm m a
     , classes           :: [Text]
     , header, footer    :: WidgetFor (HandlerSite m) ()
+    , id                :: Maybe Text
     }
 
 bform :: AForm m a -> BForm m a
@@ -36,6 +42,7 @@ bform aform =
         , classes   = []
         , footer    = mempty
         , header    = mempty
+        , id        = Nothing
         }
 
 makeFormWidget ::
@@ -44,11 +51,12 @@ makeFormWidget ::
     WidgetFor (HandlerSite m) () ->
     Enctype ->
     WidgetFor (HandlerSite m) ()
-makeFormWidget method BForm{action, header, footer, classes} fields enctype = do
+makeFormWidget method form fields enctype = do
     urlRender <- getUrlRender
     let attrs =
             [("method", method), ("role", "form"), ("class", "form-horizontal")]
-            ++  [("action", urlRender act) | Just act <- [action]]
+            ++  [("action", urlRender act) | act <- toList action]
+            ++  [("id", i) | i <- toList id]
             ++  foldr addClass [] classes
     [whamlet|
         <form *{attrs} enctype=#{enctype}>
@@ -56,7 +64,17 @@ makeFormWidget method BForm{action, header, footer, classes} fields enctype = do
             ^{fields}
             ^{footer}
     |]
+  where
+    BForm{action, header, footer, classes, id} = form
 
+-- TODO(2022-11-27, cblp) remove m as WidgetFor is already a MonadHandler
+generateFormGetB ::
+    MonadHandler m => BForm m a -> m (WidgetFor (HandlerSite m) ())
+generateFormGetB b@BForm{aform} = do
+    (fields, enctype) <- generateFormGet' $ renderForm aform
+    pure $ makeFormWidget "get" b fields enctype
+
+-- TODO(2022-11-27, cblp) remove m as WidgetFor is already a MonadHandler
 generateFormPostB ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     BForm m a -> m (WidgetFor (HandlerSite m) ())

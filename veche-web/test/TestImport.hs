@@ -125,14 +125,39 @@ createUser ident mTelegram =
 decodeUtf8Throw :: ByteString -> Text
 decodeUtf8Throw = Data.Text.Encoding.decodeUtf8
 
-postWithCsrf ::
-    (HasCallStack, Yesod site, RedirectUrl site url) =>
-    url -> YesodExample site ()
-postWithCsrf url =
+getWith ::
+    (Yesod site, RedirectUrl site url) =>
+    url -> RequestBuilder site () -> YesodExample site ()
+getWith url additional =
+    request do
+        setMethod "GET"
+        setUrl url
+        addRequestHeader ("Accept", "text/plain")
+        additional
+
+get' :: (Yesod site, RedirectUrl site url) => url -> YesodExample site ()
+get' url = getWith url $ pure ()
+
+postWith ::
+    (Yesod site, RedirectUrl site url) =>
+    url -> [(Text, Text)] -> RequestBuilder site () -> YesodExample site ()
+postWith url params additional =
     request do
         setMethod "POST"
         setUrl url
-        addTokenFromCookie
+        addRequestHeader ("Accept", "text/plain")
+        for_ params $ uncurry addPostParam
+        additional
+
+post' ::
+    (Yesod site, RedirectUrl site url) =>
+    url -> [(Text, Text)] -> YesodExample site ()
+post' url params = postWith url params $ pure ()
+
+postWithCsrf ::
+    (HasCallStack, Yesod site, RedirectUrl site url) =>
+    url -> YesodExample site ()
+postWithCsrf url = postWith url [] addTokenFromCookie
 
 -- | Assert equality with diff
 (===) :: (HasCallStack, Eq a, Show a, MonadIO m) => a -> a -> m ()

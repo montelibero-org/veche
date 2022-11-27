@@ -24,6 +24,7 @@ import Data.Function as X ((&))
 import Data.Kind as X (Type)
 import Data.Proxy as X (Proxy (Proxy))
 import Data.Scientific as X (Scientific)
+import Data.Text.Encoding as Text
 import Data.Tree as X (Forest, Tree (Node), unfoldForest)
 import Data.Void as X (Void)
 import Data.Yaml as X (array)
@@ -96,3 +97,6 @@ renderMarkdown =
 
 identity :: a -> a
 identity x = x
+
+decodeUtf8Throw :: HasCallStack => ByteString -> Text
+decodeUtf8Throw = either (error . show) identity . Text.decodeUtf8'
