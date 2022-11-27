@@ -9,7 +9,6 @@ library
 
   exposed-modules:
     Application
-    -- Authentication.Keybase TODO
     Authentication.MyMtlWalletBot
     Authentication.Stellar
     Authentication.Telegram

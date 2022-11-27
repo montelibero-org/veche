@@ -17,7 +17,10 @@ Unauthorized: Для получения доступа к странице тр�
 AuthnViaStellar: Через Stellar
 AuthnViaTelegram: Через Telegram (только если уже есть аккаунт на Вече)
 CreateAccountOrLogIn: Создание аккаунта и вход
-LoginViaMMWB: @MyMtlWalletBot
+LogInViaKeybase: Войти через Keybase
+LogInViaMMWB: Войти через @MyMtlWalletBot
+LogInViaStellarLaboratory: Войти через Stellar Laboratory
+LabelStellarPublicAddress: Публичный ключ Stellar (он же адрес, начинается с буквы G):
 
 # about
 Veche: Вече

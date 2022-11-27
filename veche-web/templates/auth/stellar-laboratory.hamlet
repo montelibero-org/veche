@@ -1,0 +1,30 @@
+<p>
+    For the purpose of authentications in Veche,
+    \ a special "request" transaction is made.
+    \ Sign this transaction, but do not submit it, instead,
+    \ paste the code below:
+<div .alert.alert-secondary>
+    <tt .stellar_challenge #stellar_challenge
+            style="overflow-wrap: break-word;">
+        #{challenge}
+<p>
+    This is an almost empty, intentionally invalid transaction.
+    \ It is costructed for the test network,
+    \ has zero fee and zero sequence number,
+    \ specifically to make sure it cannot be sent to the real network.
+<div .mb-3>
+    <button .btn.btn-primary onclick="copy_tx()">
+        <strong>1.
+        \ Copy transaction
+    \
+    <a .btn.btn-secondary
+            href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
+            role=button target=_blank>
+        View in Lab
+    \
+    <a .btn.btn-primary
+            href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}"
+            role=button target=_blank>
+        <strong>2.
+        \ Sign in Lab
+^{widget}

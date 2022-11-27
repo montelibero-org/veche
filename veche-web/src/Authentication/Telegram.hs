@@ -40,7 +40,8 @@ authTelegram =
 login :: (Route Auth -> Route App) -> Widget
 login _routeToMaster =
     [whamlet|
-        <a .btn.btn-primary href="http://t.me/mtl_veche_bot?start=login">
+        <a .btn.btn-primary
+                href="http://t.me/mtl_veche_bot?start=login" role=button>
             @mtl_veche_bot
     |]
     -- [whamlet|

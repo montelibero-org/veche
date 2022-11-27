@@ -17,7 +17,10 @@ Unauthorized: You must log in to access this page
 AuthnViaStellar: Via Stellar
 AuthnViaTelegram: Via Telegram (existing Veche accounts only)
 CreateAccountOrLogIn: Create account or log in
-LoginViaMMWB: @MyMtlWalletBot
+LogInViaKeybase: Log in via Keybase
+LogInViaMMWB: Log in via @MyMtlWalletBot
+LogInViaStellarLaboratory: Log in via Stellar Laboratory
+LabelStellarPublicAddress: Stellar public key (also known as address, starts with G):
 
 # about
 Veche: Veche

@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
@@ -8,14 +9,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Authentication.Stellar
-    (
+module Authentication.Stellar (
     -- * Authentication plugin
-      authnStellar
-    , Config (..)
-    ) where
+    authnStellar,
+    Flavor (..),
+    Config (..),
+) where
 
 -- prelude
+import Foundation.Base
 import Import.NoFoundation hiding (assert)
 
 -- global
@@ -40,7 +42,7 @@ import Servant.Client (BaseUrl, ClientError (FailureResponse),
 import Yesod.Core (HandlerSite, RenderMessage, WidgetFor, badMethod,
                    getRouteToParent, liftHandler, logErrorS, notAuthenticated,
                    toTypedContent)
-import Yesod.Form (FormMessage)
+import Yesod.Form (FormMessage, runInputGet)
 import Yesod.Form.Bootstrap5 (bfs)
 
 -- project
@@ -56,19 +58,28 @@ pluginName = "stellar"
 pluginRoute :: Route Auth
 pluginRoute = PluginR pluginName []
 
-data Config app = Config
-    { horizon :: BaseUrl
-    , getVerifyKey :: Stellar.Address -> HandlerFor app Text
-    , checkAndRemoveVerifyKey :: Stellar.Address -> Text -> HandlerFor app Bool
+data Flavor = Keybase | Laboratory
+    deriving (Read, Show)
+
+instance PathPiece Flavor where
+    toPathPiece     = tshow
+    fromPathPiece   = readMaybe . Text.unpack
+
+data Config =
+    Config
+    { flavor                  :: Flavor
+    , horizon                 :: BaseUrl
+    , getVerifyKey            :: Stellar.Address -> Handler Text
+    , checkAndRemoveVerifyKey :: Stellar.Address -> Text -> Handler Bool
     }
 
-authnStellar :: Config app -> AuthPlugin app
-authnStellar config =
+authnStellar :: Config -> AuthPlugin App
+authnStellar config@Config{flavor} =
     AuthPlugin
-        { apName     = pluginName
-        , apLogin    = login
-        , apDispatch = dispatch config
-        }
+    { apName     = pluginName
+    , apLogin    = login flavor
+    , apDispatch = dispatch config
+    }
 
 type Method = Text
 
@@ -78,8 +89,7 @@ addressField :: Text
 addressField = "stellar_address"
 
 responseForm ::
-    (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
-    Route site -> BForm m Text
+    (HandlerSite m ~ App, MonadHandler m) => Route App -> BForm m Text
 responseForm action =
     (bform $
         unTextarea
@@ -103,26 +113,28 @@ data VerificationData = VerificationData
     , nonce     :: Text
     }
 
-dispatch :: Config app -> Method -> [Piece] -> AuthHandler app TypedContent
+dispatch :: Config -> Method -> [Piece] -> AuthHandler App TypedContent
 dispatch config method _path =
     case method of
         "GET"   -> toTypedContent <$> makeChallengeForm config
         "POST"  -> receiveChallengeResponse config
         _       -> badMethod
 
-makeChallengeForm :: Config app -> AuthHandler app Html
-makeChallengeForm Config{getVerifyKey} = do
+makeChallengeForm :: Config -> AuthHandler App Html
+makeChallengeForm Config{flavor, getVerifyKey} = do
     routeToMaster <- getRouteToParent
+    flavorT <- runInputGet $ ireq textField "flavor"
+    flavor <- fromPathPiece flavorT ?| invalidArgs ["Bad flavor"]
     mAddress <- lookupGetParam addressField
     case mAddress of
-        Nothing -> authLayout makeAddressForm
+        Nothing -> authLayout $ makeAddressForm flavor
         Just address0 -> do
             let address = Text.strip address0
             nonce <- liftHandler $ getVerifyKey $ Stellar.Address address
             challenge <- makeChallenge address nonce
-            authLayout $ makeResponseForm routeToMaster challenge
+            authLayout $ makeResponseForm flavor routeToMaster challenge
 
-receiveChallengeResponse :: Config app -> AuthHandler app TypedContent
+receiveChallengeResponse :: Config -> AuthHandler App TypedContent
 receiveChallengeResponse config@Config{checkAndRemoveVerifyKey} = do
     routeToMaster <- getRouteToParent
     (result, _formWidget) <-
@@ -138,79 +150,45 @@ receiveChallengeResponse config@Config{checkAndRemoveVerifyKey} = do
                 invalidArgs ["Verification key is invalid or expired"]
         _ -> invalidArgs [Text.pack $ show result]
 
-makeCreds :: Stellar.Address -> Creds app
+makeCreds :: Stellar.Address -> Creds App
 makeCreds (Stellar.Address credsIdent) =
     Creds{credsPlugin = pluginName, credsIdent, credsExtra = []}
 
-login :: (Route Auth -> Route app) -> WidgetFor app ()
-login routeToMaster =
+login :: Flavor -> (Route Auth -> Route App) -> Widget
+login flavor routeToMaster =
     [whamlet|
-        <a href=@{start} role=button .btn.btn-primary>
-            Stellar Laboratory
+        <a href=@?{start} role=button .btn.btn-primary>
+            _{msgLogInVia}
     |]
   where
-    start = routeToMaster pluginRoute
 
-makeAddressForm :: RenderMessage app FormMessage => WidgetFor app ()
-makeAddressForm = join $ generateFormGetB addressForm
+    start = (routeToMaster pluginRoute, [("flavor", toPathPiece flavor)])
 
-addressForm ::
-    (RenderMessage site FormMessage, HandlerSite m ~ site, MonadHandler m) =>
-    BForm m (Maybe Text)
-addressForm =
-    (bform $
-        aopt
-            textField
-            (bfs ("Stellar public address (starts with G):" :: Text))
-                {fsName = Just "stellar_address"}
-            Nothing
-    )
-    {footer = [whamlet|<button type=submit .btn .btn-primary>Next|]}
+    msgLogInVia =
+        case flavor of
+            Keybase     -> MsgLogInViaKeybase
+            Laboratory  -> MsgLogInViaStellarLaboratory
 
-makeResponseForm ::
-    RenderMessage app FormMessage =>
-    (Route Auth -> Route app) -> Text -> WidgetFor app ()
-makeResponseForm routeToMaster challenge = do
+makeAddressForm :: Flavor -> Widget
+makeAddressForm flavor =
+    join $
+    generateFormGetB
+        (bform $
+            areq hiddenField ""{fsName = Just "flavor"} (Just flavor)
+            *>
+            areq
+                textField
+                (bfs MsgLabelStellarPublicAddress){fsName = Just addressField}
+                Nothing
+        )
+        {footer = [whamlet|<button type=submit .btn .btn-primary>Next|]}
+
+makeResponseForm :: Flavor -> (Route Auth -> Route App) -> Text -> Widget
+makeResponseForm flavor routeToMaster challenge = do
     widget <- generateFormPostB $ responseForm $ routeToMaster pluginRoute
-    -- let challengeHref =
-    --         mconcat
-    --             [ "web+stellar:tx?xdr=", toQueryParam challenge
-    --             , "&callback="
-    --             , toQueryParam $ renderUrl $ routeToMaster pluginRoute
-    --             ]
-    [whamlet|
-        $newline never
-        <p>
-            For the purpose of authentications in Veche,
-            \ a special "request" transaction is made.
-            \ Sign this transaction, but do not submit it, instead,
-            \ paste the code below:
-        <div .alert.alert-secondary>
-            <tt .stellar_challenge #stellar_challenge
-                    style="overflow-wrap: break-word;">
-                #{challenge}
-        <p>
-            This is an almost empty, intentionally invalid transaction.
-            \ It is costructed for the test network,
-            \ has zero fee and zero sequence number,
-            \ specifically to make sure it cannot be sent to the real network.
-        <div .mb-3>
-            <button .btn.btn-primary onclick="copy_tx()">
-                <strong>1.
-                \ Copy transaction
-            \
-            <a .btn.btn-secondary
-                    href="https://laboratory.stellar.org/#xdr-viewer?input=#{challengeE}&type=TransactionEnvelope&network=public"
-                    role=button target=_blank>
-                View in Lab
-            \
-            <a .btn.btn-primary
-                    href="https://laboratory.stellar.org/#txsigner?xdr=#{challengeE}"
-                    role=button target=_blank>
-                <strong>2.
-                \ Sign in Lab
-        ^{widget}
-    |]
+    case flavor of
+        Keybase     -> $(widgetFile "auth/stellar-keybase")
+        Laboratory  -> $(widgetFile "auth/stellar-laboratory")
     toWidget
         [julius|
             function copy_tx() {
@@ -253,6 +231,8 @@ makeChallenge address nonce0 = do
 loggingIntoVeche :: IsString s => s
 loggingIntoVeche = "Logging into Veche"
 
+e ? msg = either (const $ invalidArgs [msg]) pure e
+
 verifyResponse :: MonadHandler m => Text -> m VerificationData
 verifyResponse envelopeXdrBase64 = do
     envelope <- decodeEnvelope
@@ -263,8 +243,6 @@ verifyResponse envelopeXdrBase64 = do
     nonce <- getNonce operations
     pure VerificationData{address = source, nonce}
   where
-
-    e ? msg = either (const $ invalidArgs [msg]) pure e
 
     decodeEnvelope = do
         envelopeXdrRaw <-
@@ -290,7 +268,7 @@ verifyResponse envelopeXdrBase64 = do
         _ -> invalidArgs ["Bad operations"]
 
 -- | Throws an exception on error
-verifyAccount :: MonadHandler m => Config app -> Stellar.Address -> m ()
+verifyAccount :: MonadHandler m => Config -> Stellar.Address -> m ()
 verifyAccount Config{horizon} address = do
     account <- getAccount'
     assert "account must be personal" $ isPersonal account

@@ -42,7 +42,7 @@ login _ = do
         <a .btn.btn-primary
                 href="https://t.me/MyMTLWalletBot?start=veche_#{nonce}"
                 role=button>
-            _{MsgLoginViaMMWB}
+            _{MsgLogInViaMMWB}
     |]
 
 data AuthnParams = AuthnParams

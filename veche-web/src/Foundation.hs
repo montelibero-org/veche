@@ -187,10 +187,13 @@ instance YesodAuth App where
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins app@App{appSettings} =
-        authnStellar (authnStellarConfig app)
-        : authTelegram
-        : authMyMtlWalletBot
-        : [authDummy | appAuthDummyLogin]
+        [ authnStellar (authnStellarConfig AuthnStellar.Keybase    app)
+        , authnStellar (authnStellarConfig AuthnStellar.Laboratory app)
+        , authTelegram
+        , authMyMtlWalletBot
+        ]
+        ++
+        [authDummy | appAuthDummyLogin]
       where
         AppSettings{appAuthDummyLogin} = appSettings
 
@@ -239,10 +242,11 @@ authenticateTelegram credsIdent credsExtra = do
     telegramId = either error identity $ readEither $ Text.unpack credsIdent
     authenticatedUsername = lookup "username" credsExtra & fromMaybe (error "")
 
-authnStellarConfig :: App -> AuthnStellar.Config App
-authnStellarConfig App{appStellarHorizon} =
+authnStellarConfig :: AuthnStellar.Flavor -> App -> AuthnStellar.Config
+authnStellarConfig flavor App{appStellarHorizon} =
     AuthnStellar.Config
-    { horizon                   = appStellarHorizon
+    { flavor
+    , horizon                   = appStellarHorizon
     , getVerifyKey              = Verifier.getKey
     , checkAndRemoveVerifyKey   = Verifier.checkAndRemoveKey
     }
