@@ -37,6 +37,7 @@ Issue json
     priceOffer      Text Maybe
 
     deriving Eq
+    deriving Generic
     deriving Show
 
 
