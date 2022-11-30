@@ -25,8 +25,8 @@ module Model.Types (
 
 import ClassyPrelude
 
-import Data.Aeson (ToJSON, ToJSONKey, camelTo2, constructorTagModifier,
-                   defaultOptions)
+import Data.Aeson (FromJSON, ToJSON, ToJSONKey, camelTo2,
+                   constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
@@ -96,7 +96,7 @@ data Poll
     | ByAmountOfVeche
     | ByMtlAmount
     | BySignerWeight
-    deriving (Bounded, Enum, Eq, Generic, Read, Show, ToJSON)
+    deriving (Bounded, Enum, Eq, FromJSON, Generic, Read, Show, ToJSON)
 derivePersistField "Poll"
 
 data Role
@@ -134,12 +134,15 @@ data Forum = Forum
 newtype ForumId = ForumKey Text
     deriving newtype
         ( Eq
+        , FromHttpApiData
+        , FromJSON
         , Ord
         , PathPiece
         , PersistField
         , PersistFieldSql
         , Read
         , Show
+        , ToJSON
         , ToJSONKey
         )
 
