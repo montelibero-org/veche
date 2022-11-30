@@ -15,7 +15,7 @@ Comment
     deriving Show
 
 
-Issue
+Issue json
     author      UserId
     open        Bool
     title       Text
