@@ -106,7 +106,7 @@ data Role
     | HolderOfVeche
     | MtlHolder
     | MtlSigner
-    deriving (Eq, Ord, Read, Show)
+    deriving (Eq, Generic, Ord, Read, Show)
 deriveJSON defaultOptions ''Role
 derivePersistField "Role"
 
@@ -145,5 +145,6 @@ newtype ForumId = ForumKey Text
         , ToJSON
         , ToJSONKey
         )
+    deriving stock (Generic)
 
 type EntityForum = (ForumId, Forum)
