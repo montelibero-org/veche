@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Templates.User (
     userNameText,
@@ -13,15 +14,19 @@ module Templates.User (
     userPage,
 ) where
 
-import Import
+-- prelude
+import Foundation.Base
+import Import.NoFoundation
 
+-- global
 import Data.Text qualified as Text
 import Stellar.Horizon.Client qualified as Stellar
 import Yesod (getsYesod)
 
+-- component
 import Model.Telegram (Telegram (Telegram))
 import Model.Telegram qualified
-import Model.User (User (User))
+import Model.User (User (User), UserId)
 import Model.User qualified as User
 
 userNameWidget :: User -> Html
@@ -42,7 +47,9 @@ unbindTeleram :: Widget
 unbindTeleram =
     actionButton TelegramUnbindR ["btn-danger"] "Unbind Telegram account" True
 
-userPage :: Handler Html
+userPage ::
+    (AuthEntity App ~ User, AuthId App ~ UserId, YesodAuthPersist App) =>
+    Handler Html
 userPage = do
     telegramBotName <- getsYesod $ appTelegramBotName . appSettings
     Entity uid user <- requireAuth

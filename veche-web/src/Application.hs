@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -32,7 +33,8 @@ import Control.Monad.Fail (MonadFail, fail)
 import Control.Monad.Logger (LogLevel (LevelError), liftLoc, toLogStr)
 import Data.Aeson qualified as Aeson
 import Data.Text qualified as Text
-import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),
+import Database.Persist.Sql (ConnectionPool,
+                             PersistUnsafeMigrationException (PersistUnsafeMigrationException),
                              Single, SqlBackend, parseMigration', rawSql,
                              runMigration, runSqlPool, unSingle)
 import Database.Persist.Sqlite (createSqlitePool, sqlDatabase, sqlPoolSize)
@@ -47,10 +49,14 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              OutputFormat (Apache, Detailed),
                                              destination, mkRequestLogger,
                                              outputFormat)
+import Servant ((:<|>) ((:<|>)))
 import Servant.Client (parseBaseUrl)
+import Servant.Server (Server, serve)
 import System.Log.FastLogger (defaultBufSize, newStdoutLoggerSet)
-import Yesod.Core (defaultMiddlewaresNoLogging, messageLoggerSource,
-                   mkYesodDispatch, toWaiAppPlain)
+import Yesod.Core (YesodSubDispatch, defaultMiddlewaresNoLogging,
+                   messageLoggerSource, mkYesodDispatch, toWaiAppPlain,
+                   yesodSubDispatch)
+import Yesod.Core.Types qualified
 import Yesod.Default.Config2 (configSettingsYml, develMainHelper,
                               getDevSettings, loadYamlSettings,
                               loadYamlSettingsArgs, makeYesodLogger, useEnv)
@@ -58,7 +64,8 @@ import Yesod.Persist qualified as Unsafe (runDB)
 import Yesod.Static (static, staticDevel)
 
 -- component
-import Api (ApiSubsite (ApiSubsite))
+import Api (API, ApiSubsite (ApiSubsite))
+import Genesis (forums)
 import Handler.About (getAboutR)
 import Handler.Admin (getAdminEventsR, getAdminUpdateDatabaseR)
 import Handler.API (getWebapiCompleteUserR)
@@ -66,7 +73,7 @@ import Handler.Audit (getAuditEscrowR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
 import Handler.Dashboard (getDashboardR)
-import Handler.Forum (getForumR, getForumsR)
+import Handler.Forum (getForumIssues, getForumR, getForumsR)
 import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
                       postForumIssuesR, postIssueCloseR, postIssueR,
                       postIssueReopenR, postIssueVoteR)
@@ -81,6 +88,14 @@ import Model.Escrow (EscrowFile)
 import Model.Escrow qualified as Escrow
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
+
+instance YesodSubDispatch ApiSubsite App where
+    yesodSubDispatch ysre =
+        serve (Proxy @API) $ server ysre.ysreParentEnv.yreSite.appConnPool
+
+server :: ConnectionPool -> Server API
+server pool = getForums :<|> getForumIssues pool where
+    getForums = pure forums
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

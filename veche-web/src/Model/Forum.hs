@@ -11,6 +11,8 @@
 module Model.Forum (
     Forum (..),
     ForumId (ForumKey),
+    get,
+    getEntity,
     getEntity404,
     getEntityByIssue404,
     getJust,
@@ -32,8 +34,14 @@ import Genesis (forums)
 import Model (Issue (Issue), IssueId)
 import Model qualified
 
+get :: ForumId -> Maybe Forum
+get id = forums !? id
+
 get404 :: (HasCallStack, MonadHandler m, MonadUnliftIO m) => ForumId -> m Forum
 get404 id = forums !? id ?| addCallStack notFound
+
+getEntity :: ForumId -> Maybe EntityForum
+getEntity id = (id,) <$> get id
 
 getEntity404 ::
     (HasCallStack, MonadHandler m, MonadUnliftIO m) => ForumId -> m EntityForum
