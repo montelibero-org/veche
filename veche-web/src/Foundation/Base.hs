@@ -35,6 +35,7 @@ import Yesod.Persist qualified
 import Yesod.Static (Static)
 
 -- component
+import Api (ApiSubsite)
 import Model (EscrowStat, IssueId)
 import Model.Types (Choice, ForumId)
 import Settings (AppSettings)
@@ -85,6 +86,8 @@ data App = App
     , appStatic     :: Static
     , appWellKnown  :: WKStatic
     , appEscrow     :: IORef EscrowStat
+    -- other subsites
+    , appApiSubsite :: ApiSubsite
     }
 
 -- This is where we define all of the routes in our application. For a full

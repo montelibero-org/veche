@@ -18,6 +18,7 @@ module Model.Comment (
 ) where
 
 -- prelude
+import Authorization
 import Import
 
 -- global

@@ -10,10 +10,14 @@ module Handler.Forum (
     getForumsR,
 ) where
 
+-- prelude
+import Authorization
 import Import
 
+-- global
 import Data.Map.Strict qualified as Map
 
+-- component
 import Genesis qualified
 import Model.Forum qualified as Forum
 import Model.Issue qualified as Issue

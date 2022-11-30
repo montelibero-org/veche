@@ -36,6 +36,7 @@ module Model.Issue (
 ) where
 
 -- prelude
+import Authorization
 import Foundation.Base
 import Import.NoFoundation hiding (groupBy, isNothing)
 

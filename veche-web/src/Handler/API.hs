@@ -2,7 +2,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Handler.API (getApiCompleteUserR) where
+module Handler.API (getWebapiCompleteUserR) where
 
 import Import
 
@@ -13,8 +13,8 @@ import Model.User (User (User))
 import Model.User qualified as User
 import Templates.User (userNameText)
 
-getApiCompleteUserR :: Handler Value
-getApiCompleteUserR = do
+getWebapiCompleteUserR :: Handler Value
+getWebapiCompleteUserR = do
     term <- lookupGetParam "term" ?|> invalidArgs ["`term` param must present"]
     users <- User.selectAll
     pure $

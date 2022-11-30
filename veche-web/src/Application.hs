@@ -58,9 +58,10 @@ import Yesod.Persist qualified as Unsafe (runDB)
 import Yesod.Static (static, staticDevel)
 
 -- component
+import Api (ApiSubsite (ApiSubsite))
 import Handler.About (getAboutR)
 import Handler.Admin (getAdminEventsR, getAdminUpdateDatabaseR)
-import Handler.API (getApiCompleteUserR)
+import Handler.API (getWebapiCompleteUserR)
 import Handler.Audit (getAuditEscrowR)
 import Handler.Comment (postCommentsR)
 import Handler.Common (getFaviconR, getRobotsR)
@@ -128,6 +129,7 @@ makeFoundation appSettings = do
                 , appStatic
                 , appStellarHorizon
                 , appWellKnown
+                , appApiSubsite = ApiSubsite
                 }
         tempFoundation =
             mkFoundation $ error "connPool forced in tempFoundation"

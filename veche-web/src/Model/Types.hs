@@ -1,5 +1,6 @@
 {-# OPTIONS -Wno-orphans #-}
 
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
@@ -24,7 +25,8 @@ module Model.Types (
 
 import ClassyPrelude
 
-import Data.Aeson (camelTo2, constructorTagModifier, defaultOptions)
+import Data.Aeson (ToJSON, ToJSONKey, camelTo2, constructorTagModifier,
+                   defaultOptions)
 import Data.Aeson.TH (deriveJSON)
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
@@ -94,7 +96,7 @@ data Poll
     | ByAmountOfVeche
     | ByMtlAmount
     | BySignerWeight
-    deriving (Bounded, Enum, Eq, Read, Show)
+    deriving (Bounded, Enum, Eq, Generic, Read, Show, ToJSON)
 derivePersistField "Poll"
 
 data Role
@@ -127,10 +129,18 @@ data Forum = Forum
     , requireRole       :: Maybe Role
     , title             :: Text
     }
-    deriving (Show)
+    deriving (Generic, Show, ToJSON)
 
 newtype ForumId = ForumKey Text
     deriving newtype
-        (Eq, Ord, PathPiece, PersistField, PersistFieldSql, Read, Show)
+        ( Eq
+        , Ord
+        , PathPiece
+        , PersistField
+        , PersistFieldSql
+        , Read
+        , Show
+        , ToJSONKey
+        )
 
 type EntityForum = (ForumId, Forum)

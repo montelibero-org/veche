@@ -16,6 +16,7 @@ module Handler.Audit (
 {- HLINT ignore "Fuse on/on" -}
 
 -- prelude
+import Authorization
 import Import hiding (Value)
 
 -- global

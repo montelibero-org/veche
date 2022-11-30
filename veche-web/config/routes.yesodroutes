@@ -6,7 +6,7 @@
 /about                          AboutR                  GET
 /admin/events                   AdminEventsR            GET
 /admin/update-database          AdminUpdateDatabaseR    GET
-/api/complete-user              ApiCompleteUserR        GET
+/api                            ApiR                    ApiSubsite appApiSubsite
 /audit/escrow                   AuditEscrowR            GET
 /auth                           AuthR                   Auth getAuth
 /comments                       CommentsR               POST
@@ -29,3 +29,4 @@
 /telegram/bind                  TelegramBindR           GET
 /telegram/unbind                TelegramUnbindR         POST
 /user                           UserR                   GET PUT
+/webapi/complete-user           WebapiCompleteUserR     GET

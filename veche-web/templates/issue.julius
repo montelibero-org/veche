@@ -21,7 +21,7 @@ $(() => {
   }
 
   commentRequestUserInput.autocomplete({
-    source: "@{ApiCompleteUserR}",
+    source: "@{WebapiCompleteUserR}",
     minLength: 1,
     select: (event, ui) => {
       const value = ui.item.value;

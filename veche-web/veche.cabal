@@ -8,6 +8,7 @@ library
     NamedFieldPuns
 
   exposed-modules:
+    Api
     Application
     Authentication.MyMtlWalletBot
     Authentication.Stellar
@@ -91,6 +92,7 @@ library
     , random
     , scientific
     , servant-client
+    , servant-server
     , shakespeare        >=2.0     && <2.1
     , stellar-sdk
     , telegram-api

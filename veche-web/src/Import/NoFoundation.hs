@@ -57,7 +57,6 @@ import Yesod.Form as X (AForm, Enctype (UrlEncoded), Field (..),
 import WithCallStack as X
 
 -- component
-import Authorization as X
 import Database.Persist.Extra as X
 import Form as X
 import Model.Types as X
