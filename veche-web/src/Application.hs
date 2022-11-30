@@ -64,7 +64,7 @@ import Yesod.Persist qualified as Unsafe (runDB)
 import Yesod.Static (static, staticDevel)
 
 -- component
-import Api (API, ApiSubsite (ApiSubsite))
+import Api (API, ApiSubsite (ApiSubsite), getSwagger)
 import Genesis (forums)
 import Handler.About (getAboutR)
 import Handler.Admin (getAdminEventsR, getAdminUpdateDatabaseR)
@@ -94,7 +94,7 @@ instance YesodSubDispatch ApiSubsite App where
         serve (Proxy @API) $ server ysre.ysreParentEnv.yreSite.appConnPool
 
 server :: ConnectionPool -> Server API
-server pool = getForums :<|> getForumIssues pool where
+server pool = getSwagger :<|> (getForums :<|> getForumIssues pool) where
     getForums = pure forums
 
 -- This line actually creates our YesodDispatch instance. It is the second half

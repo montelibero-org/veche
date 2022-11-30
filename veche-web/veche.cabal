@@ -65,7 +65,7 @@ library
   hs-source-dirs:     src
   build-depends:
     , aeson
-    , base               >=4.9.1.0 && <5
+    , base                >=4.9.1.0 && <5
     , base16-bytestring
     , base64-bytestring
     , blaze-html
@@ -78,12 +78,12 @@ library
     , esqueleto
     , fast-logger
     , file-embed
-    , hjsmin             >=0.1     && <0.3
+    , hjsmin              >=0.1     && <0.3
     , http-api-data
     , http-client
-    , http-client-tls    >=0.3     && <0.4
+    , http-client-tls     >=0.3     && <0.4
     , http-types
-    , monad-logger       >=0.3     && <0.4
+    , monad-logger        >=0.3     && <0.4
     , mtl
     , nonce
     , path-pieces
@@ -93,24 +93,27 @@ library
     , scientific
     , servant-client
     , servant-server
-    , shakespeare        >=2.0     && <2.1
+    , servant-swagger
+    , servant-swagger-ui
+    , shakespeare         >=2.0     && <2.1
     , stellar-sdk
+    , swagger2
     , telegram-api
     , template-haskell
-    , text               >=0.11    && <2.0
+    , text                >=0.11    && <2.0
     , time
     , unliftio
     , wai
     , wai-extra
-    , warp               >=3.0     && <3.4
+    , warp                >=3.0     && <3.4
     , withcallstack
-    , yaml               >=0.11    && <0.12
-    , yesod              >=1.6     && <1.7
-    , yesod-auth         >=1.6     && <1.7
-    , yesod-core         >=1.6     && <1.7
-    , yesod-form         >=1.7.3
+    , yaml                >=0.11    && <0.12
+    , yesod               >=1.6     && <1.7
+    , yesod-auth          >=1.6     && <1.7
+    , yesod-core          >=1.6     && <1.7
+    , yesod-form          >=1.7.3
     , yesod-persistent
-    , yesod-static       >=1.6     && <1.7
+    , yesod-static        >=1.6     && <1.7
 
   -- project
   build-depends:

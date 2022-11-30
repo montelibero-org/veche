@@ -42,12 +42,15 @@ getForumR forumId = do
     let isAddForumIssueAllowed = isAllowed $ AddForumIssue forumE roles
     defaultLayout $(widgetFile "forum")
 
-getForumIssues :: ConnectionPool -> ForumId -> Bool -> Servant.Handler [Issue]
-getForumIssues pool forumId isOpen = do
+getForumIssues ::
+    ConnectionPool -> ForumId -> Maybe Bool -> Servant.Handler [Issue]
+getForumIssues pool forumId mIsOpen = do
     Forum{requireRole} <- Forum.get forumId ?| throwError Servant.err404
     when (isJust requireRole) $ throwError Servant.err403
     runSqlPoolIO pool $
         selectList [#forum ==. forumId, #open ==. isOpen] [] <&> map entityVal
+  where
+    isOpen = fromMaybe True mIsOpen
 
 runSqlPoolIO :: MonadIO io => ConnectionPool -> SqlPersistT IO a -> io a
 runSqlPoolIO pool = liftIO . (`runSqlPool` pool)
