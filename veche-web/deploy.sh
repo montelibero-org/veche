@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux -o pipefail
 
-stack --docker --docker-image=fpco/stack-build:lts  \
+stack --docker                                      \
     exec --package=yesod-bin --                     \
     yesod keter
 
