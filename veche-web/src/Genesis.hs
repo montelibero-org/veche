@@ -51,6 +51,15 @@ forums =
                 , title             = "MTL holders"
                 }
             )
+        ,   ( ForumKey "MTL-SIGNERS"
+            , Forum
+                { enableContacts    = False
+                , enablePriceOffer  = False
+                , pollOptions       = []
+                , requireRole       = Just MtlSigner
+                , title             = "MTL signers"
+                }
+            )
         ,   ( ForumKey "VECHE-HOLDERS"
             , Forum
                 { enableContacts    = False
