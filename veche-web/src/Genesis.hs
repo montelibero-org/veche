@@ -55,7 +55,7 @@ forums =
             , Forum
                 { enableContacts    = False
                 , enablePriceOffer  = False
-                , pollOptions       = []
+                , pollOptions       = [BySignerWeight]
                 , requireRole       = Just MtlSigner
                 , title             = "MTL signers"
                 }
