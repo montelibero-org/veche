@@ -55,8 +55,7 @@
         <div .justify-content-between .dropdown>
             <a .text-muted aria-expanded=false data-bs-toggle=dropdown href="#"
                     style="text-decoration: none;">
-                <i .bi.bi-globe>
-                Language
+                🌐 Language
             <ul .dropdown-menu>
                 <li>^{switchLanguage "en" "English"}
                 <li>^{switchLanguage "ja" "日本語"}

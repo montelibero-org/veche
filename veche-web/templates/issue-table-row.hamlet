@@ -3,8 +3,6 @@
         <a href=@{IssueR issueId}>#{title}
     <td>
         $if isJust poll
-            <i .bi.bi-check-lg>
-            #{approvalPercent}%
+            ✓ #{approvalPercent}%
     <td>
-        <i .bi.bi-chat-left-text-fill>
-        #{commentNum}
+        💬 #{commentNum}
