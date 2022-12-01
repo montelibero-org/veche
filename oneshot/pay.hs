@@ -14,9 +14,9 @@ main = do
 
         t <-
             transactionBuilder (Address issuer)
-            & tx_seqNum 187623215374270465
+            & tx_seqNum 186___
             & tx_feePerOp_guess
-            & op_payment user gem 200e7
+            & op_payment user token 200e7
             & build client
 
         secret <- Text.strip <$> Text.readFile "/tmp/secret"
@@ -27,8 +27,8 @@ main = do
         print =<< getCurrentTime
         submit envelope client >>= print
 
-issuer = "GAZI7H2IZ2YM6DCOGX4UYVDCDCHV76M4VEDKKZUCGZ45GCBK3Q5E24S3"
+issuer = "GDUMR6C3XNIMXUCS3WR7DZDWWDWAGRCCNZ23FWXAMKAIYOGKS7KN47AG"
 
-gem = mkAsset "GEM" issuer
+token = mkAsset "VECHE" issuer
 
-user = Address "GD7AXEICJMMT7POF5SJHGNVFRJIZWOXMGP67LPCWIUT4DT6WRUHH6DZF"
+user = Address "G..."
