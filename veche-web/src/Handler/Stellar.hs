@@ -31,12 +31,11 @@ getStellarFederationR = do
         | otherwise =
             notFound
 
-    respondName name = do
-        addHeader "Access-Control-Allow-Origin" "*"
+    respondName name =
         pure $
-            object
-                [ "stellar_address" .= (name <> "*" <> escrowFederatedHost)
-                , "account_id"      .= escrowAddress
-                , "memo_type"       .= ("text" :: Text)
-                , "memo"            .= name
-                ]
+        object
+            [ "stellar_address" .= (name <> "*" <> escrowFederatedHost)
+            , "account_id"      .= escrowAddress
+            , "memo_type"       .= ("text" :: Text)
+            , "memo"            .= name
+            ]

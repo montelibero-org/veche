@@ -1,20 +1,24 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 {-# OPTIONS -Wno-orphans #-}
 
-module Api (ApiSubsite (..), API, getSwagger) where
+module Api (ApiSubsite (..), API, getOpenapi) where
 
 -- global
+import Control.Lens ((?~))
+import Data.Function ((&))
 import Data.Map.Strict (Map)
+import Data.OpenApi (NamedSchema (NamedSchema), OpenApiType (OpenApiString),
+                     ToParamSchema, ToSchema, type_)
+import Data.OpenApi qualified
 import Data.Proxy (Proxy (Proxy))
-import Data.Swagger (NamedSchema (NamedSchema), ToParamSchema, ToSchema,
-                     declareNamedSchema)
 import Data.Text (Text)
-import Servant (Capture, Get, JSON, QueryParam, (:<|>), (:>))
+import Servant (Capture, Get, JSON, QueryParam, Summary, (:<|>), (:>))
+import Servant.OpenApi (toOpenApi)
 import Servant.Server (Server)
-import Servant.Swagger (toSwagger)
 import Servant.Swagger.UI (SwaggerSchemaUI, swaggerSchemaUIServer)
 import Yesod.Core (ParseRoute, RenderRoute, Route, parseRoute, renderRoute)
 
@@ -22,15 +26,18 @@ import Yesod.Core (ParseRoute, RenderRoute, Route, parseRoute, renderRoute)
 import Model (Issue, IssueVersionId, UserId)
 import Model.Types (Forum, ForumId, Poll, Role)
 
-type TheAPI = "unstable" :> Unstable
+type API = OpenAPI :<|> TheAPI
 
-type API = SwaggerSchemaUI "swagger-ui" "swagger.json" :<|> TheAPI
+type OpenAPI = SwaggerSchemaUI "openapi-ui" "openapi.json"
+
+type TheAPI = "unstable" :> Unstable
 
 type Unstable =
     "forums"
-    :>  (   Get '[JSON] (Map ForumId Forum)
+    :>  (   Summary "list forums" :> Get '[JSON] (Map ForumId Forum)
         :<|>
-            Capture "forumId" ForumId :> "issues" :> QueryParam "open" Bool
+            Summary "list issues in a forum"
+            :> Capture "forumId" ForumId :> "issues" :> QueryParam "open" Bool
             :> Get '[JSON] [Issue]
         )
 
@@ -54,10 +61,15 @@ instance ToSchema Poll
 instance ToSchema Role
 
 instance ToSchema IssueVersionId where
-    declareNamedSchema _ = pure $ NamedSchema (Just "IssueVersionId") mempty
+    declareNamedSchema _ =
+        pure $ named "IssueVersionId" & type_ ?~ OpenApiString
 
 instance ToSchema UserId where
-    declareNamedSchema _ = pure $ NamedSchema (Just "UserId") mempty
+    declareNamedSchema _ = pure $ named "UserId" & type_ ?~ OpenApiString
 
-getSwagger :: Server (SwaggerSchemaUI "swagger-ui" "swagger.json")
-getSwagger = swaggerSchemaUIServer $ toSwagger $ Proxy @TheAPI
+named name = NamedSchema (Just name) mempty
+
+getOpenapi :: Server OpenAPI
+getOpenapi =
+    -- TODO addHeader ("Access-Control-Allow-Origin", "*") $
+    swaggerSchemaUIServer $ toOpenApi (Proxy @TheAPI)

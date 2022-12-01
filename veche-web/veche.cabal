@@ -83,21 +83,22 @@ library
     , http-client
     , http-client-tls     >=0.3     && <0.4
     , http-types
+    , lens
     , monad-logger        >=0.3     && <0.4
     , mtl
     , nonce
+    , openapi3
     , path-pieces
     , persistent
     , persistent-sqlite
     , random
     , scientific
     , servant-client
+    , servant-openapi3
     , servant-server
-    , servant-swagger
     , servant-swagger-ui
     , shakespeare         >=2.0     && <2.1
     , stellar-sdk
-    , swagger2
     , telegram-api
     , template-haskell
     , text                >=0.11    && <2.0
