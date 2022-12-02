@@ -14,7 +14,7 @@ main = do
 
         t <-
             transactionBuilder (Address issuer)
-            & tx_seqNum 186___
+            & tx_seqNum 186___0
             & tx_feePerOp_guess
             & op_payment user token 200e7
             & build client

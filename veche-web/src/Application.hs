@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -41,6 +42,7 @@ import Database.Persist.Sqlite (createSqlitePool, sqlDatabase, sqlPoolSize)
 import Language.Haskell.TH.Syntax (qLocation)
 import Network.HTTP.Client.TLS (getGlobalManager)
 import Network.Wai (Application, Middleware)
+import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp (Settings, defaultSettings,
                                  defaultShouldDisplayException, getPort,
                                  runSettings, setHost, setOnException, setPort)
@@ -90,8 +92,19 @@ import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
 
 instance YesodSubDispatch ApiSubsite App where
-    yesodSubDispatch ysre =
-        serve (Proxy @API) $ server ysre.ysreParentEnv.yreSite.appConnPool
+    yesodSubDispatch ysre req respond =
+        serve
+            (Proxy @API)
+            (server ysre.ysreParentEnv.yreSite.appConnPool)
+            req
+            (respond . addAcao)
+      where
+        addAcao =
+            case Wai.pathInfo req of
+                ["openapi.json"] ->
+                    Wai.mapResponseHeaders
+                        (("Access-Control-Allow-Origin", "*") :)
+                _ -> identity
 
 server :: ConnectionPool -> Server API
 server pool = getOpenapi :<|> (getForums :<|> getForumIssues pool) where

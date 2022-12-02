@@ -67,9 +67,8 @@ instance ToSchema IssueVersionId where
 instance ToSchema UserId where
     declareNamedSchema _ = pure $ named "UserId" & type_ ?~ OpenApiString
 
+named :: Text -> NamedSchema
 named name = NamedSchema (Just name) mempty
 
 getOpenapi :: Server OpenAPI
-getOpenapi =
-    -- TODO addHeader ("Access-Control-Allow-Origin", "*") $
-    swaggerSchemaUIServer $ toOpenApi (Proxy @TheAPI)
+getOpenapi = swaggerSchemaUIServer $ toOpenApi (Proxy @TheAPI)

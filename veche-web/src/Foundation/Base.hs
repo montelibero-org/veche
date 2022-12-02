@@ -57,21 +57,18 @@ instance ParseRoute WKStatic where
     parseRoute = fmap WKStaticR . parseRoute @Static
 
 instance YesodSubDispatch WKStatic master where
-    yesodSubDispatch YesodSubRunnerEnv{..} =
-        addAcao $
+    yesodSubDispatch YesodSubRunnerEnv{..} req respond =
         yesodSubDispatch @Static
             YesodSubRunnerEnv
                 { ysreGetSub = unwrapWKStatic . ysreGetSub
                 , ysreToParentRoute = ysreToParentRoute . WKStaticR
                 , ..
                 }
-
-addAcao :: Wai.Middleware
-addAcao app req respond = app req respond' where
-    acao = ("Access-Control-Allow-Origin", "*")
-    respond' response = do
-        let (status, headers, stream) = Wai.responseToStream response
-        stream $ respond . Wai.responseStream status (headers <> [acao])
+            req
+            (respond . addAcao)
+      where
+        addAcao =
+            Wai.mapResponseHeaders (("Access-Control-Allow-Origin", "*") :)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
