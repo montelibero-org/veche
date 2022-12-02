@@ -32,7 +32,7 @@ $if isJust authnUser && enablePriceOffer
                         <a data-bs-toggle=tooltip
                                 data-bs-title="#{show amount} #{showKnownAsset asset} minus 2% service fee"
                                 style="text-decoration: underline dotted;">
-                            🛈
+                            ℹ️
             $if open
                 <p>
                     <button .btn.btn-success
