@@ -81,7 +81,10 @@ PollMtlSignerWeight: Пропорционально весу подписи Stel
 
 # telegram bot
 TelegramBotHelp site@Text: Этот бот — часть Веча #{site}. Команды: /help
-TelegramBotLoginButton: Войти на сайт
+TelegramBotLoginBoundButton: Войти в привязанный аккаунт на сайте
+TelegramBotLoginUnboundButton: Перейти на сайт
+TelegramBotHelpBound acc@Text: Ваш телеграмный аккаунт привязан к аккаунту <b>#{acc}</b> на Вече.
+TelegramBotHelpUnbound: Ваш телеграмный аккаунт не привязан к Вечу. Можете привязать его в профиле, войдя на сайт через Stellar.
 TelegramBotNotUnderstood: Ничего не понял. Попробуйте /help
 TelegramBotSettingsButton: Настройки аккаунта
 

@@ -84,7 +84,10 @@ PollMtlSignerWeight: Proportionally to Stellar signer weight
 
 # telegram bot
 TelegramBotHelp site@Text: This bot is a part of the Veche service #{site}. Available commands: /help
-TelegramBotLoginButton: Log in to the website
+TelegramBotLoginBoundButton: Log in to the bound account
+TelegramBotLoginUnboundButton: Go to the website
+TelegramBotHelpBound acc@Text: Your Telegram account is bound to the Veche account <b>#{acc}</b>
+TelegramBotHelpUnbound: Your Telegram account is not bound to a Veche account. You can bind it in your profile if you log in via Stellar.
 TelegramBotNotUnderstood: I didn't understand your message. Try /help
 TelegramBotSettingsButton: Account settings
 

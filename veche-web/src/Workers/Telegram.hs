@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -21,7 +22,7 @@ import Prelude (filter)
 -- global
 import Control.Concurrent (threadDelay)
 import Data.Foldable (for_)
-import Database.Persist (exists, (==.))
+import Database.Persist (getJust, selectFirst, (==.))
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Network.HTTP.Types (forbidden403)
 import Servant.Client (ClientError (FailureResponse), ResponseF (Response))
@@ -36,11 +37,12 @@ import Yesod.Core (Lang, messageLoggerSource, renderMessage, yesodRender)
 import Authentication.Telegram qualified as Authn
 import Model.Event (Event, SomeEvent (SomeEvent))
 import Model.Event qualified as Event
-import Model.Telegram (EntityField (Telegram_chatid), Telegram (Telegram),
+import Model.Telegram (Key (TelegramKey), Telegram (Telegram),
                        TelegramState (TelegramState), dbGetState, dbSetOffset)
 import Model.Telegram qualified
 import Model.User (UserId)
 import Model.User qualified as User
+import Templates.User (userNameText)
 
 telegramBot :: App -> IO ()
 telegramBot app@App{appLogger, appSettings} =
@@ -110,17 +112,29 @@ handleMessageText text =
 
     replyHelp = do
         let ?connectionPool = appConnPool
-        telegramIsBound <- runDB $ exists [Telegram_chatid ==. ?chatId]
+        accountBound <-
+            runDB do
+                mid <- selectFirst [#chatid ==. ?chatId] []
+                for mid \(Entity (TelegramKey userId) _) -> getJust userId
         void $
             runTelegramClientThrow $
             Tg.sendMessageM
                 ( Tg.sendMessageRequest (Tg.ChatId ?chatId) $
-                    tr $ MsgTelegramBotHelp appRoot
+                    tr (MsgTelegramBotHelp appRoot)
+                    <> "\n\n" <>
+                    tr  ( maybe
+                            MsgTelegramBotHelpUnbound
+                            (MsgTelegramBotHelpBound . userNameText)
+                            accountBound
+                        )
                 )
-                { Tg.message_reply_markup =
+                { Tg.message_parse_mode = Just Tg.HTML
+                , Tg.message_reply_markup =
                     Just $
                     Tg.ReplyInlineKeyboardMarkup
-                        [[loginButton telegramIsBound], [settingsButton]]
+                        [ [loginButton $ isJust accountBound]
+                        , [settingsButton | isJust accountBound]
+                        ]
                 }
       where
         authR  = renderUrl $ AuthR Authn.pluginRoute
@@ -128,10 +142,12 @@ handleMessageText text =
         userR  = renderUrl   UserR
 
         loginButton telegramIsBound
-            | telegramIsBound = btn{Tg.ikb_login_url = Just $ Tg.loginUrl authR}
-            | otherwise       = btn{Tg.ikb_url       = Just loginR}
-          where
-            btn = Tg.inlineKeyboardButton $ tr MsgTelegramBotLoginButton
+            | telegramIsBound =
+                (Tg.inlineKeyboardButton $ tr MsgTelegramBotLoginBoundButton)
+                {Tg.ikb_login_url = Just $ Tg.loginUrl authR}
+            | otherwise =
+                (Tg.inlineKeyboardButton $ tr MsgTelegramBotLoginUnboundButton)
+                {Tg.ikb_url       = Just loginR}
 
         settingsButton =
             (Tg.inlineKeyboardButton $ tr MsgTelegramBotSettingsButton)
