@@ -14,8 +14,6 @@ LogInToComment: Log in to see full publication and add comments
 Unauthorized: You must log in to access this page
 
 # log in
-AuthnViaStellar: Via Stellar
-AuthnViaTelegram: Via Telegram (existing Veche accounts only)
 CreateAccountOrLogIn: Create account or log in
 LogInViaKeybase: Log in via Keybase
 LogInViaMMWB: Log in via @MyMtlWalletBot

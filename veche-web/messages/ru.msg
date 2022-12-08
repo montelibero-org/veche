@@ -14,14 +14,12 @@ LogInToComment: Войдите на сайт, и вы сможете читат�
 Unauthorized: Для получения доступа к странице требуется войти
 
 # log in
-AuthnViaStellar: Через Stellar
-AuthnViaTelegram: Через Telegram (только если уже есть аккаунт на Вече)
 CreateAccountOrLogIn: Создание аккаунта и вход
 LogInViaKeybase: Войти через Keybase
 LogInViaMMWB: Войти через @MyMtlWalletBot
 LogInViaStellarLaboratory: Войти через Stellar Laboratory
 LabelStellarPublicAddress: Публичный ключ Stellar (он же адрес, начинается с буквы G):
-TelegramIsBound: У меня привязан аккаунт Телеграма
+TelegramIsBound: У меня привязан Телеграм
 
 # log in via Stellar Laboratory and Keybase
 AuthnStellarIntro: Вече подготовило вам особую транзакцию-запрос, предназначенную только для входа.
@@ -77,7 +75,7 @@ IssueAddComment: Добавить комментарий
 # poll type
 PollDisabled: Выключено
 PollMtlShare: Пропорционально количеству MTL
-PollMtlSignerWeight: Пропорционально весу подписи Stella
+PollMtlSignerWeight: Пропорционально весу подписи Stellar
 
 # telegram bot
 TelegramBotHelp site@Text: Этот бот — часть Веча #{site}. Команды: /help
