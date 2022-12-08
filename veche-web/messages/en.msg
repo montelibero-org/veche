@@ -21,6 +21,7 @@ LogInViaKeybase: Log in via Keybase
 LogInViaMMWB: Log in via @MyMtlWalletBot
 LogInViaStellarLaboratory: Log in via Stellar Laboratory
 LabelStellarPublicAddress: Stellar public key (also known as address, starts with G):
+TelegramIsBound: I've bound Telegram account
 
 # log in via Stellar Laboratory and Keybase
 AuthnStellarIntro: For the purpose of authentications in Veche a special "request" transaction is made.

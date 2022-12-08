@@ -186,8 +186,8 @@ instance YesodAuth App where
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
     authPlugins app@App{appSettings} =
-        [ authnStellar (authnStellarConfig AuthnStellar.Keybase    app)
-        , authnStellar (authnStellarConfig AuthnStellar.Laboratory app)
+        [ authnStellar $ authnStellarConfig AuthnStellar.Keybase    app
+        , authnStellar $ authnStellarConfig AuthnStellar.Laboratory app
         , authTelegram
         , authMyMtlWalletBot
         ]
@@ -197,22 +197,37 @@ instance YesodAuth App where
         AppSettings{appAuthDummyLogin} = appSettings
 
     loginHandler = do
+        app <- getYesod
         routeToParent <- getRouteToParent
         mmwb <- lookupGetParam "mmwb"
+        let createAccountWidgets =
+                [ apLogin
+                    (authnStellar $ authnStellarConfig AuthnStellar.Keybase app)
+                    routeToParent
+                , apLogin
+                    (authnStellar $
+                        authnStellarConfig AuthnStellar.Laboratory app
+                    )
+                    routeToParent
+                ]
+                ++
+                [apLogin authMyMtlWalletBot routeToParent | not $ null mmwb]
+        let widgetIfTelegramBound = apLogin authTelegram routeToParent
         authLayout do
             setTitleI LoginTitle
-            master <- getYesod
-            let visiblePlugins =
-                    filter
-                        (\AuthPlugin{apName} ->
-                            not (null mmwb) || apName /= "mymtlwalletbot"
-                        )
-                        (authPlugins master)
             [whamlet|
                 <h1 .text-center>_{MsgCreateAccountOrLogIn}
-                $forall AuthPlugin{apLogin} <- visiblePlugins
-                    <div .mb-1 .text-center>
-                        ^{apLogin routeToParent}
+                $forall loginWidget <- createAccountWidgets
+                    <div .mb-1 .text-center>^{loginWidget}
+                <div .text-center>
+                    <input  #checkTelegramBound
+                            .form-check-input
+                            data-bs-target="#collapsedTelegramBound"
+                            data-bs-toggle=collapse type=checkbox>
+                    <label .form-check-label for=checkTelegramBound>
+                        _{MsgTelegramIsBound}
+                <div #collapsedTelegramBound .collapse .mb-1 .text-center>
+                    ^{widgetIfTelegramBound}
             |]
 
 authenticateStellar ::

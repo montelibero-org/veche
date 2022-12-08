@@ -21,6 +21,7 @@ LogInViaKeybase: Войти через Keybase
 LogInViaMMWB: Войти через @MyMtlWalletBot
 LogInViaStellarLaboratory: Войти через Stellar Laboratory
 LabelStellarPublicAddress: Публичный ключ Stellar (он же адрес, начинается с буквы G):
+TelegramIsBound: У меня привязан аккаунт Телеграма
 
 # log in via Stellar Laboratory and Keybase
 AuthnStellarIntro: Вече подготовило вам особую транзакцию-запрос, предназначенную только для входа.
