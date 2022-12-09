@@ -71,4 +71,4 @@ named :: Text -> NamedSchema
 named name = NamedSchema (Just name) mempty
 
 getOpenapi :: Server OpenAPI
-getOpenapi = swaggerSchemaUIServer $ toOpenApi (Proxy @TheAPI)
+getOpenapi = swaggerSchemaUIServer $ toOpenApi (Proxy @("api" :> TheAPI))
