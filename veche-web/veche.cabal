@@ -1,6 +1,6 @@
 cabal-version: 3.4
 name:          veche
-version:       2022.22
+version:       2022.23
 
 library
   default-extensions:
