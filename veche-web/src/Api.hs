@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -16,15 +17,19 @@ module Api (
 ) where
 
 -- global
-import Control.Lens ((?~))
-import Data.Aeson (Value)
+import Control.Lens ((.~), (?~))
+import Data.Aeson (Value, toJSON)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.TH (deriveFromJSON)
 import Data.ByteString (ByteString)
 import Data.Function ((&))
+import Data.HashMap.Strict.InsOrd qualified as InsOrdHashMap
 import Data.Map.Strict (Map)
-import Data.OpenApi (NamedSchema (NamedSchema), OpenApiType (OpenApiString),
-                     ToParamSchema, ToSchema, declareNamedSchema, type_)
+import Data.OpenApi (NamedSchema (NamedSchema),
+                     OpenApiType (OpenApiBoolean, OpenApiString),
+                     Referenced (Inline), ToParamSchema, ToSchema,
+                     declareNamedSchema, declareSchemaRef, default_, enum_,
+                     oneOf, properties, required, schema, type_)
 import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -48,12 +53,36 @@ import Model.Types (Forum, ForumId, Poll, Role)
 data RpcRequest
     = GetForumIssues{id :: ForumId, open :: Maybe Bool}
     | GetForums
+    -- TODO | GetIssue{id :: IssueId}
+    -- TODO | GetIssueNonvotedSigners{issueId :: IssueId}
     | GetSelf
     deriving (Generic)
 deriveFromJSON
     Aeson.defaultOptions
         {Aeson.sumEncoding = Aeson.TaggedObject "method" "params"}
     ''RpcRequest
+
+instance ToSchema RpcRequest where
+    declareNamedSchema _ = do
+        forumId <- declareSchemaRef $ Proxy @ForumId
+        pure $
+            named "RpcRequest"
+            & schema . oneOf
+                ?~  [ object
+                        [("method", string "GetForumIssues"), ("id", forumId)]
+                        [("open", open)]
+                    , object [("method", string "GetForums")] []
+                    , object [("method", string "GetSelf")] []
+                    ]
+      where
+        object req opt =
+            Inline $
+                mempty
+                & properties .~ (req <> opt)
+                & required .~ InsOrdHashMap.keys req
+        open =
+            Inline $ mempty & type_ ?~ OpenApiBoolean & default_ ?~ toJSON True
+        string s = Inline $ mempty & type_ ?~ OpenApiString & enum_ ?~ [s]
 
 type API = OpenAPI :<|> TheAPI
 
@@ -81,7 +110,6 @@ instance
 
     route _api = route (Proxy @(RawReqBody :> sub))
 
-    -- hoistServerWithContext :: Proxy api -> Proxy context -> (forall x. m x -> n x) -> ServerT api m -> ServerT api n
     hoistServerWithContext _api =
         hoistServerWithContext (Proxy @(RawReqBody :> sub))
 
@@ -126,7 +154,6 @@ instance ToSchema ForumId
 instance ToSchema Issue
 instance ToSchema Poll
 instance ToSchema Role
-instance ToSchema RpcRequest
 instance ToSchema Value
 
 instance ToSchema IssueVersionId where
