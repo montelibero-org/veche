@@ -27,7 +27,11 @@ import Servant.Server (Handler, ServerError)
 import Stellar.Simple qualified as Stellar
 
 -- component
-import Api (RpcRequest (..), Signature (Signature))
+import Api (RpcRequest (GetForumIssues, GetForums, GetSelf),
+            Signature (Signature))
+import Api qualified
+import Foundation.Base (App (App))
+import Foundation.Base qualified
 import Genesis (forums)
 import Model (Issue, Unique (UniqueUser), User (User))
 import Model qualified
@@ -36,24 +40,25 @@ import Model.Forum qualified as Forum
 import Model.User (requireAuthzRoleS)
 
 rpc ::
-    ConnectionPool ->
+    App ->
     Stellar.Address ->
     Signature ->
     -- | Expected to be a JSON-encoded 'RpcRequest';
     -- we take it as a blob to verify the signature
     ByteString ->
     Handler Value
-rpc pool address signature requestBS = do
+rpc app address signature requestBS = do
     checkSignature address requestBS signature
     request <- Aeson.eitherDecodeStrict requestBS & either badRequest pure
     case request of
         GetForumIssues{id, open} ->
-            toJSON <$> getForumIssues pool address id open
+            toJSON <$> getForumIssues appConnPool address id open
         GetForums   -> pure $ toJSON forums
-        GetSelf     -> toJSON <$> getUser pool address
+        GetSelf     -> toJSON <$> getUser appConnPool address
   where
     badRequest err =
         throwError Servant.err400{Servant.errBody = encodeUtf8 $ LText.pack err}
+    App{appConnPool} = app
 
 runDB :: ConnectionPool -> SqlPersistT IO a -> Handler a
 runDB pool action = liftIO $ runSqlPool action pool

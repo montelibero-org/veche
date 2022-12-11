@@ -34,8 +34,7 @@ import Control.Monad.Fail (MonadFail, fail)
 import Control.Monad.Logger (LogLevel (LevelError), liftLoc, toLogStr)
 import Data.Aeson qualified as Aeson
 import Data.Text qualified as Text
-import Database.Persist.Sql (ConnectionPool,
-                             PersistUnsafeMigrationException (PersistUnsafeMigrationException),
+import Database.Persist.Sql (PersistUnsafeMigrationException (PersistUnsafeMigrationException),
                              Single, SqlBackend, parseMigration', rawSql,
                              runMigration, runSqlPool, unSingle)
 import Database.Persist.Sqlite (createSqlitePool, sqlDatabase, sqlPoolSize)
@@ -96,7 +95,7 @@ instance YesodSubDispatch ApiSubsite App where
     yesodSubDispatch ysre req respond =
         serve
             (Proxy @API)
-            (server ysre.ysreParentEnv.yreSite.appConnPool)
+            (server ysre.ysreParentEnv.yreSite)
             req
             (respond . addAcao)
       where
@@ -107,8 +106,9 @@ instance YesodSubDispatch ApiSubsite App where
                         (("Access-Control-Allow-Origin", "*") :)
                 _ -> identity
 
-server :: ConnectionPool -> Server API
-server pool = getOpenapi :<|> (rpc pool :<|> getForums :<|> getForumIssues pool)
+server :: App -> Server API
+server app =
+    getOpenapi :<|> (rpc app :<|> getForums :<|> getForumIssues app.appConnPool)
   where
     getForums = pure forums
 
