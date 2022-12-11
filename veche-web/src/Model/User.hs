@@ -37,15 +37,20 @@ module Model.User (
     -- * Authorization
     maybeAuthzRoles,
     requireAuthzRoles,
+    requireAuthzRoleS,
 ) where
 
 -- prelude
 import Import.NoFoundation
 
 -- global
+import Control.Monad.Except (MonadError, throwError)
 import Data.Set qualified as Set
 import Database.Persist (delete, exists, get, getBy, insert, repsert,
                          selectFirst, selectList, update, (=.), (==.))
+import Database.Persist.Sql (ConnectionPool, runSqlPool)
+import Servant (ServerError)
+import Servant qualified
 import Stellar.Simple (Asset)
 import Stellar.Simple qualified as Stellar
 import Yesod.Core (HandlerSite, liftHandler, notAuthenticated)
@@ -145,27 +150,24 @@ maybeAuthzRoles = do
     mUserE <- maybeAuth
     case mUserE of
         Nothing -> pure (Nothing, Set.empty)
-        Just (Entity id User{stellarAddress}) ->
-            liftHandler $
-            runDB do
-                signer <-
-                    exists
-                        @_ @_ @StellarSigner
-                        [#target ==. mtlFund, #key ==. stellarAddress]
-                assets <-
-                    selectList
-                        @StellarHolder
-                        [#key ==. stellarAddress]
-                        []
-                    <&> map \(Entity _ StellarHolder{..}) -> asset
-                pure
-                    ( Just id
-                    , Set.fromList $
-                        [MtlSigner | signer]
-                        ++ [MtlHolder     | mtlAsset   `elem` assets]
-                        ++ [HolderOfFcm   | fcmAsset   `elem` assets]
-                        ++ [HolderOfVeche | vecheAsset `elem` assets]
-                    )
+        Just (Entity id User{stellarAddress}) -> do
+            roles <- liftHandler $ runDB $ getRoles stellarAddress
+            pure (Just id, roles)
+
+getRoles :: MonadIO m => Stellar.Address -> SqlPersistT m Roles
+getRoles stellarAddress = do
+    signer <-
+        exists
+            @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. stellarAddress]
+    assets <-
+        selectList @StellarHolder [#key ==. stellarAddress] []
+        <&> map \(Entity _ StellarHolder{..}) -> asset
+    pure $
+        Set.fromList $
+            [MtlSigner | signer]
+            ++ [MtlHolder     | mtlAsset   `elem` assets]
+            ++ [HolderOfFcm   | fcmAsset   `elem` assets]
+            ++ [HolderOfVeche | vecheAsset `elem` assets]
 
 requireAuthzRoles ::
     ( MonadHandler m
@@ -179,3 +181,11 @@ requireAuthzRoles = do
     case mUserId of
         Nothing -> notAuthenticated
         Just id -> pure (id, roles)
+
+-- | Require a specific authorization role
+requireAuthzRoleS ::
+    (MonadError ServerError m, MonadIO m) =>
+    ConnectionPool -> Stellar.Address -> Role -> m ()
+requireAuthzRoleS pool stellarAddress role = do
+    roles <- liftIO $ runSqlPool (getRoles stellarAddress) pool
+    unless (role `elem` roles) $ throwError Servant.err403

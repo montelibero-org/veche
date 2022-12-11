@@ -88,6 +88,7 @@ import Handler.User (getUserR, putUserR)
 import Model (migrateAll)
 import Model.Escrow (EscrowFile)
 import Model.Escrow qualified as Escrow
+import RPC (rpc)
 import Workers.StellarUpdate (stellarDataUpdater)
 import Workers.Telegram (telegramBot)
 
@@ -107,7 +108,8 @@ instance YesodSubDispatch ApiSubsite App where
                 _ -> identity
 
 server :: ConnectionPool -> Server API
-server pool = getOpenapi :<|> (getForums :<|> getForumIssues pool) where
+server pool = getOpenapi :<|> (rpc pool :<|> getForums :<|> getForumIssues pool)
+  where
     getForums = pure forums
 
 -- This line actually creates our YesodDispatch instance. It is the second half

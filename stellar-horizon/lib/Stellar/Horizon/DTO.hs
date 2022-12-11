@@ -36,6 +36,7 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Traversable (for)
+import GHC.Generics (Generic)
 import Servant.API (FromHttpApiData, ToHttpApiData)
 import Web.PathPieces (PathPiece)
 
@@ -59,6 +60,7 @@ data Account = Account
 newtype Address = Address Text
     deriving newtype
         (Eq, FromHttpApiData, FromJSON, Ord, Read, Show, ToHttpApiData, ToJSON)
+    deriving stock Generic
 
 data Balance = Balance
     { balance :: Text

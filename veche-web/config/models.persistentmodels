@@ -90,7 +90,7 @@ StellarSigner
     deriving Show
 
 
-User
+User json
     name            Text Maybe
     stellarAddress  Stellar.Address
 

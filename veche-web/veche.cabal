@@ -52,6 +52,7 @@ library
     Model.Verifier
     Model.Vote
     Paths_veche
+    RPC
     Settings
     Settings.StaticFiles
     Telegram.Auth
@@ -69,6 +70,7 @@ library
     , base16-bytestring
     , base64-bytestring
     , blaze-html
+    , bytestring
     , case-insensitive
     , classy-prelude
     , cmark-gfm
@@ -93,6 +95,7 @@ library
     , persistent-sqlite
     , random
     , scientific
+    , servant
     , servant-client
     , servant-openapi3
     , servant-server
