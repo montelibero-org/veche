@@ -28,12 +28,12 @@ import Genesis qualified
 import Model.Forum qualified as Forum
 import Model.Issue (Issue)
 import Model.Issue qualified as Issue
-import Model.User (maybeAuthzRoles)
+import Model.User (maybeAuthzRolesY)
 import Templates.Issue (issueTable)
 
 getForumR :: ForumId -> Handler Html
 getForumR forumId = do
-    (_, roles) <- maybeAuthzRoles
+    (_, roles) <- maybeAuthzRolesY
     mState <- lookupGetParam "state"
     let stateOpen = mState /= Just "closed"
     forumE@(_, Forum{title}) <- Forum.getEntity404 forumId
@@ -57,7 +57,7 @@ runSqlPoolIO pool = liftIO . (`runSqlPool` pool)
 
 getForumsR :: Handler Html
 getForumsR = do
-    (_, roles) <- maybeAuthzRoles
+    (_, roles) <- maybeAuthzRolesY
     let forums =
             filter (\f -> isAllowed $ ReadForum f roles) $
             Map.assocs Genesis.forums

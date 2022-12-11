@@ -41,7 +41,7 @@ Issue json
     deriving Show
 
 
-IssueVersion
+IssueVersion json
     author  UserId
     body    Text
     created UTCTime

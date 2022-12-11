@@ -27,17 +27,19 @@ import Servant.Server (Handler, ServerError)
 import Stellar.Simple qualified as Stellar
 
 -- component
-import Api (RpcRequest (GetForumIssues, GetForums, GetSelf),
+import Api (GetForumIssuesParams (GetForumIssuesParams),
+            GetIssueParams (GetIssueParams),
+            RpcRequest (GetForumIssues, GetForums, GetIssue, GetSelf),
             Signature (Signature))
 import Api qualified
 import Foundation.Base (App (App))
 import Foundation.Base qualified
 import Genesis (forums)
-import Model (Issue, Unique (UniqueUser), User (User))
 import Model qualified
 import Model.Forum (Forum (Forum), ForumId)
 import Model.Forum qualified as Forum
-import Model.User (requireAuthzRoleS)
+import Model.Issue (Issue, getIssue)
+import Model.User (Unique (UniqueUser), User (User), requireAuthzRoleS)
 
 rpc ::
     App ->
@@ -51,10 +53,11 @@ rpc app address signature requestBS = do
     checkSignature address requestBS signature
     request <- Aeson.eitherDecodeStrict requestBS & either badRequest pure
     case request of
-        GetForumIssues{id, open} ->
+        GetForumIssues GetForumIssuesParams{id, open} ->
             toJSON <$> getForumIssues appConnPool address id open
-        GetForums   -> pure $ toJSON forums
-        GetSelf     -> toJSON <$> getUser appConnPool address
+        GetForums                   -> pure $ toJSON forums
+        GetIssue GetIssueParams{id} -> toJSON <$> getIssue app address id
+        GetSelf                     -> toJSON <$> getUser appConnPool address
   where
     badRequest err =
         throwError Servant.err400{Servant.errBody = encodeUtf8 $ LText.pack err}

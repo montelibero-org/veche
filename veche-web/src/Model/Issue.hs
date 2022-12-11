@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
@@ -25,6 +26,7 @@ module Model.Issue (
     -- * Retrieve
     countOpenAndClosed,
     getContentForEdit,
+    getIssue,
     load,
     listForumIssues,
     selectWithoutVoteFromUser,
@@ -41,6 +43,7 @@ import Foundation.Base
 import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global
+import Control.Monad.Fail (fail)
 import Data.Coerce (coerce)
 import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
@@ -52,10 +55,13 @@ import Database.Persist (PersistException (PersistForeignConstraintUnmet), get,
                          getEntity, getJust, insert, insert_, selectList,
                          update, (!=.), (=.))
 import Database.Persist qualified as Persist
+import Database.Persist.Sql (runSqlPool)
+import Servant qualified
 import Yesod.Persist (get404, runDB)
 
 -- project
 import Stellar.Simple (Asset)
+import Stellar.Simple qualified as Stellar
 
 -- component
 import Genesis (forums)
@@ -69,7 +75,7 @@ import Model.Escrow qualified as Escrow
 import Model.Forum qualified as Forum
 import Model.Request (IssueRequestMaterialized)
 import Model.Request qualified as Request
-import Model.User (maybeAuthzRoles, requireAuthzRoles)
+import Model.User (maybeAuthzRolesDB, maybeAuthzRolesY, requireAuthzRoles)
 import Model.Vote qualified as Vote
 
 data IssueContent = IssueContent
@@ -100,6 +106,12 @@ data IssueMaterialized = IssueMaterialized
     , votes                 :: Map Choice (EntitySet User)
     }
     deriving (Show)
+
+data IssueDto = IssueDto
+    { issue     :: Issue
+    , version   :: IssueVersion
+    }
+    deriving (Generic, ToJSON)
 
 data StateAction = Close | Reopen
     deriving (Eq)
@@ -194,9 +206,10 @@ loadVotes issueId = do
 
 load :: IssueId -> Handler IssueMaterialized
 load issueId = do
-    (mUserId, roles) <- maybeAuthzRoles
+    (mUserId, roles) <- maybeAuthzRolesY
     let authenticated = isJust mUserId
-    escrow <- Escrow.getIssueBalance issueId
+    app <- getYesod
+    escrow <- Escrow.getIssueBalance issueId app
     runDB do
         issue <- get404 issueId
         let Issue{author = authorId, created, curVersion, forum = forumId} =
@@ -269,6 +282,44 @@ load issueId = do
                 }
             []
 
+getIssue :: App -> Stellar.Address -> IssueId -> Servant.Handler IssueDto
+getIssue app userAddress issueId = do
+    -- escrow <- Escrow.getIssueBalance issueId app
+    ((_, roles), issue, forumE) <-
+        liftIO $ (`runSqlPool` appConnPool) do
+            mauth  <- maybeAuthzRolesDB userAddress
+            issue  <- get404 issueId
+            forumE <- Forum.getJustEntity issue.forum
+            pure (mauth, issue, forumE)
+
+    -- let mUserId = entityKey <$> mUserE
+    let Issue{curVersion} = issue
+
+    requireAuthzS $ ReadForumIssue forumE roles
+
+    liftIO $ (`runSqlPool` appConnPool) do
+        versionId <- curVersion ?| fail "Issue.current_version must be valid"
+        -- comments <- loadComments issueId
+        version <-
+            get versionId
+            ?|> fail "Issue.current_version must exist in IssueVersion table"
+        -- votes <- collectChoices <$> loadVotes issueId
+        -- requests <-
+        --     case mUserId of
+        --         Nothing     -> pure []
+        --         Just userId ->
+        --             Request.selectActiveByIssueAndRequestedUser issueId userId
+
+        -- let issueE = Entity issueId issue
+        -- let isEditAllowed = any (isAllowed . EditIssue issueE) mUserId
+        -- let isCloseReopenAllowed =
+        --         any (isAllowed . CloseReopenIssue issueE) mUserId
+        -- let isCommentAllowed = isAllowed $ AddForumIssueComment forumE roles
+        -- let isVoteAllowed    = isAllowed $ AddIssueVote         issueE roles
+        pure IssueDto{issue, version}
+  where
+    App{appConnPool} = app
+
 collectChoices :: [VoteMaterialized] -> Map Choice (EntitySet User)
 collectChoices votes =
     Map.fromListWith
@@ -279,7 +330,7 @@ collectChoices votes =
 
 listForumIssues :: EntityForum -> Maybe Bool -> Handler [Entity Issue]
 listForumIssues forumE@(forumId, _) mIsOpen = do
-    (_, roles) <- maybeAuthzRoles
+    (_, roles) <- maybeAuthzRolesY
     requireAuthz $ ReadForum forumE roles
     runDB $ selectList filters []
   where

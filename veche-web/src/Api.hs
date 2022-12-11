@@ -1,26 +1,25 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -Wno-orphans #-}
 
 module Api (
-    API, ApiSubsite (..), RpcRequest (..), RpcRequestBody (..), Signature (..),
+    API, ApiSubsite (..), RpcRequestBody (..), Signature (..),
     getOpenapi,
+    -- * RPC
+    GetForumIssuesParams (..), GetIssueParams (..), RpcRequest (..),
 ) where
 
 -- global
 import Control.Lens ((.~), (?~))
-import Data.Aeson (Value, toJSON)
+import Data.Aeson (FromJSON, Value, genericParseJSON, toJSON)
 import Data.Aeson qualified as Aeson
-import Data.Aeson.TH (deriveFromJSON)
 import Data.ByteString (ByteString)
 import Data.Function ((&))
 import Data.HashMap.Strict.InsOrd qualified as InsOrdHashMap
@@ -47,20 +46,30 @@ import Yesod.Core (ParseRoute, RenderRoute, Route, parseRoute, renderRoute)
 import Stellar.Simple qualified as Stellar
 
 -- component
-import Model (Issue, IssueVersionId, UserId)
+import Model (Issue, IssueId, IssueVersionId, UserId)
 import Model.Types (Forum, ForumId, Poll, Role)
 
 data RpcRequest
-    = GetForumIssues{id :: ForumId, open :: Maybe Bool}
+    = GetForumIssues GetForumIssuesParams
     | GetForums
-    -- TODO | GetIssue{id :: IssueId}
+    | GetIssue GetIssueParams
     -- TODO | GetIssueNonvotedSigners{issueId :: IssueId}
     | GetSelf
     deriving (Generic)
-deriveFromJSON
-    Aeson.defaultOptions
-        {Aeson.sumEncoding = Aeson.TaggedObject "method" "params"}
-    ''RpcRequest
+
+instance FromJSON RpcRequest where
+    parseJSON =
+        genericParseJSON
+            Aeson.defaultOptions
+            {Aeson.sumEncoding = Aeson.TaggedObject "method" "params"}
+
+data GetForumIssuesParams =
+    GetForumIssuesParams{id :: ForumId, open :: Maybe Bool}
+    deriving (FromJSON, Generic)
+
+newtype GetIssueParams = GetIssueParams{id :: IssueId}
+    deriving anyclass (FromJSON)
+    deriving stock (Generic)
 
 instance ToSchema RpcRequest where
     declareNamedSchema _ = do

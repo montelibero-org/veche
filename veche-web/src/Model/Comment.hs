@@ -32,7 +32,7 @@ import Model (Comment (Comment), CommentId, Issue (Issue), IssueId,
               Request (Request), RequestId, User, UserId)
 import Model qualified
 import Model.Forum qualified as Forum
-import Model.User (maybeAuthzRoles)
+import Model.User (maybeAuthzRolesY)
 
 data CommentInput = CommentInput
     { issue        :: IssueId
@@ -71,7 +71,7 @@ addText commentInput = do
     runDB do
         Issue{forum} <- get404 issue
         forumE <- Forum.getJustEntity forum
-        (_, roles) <- maybeAuthzRoles
+        (_, roles) <- maybeAuthzRolesY
         requireAuthz $ AddForumIssueComment forumE roles
 
         commentId <- insert comment

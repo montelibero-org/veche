@@ -12,6 +12,9 @@ import Foundation.Base
 
 -- global
 import Control.Monad (unless)
+import Control.Monad.Except (MonadError, throwError)
+import Servant (ServerError)
+import Servant qualified
 import Yesod.Core (HandlerSite, MonadHandler, permissionDeniedI)
 import Yesod.Persist (Entity (Entity))
 
@@ -64,3 +67,6 @@ checkVote mPoll roles =
 
 requireAuthz :: (MonadHandler m, HandlerSite m ~ App) => AuthzRequest -> m ()
 requireAuthz req = unless (isAllowed req) $ permissionDeniedI MsgUnauthorized
+
+requireAuthzS :: MonadError ServerError m => AuthzRequest -> m ()
+requireAuthzS req = unless (isAllowed req) $ throwError Servant.err403

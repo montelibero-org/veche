@@ -84,8 +84,7 @@ buildEscrow Corrections{exclude, include} txs =
     tellUnknownTx tx = tell mempty{unknownTxs = [tx]}
 
 -- | Get active (unspent) escrows for the issue
-getIssueBalance :: IssueId -> Handler (Map Asset Scientific)
-getIssueBalance issue = do
-    App{appEscrow} <- getYesod
+getIssueBalance :: MonadIO m => IssueId -> App -> m (Map Asset Scientific)
+getIssueBalance issue App{appEscrow} = do
     EscrowStat{balances} <- readIORef appEscrow
     pure $ Map.findWithDefault mempty issue balances

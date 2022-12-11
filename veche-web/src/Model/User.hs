@@ -12,6 +12,7 @@
 module Model.User (
     -- * Data
     Key (UserKey),
+    Unique (UniqueUser),
     User (..),
     UserId,
     -- * Create
@@ -35,7 +36,8 @@ module Model.User (
     dbDeleteTelegram,
     deleteTelegram,
     -- * Authorization
-    maybeAuthzRoles,
+    maybeAuthzRolesDB,
+    maybeAuthzRolesY,
     requireAuthzRoles,
     requireAuthzRoleS,
 ) where
@@ -139,36 +141,44 @@ getHolderId User{stellarAddress} asset = do
     mEntity <- runDB $ getBy $ UniqueHolder asset stellarAddress
     pure $ entityKey <$> mEntity
 
-maybeAuthzRoles ::
+-- | Get possible authz roles using Yesod.
+maybeAuthzRolesY ::
     ( MonadHandler m
     , AuthId (HandlerSite m) ~ UserId
     , AuthEntity (HandlerSite m) ~ User
     , PersistSql (HandlerSite m)
     ) =>
     m (Maybe UserId, Roles)
-maybeAuthzRoles = do
+maybeAuthzRolesY = do
     mUserE <- maybeAuth
     case mUserE of
         Nothing -> pure (Nothing, Set.empty)
         Just (Entity id User{stellarAddress}) -> do
-            roles <- liftHandler $ runDB $ getRoles stellarAddress
+            (_, roles) <- liftHandler $ runDB $ maybeAuthzRolesDB stellarAddress
             pure (Just id, roles)
 
-getRoles :: MonadIO m => Stellar.Address -> SqlPersistT m Roles
-getRoles stellarAddress = do
+-- | Get possible authz roles using DB.
+-- We consider the address authenticated event if it's not registered.
+maybeAuthzRolesDB ::
+    MonadIO m => Stellar.Address -> SqlPersistT m (Maybe (Entity User), Roles)
+maybeAuthzRolesDB stellarAddress = do
+    mUser <- getBy $ UniqueUser stellarAddress
     signer <-
         exists
             @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. stellarAddress]
     assets <-
         selectList @StellarHolder [#key ==. stellarAddress] []
         <&> map \(Entity _ StellarHolder{..}) -> asset
-    pure $
-        Set.fromList $
+    pure
+        ( mUser
+        , Set.fromList $
             [MtlSigner | signer]
             ++ [MtlHolder     | mtlAsset   `elem` assets]
             ++ [HolderOfFcm   | fcmAsset   `elem` assets]
             ++ [HolderOfVeche | vecheAsset `elem` assets]
+        )
 
+-- | Get authz roles for Yesod.
 requireAuthzRoles ::
     ( MonadHandler m
     , AuthId (HandlerSite m) ~ UserId
@@ -177,15 +187,15 @@ requireAuthzRoles ::
     ) =>
     m (UserId, Roles)
 requireAuthzRoles = do
-    (mUserId, roles) <- maybeAuthzRoles
+    (mUserId, roles) <- maybeAuthzRolesY
     case mUserId of
         Nothing -> notAuthenticated
         Just id -> pure (id, roles)
 
--- | Require a specific authorization role
+-- | Require a specific authorization role for Servant.
 requireAuthzRoleS ::
     (MonadError ServerError m, MonadIO m) =>
     ConnectionPool -> Stellar.Address -> Role -> m ()
 requireAuthzRoleS pool stellarAddress role = do
-    roles <- liftIO $ runSqlPool (getRoles stellarAddress) pool
+    (_, roles) <- liftIO $ runSqlPool (maybeAuthzRolesDB stellarAddress) pool
     unless (role `elem` roles) $ throwError Servant.err403
