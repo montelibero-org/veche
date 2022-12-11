@@ -2,14 +2,16 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS -Wno-orphans #-}
 
 module Api (
-    ApiSubsite (..), API, RepresentedAs (..), RpcRequest (..), Signature (..),
+    API, ApiSubsite (..), RpcRequest (..), RpcRequestBody (..), Signature (..),
     getOpenapi,
 ) where
 
@@ -25,13 +27,13 @@ import Data.OpenApi (NamedSchema (NamedSchema), OpenApiType (OpenApiString),
                      ToParamSchema, ToSchema, declareNamedSchema, type_)
 import Data.Proxy (Proxy (Proxy))
 import Data.Text (Text)
-import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
-import Servant.API (Capture, Get, JSON, MimeUnrender, OctetStream, Post,
-                    QueryParam, QueryParam', ReqBody, Required, Summary, (:<|>),
-                    (:>))
-import Servant.OpenApi (toOpenApi)
-import Servant.Server (Server)
+import Servant.API (Capture, Get, JSON, OctetStream, Post, QueryParam,
+                    QueryParam', ReqBody, Required, Summary, (:<|>), (:>))
+import Servant.OpenApi (HasOpenApi, toOpenApi)
+import Servant.Server (HasServer, Server, ServerT, hoistServerWithContext,
+                       route, type (.++))
+import Servant.Server qualified as Servant
 import Servant.Swagger.UI (SwaggerSchemaUI, swaggerSchemaUIServer)
 import Web.HttpApiData (FromHttpApiData)
 import Yesod.Core (ParseRoute, RenderRoute, Route, parseRoute, renderRoute)
@@ -59,17 +61,38 @@ type OpenAPI = SwaggerSchemaUI "openapi-ui" "openapi.json"
 
 type TheAPI = "unstable" :> Unstable
 
-newtype RepresentedAs model representation = RepresentedAs representation
-
 newtype Signature = Signature Text -- TODO ByteString?
     deriving newtype (FromHttpApiData)
     deriving stock (Generic)
+
+type RawReqBody = ReqBody '[OctetStream] ByteString
+
+newtype RpcRequestBody = RpcRequestBody RawReqBody
+
+instance
+    ( HasServer sub context
+    , Servant.HasContextEntry
+        (context .++ Servant.DefaultErrorFormatters) Servant.ErrorFormatters
+    ) =>
+    HasServer (RpcRequestBody :> sub) context
+    where
+
+    type ServerT (RpcRequestBody :> sub) m = ServerT (RawReqBody :> sub) m
+
+    route _api = route (Proxy @(RawReqBody :> sub))
+
+    -- hoistServerWithContext :: Proxy api -> Proxy context -> (forall x. m x -> n x) -> ServerT api m -> ServerT api n
+    hoistServerWithContext _api =
+        hoistServerWithContext (Proxy @(RawReqBody :> sub))
+
+instance HasOpenApi sub => HasOpenApi (RpcRequestBody :> sub) where
+    toOpenApi _ = toOpenApi $ Proxy @(ReqBody '[JSON] RpcRequest :> sub)
 
 type Unstable
     =   Summary "RPC"
         :> QueryParam' '[Required] "user" Stellar.Address
         :> QueryParam' '[Required] "signature" Signature
-        :> ReqBody '[OctetStream] (RpcRequest `RepresentedAs` ByteString)
+        :> RpcRequestBody
         :> Post '[JSON] Value
     :<|>
         "forums"
@@ -94,9 +117,6 @@ instance RenderRoute ApiSubsite where
 instance ParseRoute ApiSubsite where
     parseRoute (path, params) = Just $ ApiR path params
 
-deriving newtype instance
-    MimeUnrender c b => MimeUnrender c (a `RepresentedAs` b)
-
 instance ToParamSchema ForumId
 instance ToParamSchema Signature
 instance ToParamSchema Stellar.Address
@@ -108,13 +128,6 @@ instance ToSchema Poll
 instance ToSchema Role
 instance ToSchema RpcRequest
 instance ToSchema Value
-
-instance
-    (Typeable (model `RepresentedAs` repr), ToSchema model) =>
-    ToSchema (model `RepresentedAs` repr)
-    where
-
-    declareNamedSchema _ = declareNamedSchema (Proxy @model)
 
 instance ToSchema IssueVersionId where
     declareNamedSchema _ =

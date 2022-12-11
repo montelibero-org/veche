@@ -27,8 +27,7 @@ import Servant.Server (Handler, ServerError)
 import Stellar.Simple qualified as Stellar
 
 -- component
-import Api (RepresentedAs (RepresentedAs), RpcRequest (..),
-            Signature (Signature))
+import Api (RpcRequest (..), Signature (Signature))
 import Genesis (forums)
 import Model (Issue, Unique (UniqueUser), User (User))
 import Model qualified
@@ -40,9 +39,11 @@ rpc ::
     ConnectionPool ->
     Stellar.Address ->
     Signature ->
-    RpcRequest `RepresentedAs` ByteString ->
+    -- | Expected to be a JSON-encoded 'RpcRequest';
+    -- we take it as a blob to verify the signature
+    ByteString ->
     Handler Value
-rpc pool address signature (RepresentedAs requestBS) = do
+rpc pool address signature requestBS = do
     checkSignature address requestBS signature
     request <- Aeson.eitherDecodeStrict requestBS & either badRequest pure
     case request of
