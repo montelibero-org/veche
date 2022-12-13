@@ -94,8 +94,6 @@ User json
     name            Text Maybe
     stellarAddress  Stellar.Address
 
-    UniqueUser stellarAddress
-
     deriving Eq
     deriving Show
 

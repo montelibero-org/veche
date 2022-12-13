@@ -60,13 +60,13 @@ import Yesod.Persist (runDB)
 import Genesis (fcmAsset, mtlAsset, mtlFund, vecheAsset)
 import Model (Key (TelegramKey), StellarHolder (StellarHolder), StellarHolderId,
               StellarSigner, StellarSignerId, Telegram (Telegram),
-              Unique (UniqueHolder, UniqueSigner, UniqueUser), User (User),
-              UserId)
+              Unique (UniqueHolder, UniqueSigner), User (User), UserId)
 import Model qualified
 
 getByStellarAddress ::
     PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))
-getByStellarAddress = runDB . getBy . UniqueUser
+getByStellarAddress stellarAddress =
+    runDB $ selectFirst [#stellarAddress ==. stellarAddress] []
 
 getByTelegramId ::
     (MonadHandler m, PersistSql (HandlerSite m)) =>
@@ -77,8 +77,8 @@ getByTelegramId chatid =
 getOrCreate ::
     (MonadHandler m, PersistSql (HandlerSite m)) => Stellar.Address -> m UserId
 getOrCreate stellarAddress =
-    liftHandler . runDB $ do
-        mExisted <- getBy $ UniqueUser stellarAddress
+    liftHandler $ runDB do
+        mExisted <- selectFirst [#stellarAddress ==. stellarAddress] []
         case mExisted of
             Just (Entity id _)  -> pure id
             Nothing             -> insert fresh

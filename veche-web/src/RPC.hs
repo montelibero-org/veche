@@ -16,7 +16,7 @@ import Data.Aeson qualified as Aeson
 import Data.ByteString.Base64 qualified as Base64
 import Data.Function ((&))
 import Data.Text.Lazy qualified as LText
-import Database.Persist (entityVal, getBy, selectList, (==.))
+import Database.Persist (entityVal, selectFirst, selectList, (==.))
 import Database.Persist.Sql (ConnectionPool, SqlPersistT, runSqlPool)
 import Network.Stellar.Keypair qualified as Keypair
 import Network.Stellar.Signature (verifyBlob)
@@ -33,7 +33,7 @@ import Api qualified
 import Foundation.Base (App (App))
 import Foundation.Base qualified
 import Genesis (forums)
-import Model (Issue, Unique (UniqueUser), User (User))
+import Model (Issue, User (User))
 import Model qualified
 import Model.Forum (Forum (Forum), ForumId)
 import Model.Forum qualified as Forum
@@ -90,7 +90,7 @@ checkSignature address request signatureInput = do
 
 getUser :: ConnectionPool -> Stellar.Address -> Handler User
 getUser pool stellarAddress = do
-    muser <- runDB pool $ getBy $ UniqueUser stellarAddress
+    muser <- runDB pool $ selectFirst [#stellarAddress ==. stellarAddress] []
     pure $ maybe User{name = Nothing, stellarAddress} entityVal muser
 
 getForumIssues ::
