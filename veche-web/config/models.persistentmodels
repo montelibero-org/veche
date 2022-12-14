@@ -92,7 +92,8 @@ StellarSigner
 
 User json
     name            Text Maybe
-    stellarAddress  Stellar.Address
+    stellarAddress  Stellar.Address Maybe   -- unique if not null;
+                                            -- nulls may be non-unique
 
     deriving Eq
     deriving Show

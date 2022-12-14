@@ -121,7 +121,7 @@ makePollWidget mPoll issueId IssueMaterialized{isVoteAllowed, votes} =
         , let
             choiceWeight =
                 sum [ Map.findWithDefault 0 key weights
-                    | User{stellarAddress = key} <- toList users
+                    | User{stellarAddress = Just key} <- toList users
                     ]
             percentage = realToFrac (choiceWeight / sum weights * 100) :: Double
             share =

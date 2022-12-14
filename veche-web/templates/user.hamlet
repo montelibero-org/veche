@@ -17,7 +17,7 @@
             <div .help-block #nameEditError>
     <div .row>
         <div .col-sm-2>_{MsgStellarAddress}
-        <div .col-sm-10 .user_stellar_address>#{stellarAddress}
+        <div .col-sm-10 .user_stellar_address>#{maybe "" show stellarAddress}
     <div .row>
         <div .col-sm-2>_{MsgRoles}
         <div .col-sm-10>

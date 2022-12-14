@@ -90,8 +90,11 @@ checkSignature address request signatureInput = do
 
 getUser :: ConnectionPool -> Stellar.Address -> Handler User
 getUser pool stellarAddress = do
-    muser <- runDB pool $ selectFirst [#stellarAddress ==. stellarAddress] []
-    pure $ maybe User{name = Nothing, stellarAddress} entityVal muser
+    muser <-
+        runDB pool $ selectFirst [#stellarAddress ==. Just stellarAddress] []
+    pure $ maybe defaultUser entityVal muser
+  where
+    defaultUser = User{name = Nothing, stellarAddress = Just stellarAddress}
 
 getForumIssues ::
     ConnectionPool ->

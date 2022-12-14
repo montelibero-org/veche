@@ -33,12 +33,15 @@ userNameWidget :: User -> Html
 userNameWidget = toHtml . userNameText
 
 userNameText :: User -> Text
-userNameText User{name = mName, stellarAddress = Stellar.Address address} =
-    case mName of
-        Just name   -> name <> " (" <> abbreviatedAddress <> ")"
-        Nothing     -> abbreviatedAddress
-  where
-    abbreviatedAddress = "*" <> Text.takeEnd 4 address
+userNameText User{name = mName, stellarAddress} =
+    case stellarAddress of
+        Nothing -> "deleted account"
+        Just (Stellar.Address address) ->
+            let abbreviatedAddress = "*" <> Text.takeEnd 4 address
+            in
+            case mName of
+                Just name   -> name <> " (" <> abbreviatedAddress <> ")"
+                Nothing     -> abbreviatedAddress
 
 telegramUsernameWidget :: Telegram -> Widget
 telegramUsernameWidget Telegram{username} = [whamlet|<samp>@#{username}|]
@@ -54,7 +57,7 @@ userPage = do
     telegramBotName <- getsYesod $ appTelegramBotName . appSettings
     Entity uid user <- requireAuth
     (_uid, roles) <- User.requireAuthzRoles
-    let User{name, stellarAddress = Stellar.Address stellarAddress} = user
+    let User{name, stellarAddress} = user
     mTelegram <- User.getTelegram uid
     defaultLayout do
         setTitle "Profile"

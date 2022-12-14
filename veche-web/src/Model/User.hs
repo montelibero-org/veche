@@ -66,7 +66,7 @@ import Model qualified
 getByStellarAddress ::
     PersistSql app => Stellar.Address -> HandlerFor app (Maybe (Entity User))
 getByStellarAddress stellarAddress =
-    runDB $ selectFirst [#stellarAddress ==. stellarAddress] []
+    runDB $ selectFirst [#stellarAddress ==. Just stellarAddress] []
 
 getByTelegramId ::
     (MonadHandler m, PersistSql (HandlerSite m)) =>
@@ -78,12 +78,12 @@ getOrCreate ::
     (MonadHandler m, PersistSql (HandlerSite m)) => Stellar.Address -> m UserId
 getOrCreate stellarAddress =
     liftHandler $ runDB do
-        mExisted <- selectFirst [#stellarAddress ==. stellarAddress] []
+        mExisted <- selectFirst [#stellarAddress ==. Just stellarAddress] []
         case mExisted of
             Just (Entity id _)  -> pure id
             Nothing             -> insert fresh
   where
-    fresh = User{name = Nothing, stellarAddress}
+    fresh = User{name = Nothing, stellarAddress = Just stellarAddress}
 
 selectAll :: PersistSql app => HandlerFor app [Entity User]
 selectAll = runDB $ selectList [] []
@@ -120,24 +120,35 @@ dbDeleteTelegram = delete . TelegramKey
 
 isSigner :: PersistSql app => User -> HandlerFor app Bool
 isSigner User{stellarAddress} =
-    runDB $
-    exists @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. stellarAddress]
+    case stellarAddress of
+        Nothing -> pure False
+        Just key ->
+            runDB $
+            exists @_ @_ @StellarSigner [#target ==. mtlFund, #key ==. key]
 
 isHolder :: PersistSql app => User -> Asset -> HandlerFor app Bool
 isHolder User{stellarAddress} asset =
-    runDB $
-    exists @_ @_ @StellarHolder [#asset ==. asset, #key ==. stellarAddress]
+    case stellarAddress of
+        Nothing -> pure False
+        Just key ->
+            runDB $ exists @_ @_ @StellarHolder [#asset ==. asset, #key ==. key]
 
 getSignerId :: PersistSql app => User -> HandlerFor app (Maybe StellarSignerId)
-getSignerId User{stellarAddress} = do
-    mEntity <- runDB $ getBy $ UniqueSigner mtlFund stellarAddress
-    pure $ entityKey <$> mEntity
+getSignerId User{stellarAddress} =
+    case stellarAddress of
+        Nothing -> pure Nothing
+        Just key -> do
+            mEntity <- runDB $ getBy $ UniqueSigner mtlFund key
+            pure $ entityKey <$> mEntity
 
 getHolderId ::
     PersistSql app => User -> Asset -> HandlerFor app (Maybe StellarHolderId)
-getHolderId User{stellarAddress} asset = do
-    mEntity <- runDB $ getBy $ UniqueHolder asset stellarAddress
-    pure $ entityKey <$> mEntity
+getHolderId User{stellarAddress} asset =
+    case stellarAddress of
+        Nothing -> pure Nothing
+        Just key -> do
+            mEntity <- runDB $ getBy $ UniqueHolder asset key
+            pure $ entityKey <$> mEntity
 
 maybeAuthzRoles ::
     ( MonadHandler m
@@ -150,9 +161,11 @@ maybeAuthzRoles = do
     mUserE <- maybeAuth
     case mUserE of
         Nothing -> pure (Nothing, Set.empty)
-        Just (Entity id User{stellarAddress}) -> do
-            roles <- liftHandler $ runDB $ getRoles stellarAddress
-            pure (Just id, roles)
+        Just (Entity id User{stellarAddress}) ->
+            (Just id,) <$>
+            case stellarAddress of
+                Nothing  -> pure Set.empty
+                Just key -> liftHandler $ runDB $ getRoles key
 
 getRoles :: MonadIO m => Stellar.Address -> SqlPersistT m Roles
 getRoles stellarAddress = do

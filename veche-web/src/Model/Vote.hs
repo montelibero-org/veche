@@ -15,8 +15,10 @@ module Model.Vote (
     updateIssueApproval,
 ) where
 
+-- prelude
 import Import hiding (Value)
 
+-- global
 import Data.Map.Strict qualified as Map
 import Database.Esqueleto.Experimental (from, just, leftJoin, on, select, table,
                                         unValue, val, where_, (:&) ((:&)),
@@ -25,6 +27,7 @@ import Database.Persist (getJustEntity, insert_, selectList, update, (=.))
 import Database.Persist qualified as Persist
 import Yesod.Persist (runDB)
 
+-- component
 import Genesis (fcmAsset, mtlAsset, mtlFund, vecheAsset)
 import Model (Comment (Comment), Issue (Issue), IssueId, StellarHolder,
               StellarSigner, User, UserId, Vote (Vote))
@@ -99,23 +102,26 @@ dbUpdateIssueApproval (Entity issueId Issue{approval = oldApproval, poll}) = do
             Just ByAmountOfFcm   -> getWeightsByAmountOfAsset fcmAsset
             Just ByAmountOfVeche -> getWeightsByAmountOfAsset vecheAsset
             Just ByMtlAmount     -> getWeightsByAmountOfAsset mtlAsset
-            Just BySignerWeight ->
-                addCallStack $
-                    select do
-                        signer :& user <- from $
-                            table @StellarSigner `leftJoin` table @User
-                            `on` \(signer :& user) ->
-                                just signer.key ==. user.stellarAddress
-                        where_ $ signer.target ==. val mtlFund
-                        pure (signer.weight, user.id)
-                    <&> map (bimap (fromIntegral . unValue) unValue)
+            Just BySignerWeight  -> addCallStack selectWeights
+
+    selectWeights :: MonadIO m => SqlPersistT m [(Double, Maybe UserId)]
+    selectWeights =
+        select do
+            signer :& user <- from $
+                table @StellarSigner `leftJoin` table @User
+                `on` \(signer :& user) ->
+                    just (just signer.key) ==. user.stellarAddress
+            where_ $ signer.target ==. val mtlFund
+            pure (signer.weight, user.id)
+        <&> map (bimap (fromIntegral . unValue) unValue)
 
     getWeightsByAmountOfAsset asset =
         addCallStack $
             select do
                 holder :& user <- from $
                     table @StellarHolder `leftJoin` table @User `on`
-                    \(holder :& user) -> just holder.key ==. user.stellarAddress
+                    \(holder :& user) ->
+                        just (just holder.key) ==. user.stellarAddress
                 where_ $ holder.asset ==. val asset
                 pure (holder.amount, user.id)
             <&> map (bimap (realToFrac . unValue) unValue)
