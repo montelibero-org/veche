@@ -42,14 +42,11 @@ commentForestWidget comments =
     |]
 
 commentWidget :: Tree CommentMaterialized -> Widget
-commentWidget
-        (Node
-            CommentMaterialized{id, author, comment, requestedUsers}
-            subComments) =
-    $(widgetFile "comment")
-  where
+commentWidget (Node comment' subComments) = $(widgetFile "comment") where
+    CommentMaterialized{id, author, comment, requestedUsers} = comment'
     Entity authorId commentAuthor = author
     Comment{message, type_, created} = comment
+    isAlive = type_ /= CommentTombstone
     createdTime = formatTime defaultTimeLocale rfc822DateFormat created
 
 commentAnchor :: CommentId -> Text

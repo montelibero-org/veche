@@ -65,6 +65,7 @@ data CommentType
     | CommentReopen
     | CommentStart
     | CommentText
+    | CommentTombstone
     deriving stock (Eq, Show)
 deriveJSON
     defaultOptions{constructorTagModifier = camelTo2 '_' . drop 7}
@@ -74,14 +75,15 @@ deriving via JsonString CommentType instance PersistFieldSql CommentType
 
 instance ToMarkup CommentType where
     toMarkup = \case
-        CommentAbstain  -> "abstained"
-        CommentApprove  -> "approved"
-        CommentClose    -> "closed issue"
-        CommentEdit     -> "edited issue"
-        CommentReject   -> "voted against"
-        CommentReopen   -> "reopened issue"
-        CommentStart    -> "started issue"
-        CommentText     -> ""
+        CommentAbstain      -> "abstained"
+        CommentApprove      -> "approved"
+        CommentClose        -> "closed issue"
+        CommentEdit         -> "edited issue"
+        CommentReject       -> "voted against"
+        CommentReopen       -> "reopened issue"
+        CommentStart        -> "started issue"
+        CommentText         -> ""
+        CommentTombstone    -> "deleted message"
 
 deriving newtype instance PersistField    Stellar.Address
 deriving newtype instance PersistFieldSql Stellar.Address

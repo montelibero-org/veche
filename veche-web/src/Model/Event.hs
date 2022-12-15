@@ -62,14 +62,15 @@ instance Event Comment where
 
     dbGetUsersToDeliver Comment{author, type_, issue, parent} =
         case type_ of
-            CommentAbstain  -> pure []
-            CommentApprove  -> pure []
-            CommentClose    -> pure []
-            CommentEdit     -> pure []
-            CommentReject   -> pure []
-            CommentReopen   -> pure []
-            CommentStart    -> error "not a real comment"
-            CommentText     -> getParentCommentAuthor
+            CommentAbstain      -> pure []
+            CommentApprove      -> pure []
+            CommentClose        -> pure []
+            CommentEdit         -> pure []
+            CommentReject       -> pure []
+            CommentReopen       -> pure []
+            CommentStart        -> error "not a real comment"
+            CommentText         -> getParentCommentAuthor
+            CommentTombstone    -> pure []
       where
         getParentCommentAuthor =
             maybe (getIssueAuthor issue) getCommentAuthor parent
@@ -80,11 +81,12 @@ instance Event Comment where
             CommentAbstain  -> dflt
             CommentApprove  -> dflt
             CommentClose    -> pure [shamlet|Discussion is closed #{issueLink}|]
-            CommentEdit     -> dflt
-            CommentReject   -> dflt
-            CommentReopen   -> reopenMessage
-            CommentStart    -> error "not a real comment"
-            CommentText     -> commentTextMessage app commentE
+            CommentEdit         -> dflt
+            CommentReject       -> dflt
+            CommentReopen       -> reopenMessage
+            CommentStart        -> error "not a real comment"
+            CommentText         -> commentTextMessage app commentE
+            CommentTombstone    -> dflt
       where
         dflt = defaultMessage app commentE
         issueLink = renderUrl app (IssueR issue)

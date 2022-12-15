@@ -1,11 +1,12 @@
 <li>
     <div .comment_widget
-            data-author-id=#{toPathPiece authorId}
-            data-author-name=#{userNameText commentAuthor}
+            :isAlive:data-author-id=#{toPathPiece authorId}
+            :isAlive:data-author-name=#{userNameText commentAuthor}
             data-comment-id=#{toPathPiece id}>
         <div .comment ##{commentAnchor id}>
             <div .comment_header>
-                <span .comment_author>^{userNameWidget commentAuthor}
+                $if isAlive
+                    <span .comment_author>^{userNameWidget commentAuthor}
                 <span .text-muted>
                     <span .comment_action>
                         $if null requestedUsers
@@ -20,11 +21,12 @@
                         #{createdTime}
             $if message /= ""
                 <div .comment_message>#{renderMarkdown message}
-        <div>
-            $if type_ /= CommentStart
-
-                <a .comment-reply .me-3 .text-muted href="#">_{MsgIssueReply}
-            <a .comment-request .text-muted .text-nowrap href="#">
-                _{MsgIssueRequestInfoFrom} #{userNameText commentAuthor}
+        $if isAlive
+            <div>
+                $if type_ /= CommentStart
+                    <a .comment-reply .me-3 .text-muted href="#">
+                        _{MsgIssueReply}
+                <a .comment-request .text-muted .text-nowrap href="#">
+                    _{MsgIssueRequestInfoFrom} #{userNameText commentAuthor}
 
     ^{commentForestWidget subComments}
