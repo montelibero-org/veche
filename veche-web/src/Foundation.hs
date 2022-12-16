@@ -199,7 +199,6 @@ instance YesodAuth App where
     loginHandler = do
         app@App{appSettings = AppSettings{appAuthDummyLogin}} <- getYesod
         routeToParent <- getRouteToParent
-        mmwb <- lookupGetParam "mmwb"
         let createAccountWidgets =
                 [ apLogin
                     (authnStellar $ authnStellarConfig AuthnStellar.Keybase app)
@@ -209,9 +208,8 @@ instance YesodAuth App where
                         authnStellarConfig AuthnStellar.Laboratory app
                     )
                     routeToParent
+                , apLogin authMyMtlWalletBot routeToParent
                 ]
-                ++
-                [apLogin authMyMtlWalletBot routeToParent | not $ null mmwb]
                 ++
                 [apLogin authDummy routeToParent | appAuthDummyLogin]
         let widgetIfTelegramBound = apLogin authTelegram routeToParent
