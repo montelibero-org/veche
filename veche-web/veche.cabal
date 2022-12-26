@@ -161,6 +161,7 @@ test-suite veche-test
     , base               >=4.9.1.0 && <5
     , base64-bytestring
     , blaze-html
+    , bytestring
     , classy-prelude     >=1.5     && <1.6
     , hedgehog
     , hspec              >=2.0.0

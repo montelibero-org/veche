@@ -42,7 +42,7 @@ login :: (Route Auth -> Route App) -> Widget
 login _ = do
     nonce <- liftHandler Verifier.getKeyNoAddress
     [whamlet|
-        <a .btn.btn-primary
+        <a .btn.btn-primary .mymtlwalletbot-authn-start
                 href="https://t.me/MyMTLWalletBot?start=veche_#{nonce}"
                 role=button>
             _{MsgLogInViaMMWB}
@@ -51,7 +51,7 @@ login _ = do
 data AuthnParams = AuthnParams
     { account       :: Text
     , signature_    :: Text
-    , nonce         :: Maybe Text
+    , verifier      :: Maybe Text
         -- ^ Nonce from request.
         -- If present, is checked against the database and the account.
         -- If not, nonce is got from session.
@@ -62,7 +62,7 @@ getAuthnParams =
     runInputGet do
         account     <- ireq textField "account"
         signature_  <- ireq textField "signature"
-        nonce       <- iopt textField "nonce"
+        verifier    <- iopt textField "verifier"
         pure AuthnParams{..}
 
 base64Decode :: MonadHandler m => Text -> m ByteString
@@ -74,17 +74,18 @@ getAuthenticatedAccount = do
     ap <- getAuthnParams
     signatureBs <- base64Decode ap.signature_
     nonce <-
-        case ap.nonce of
-            Nothing -> do
-                mNonce <- Verifier.getAndRemoveKey
-                mNonce ?| invalidArgs ["Bad nonce"]
+        case ap.verifier of
             Just nonce -> do
                 nonceOk <-
                     Verifier.checkAndRemoveKey
                         (Stellar.Address ap.account)
                         nonce
-                unless nonceOk $ invalidArgs ["Bad nonce"]
+                unless nonceOk $ invalidArgs ["Bad verifier"]
                 pure nonce
+            Nothing -> do
+                -- take nonce from session
+                mNonce <- Verifier.getAndRemoveKey
+                mNonce ?| invalidArgs ["Bad verifier"]
     let message = encodeUtf8 $ ap.account <> nonce
     account' <- decodePublicKey ap.account ?| invalidArgs ["Bad public key"]
     unless (verifyBlob account' message signatureBs) $
