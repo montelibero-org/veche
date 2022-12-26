@@ -37,16 +37,16 @@ library
   hs-source-dirs:   lib
 
 executable horizon
-  -- TODO:
-  buildable:        False
-
   -- global
   build-depends:
     , base
     , http-client-tls
+    , optparse-applicative
+    , optparse-generic
     , pretty-simple
-    , servant-cli
     , servant-client
+    , stellar-sdk
+    , text
 
   -- package
   build-depends:    stellar-horizon

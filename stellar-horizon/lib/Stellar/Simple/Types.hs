@@ -41,7 +41,7 @@ shown :: Show a => a -> Shown a
 shown = Shown . show
 
 data Asset = Asset{issuer :: Maybe Text, code :: Text}
-    deriving (Eq, Ord, Read, Show)
+    deriving (Eq, Generic, Ord, Read, Show)
 
 -- | Representation is "XLM" or "{code}:{issuer}"
 assetToText :: Asset -> Text

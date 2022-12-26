@@ -78,6 +78,7 @@ data FeeStats = FeeStats
     { fee_charged   :: FeeDistribution
     , max_fee       :: FeeDistribution
     }
+    deriving (Show)
 
 data Record a = Record
     { paging_token  :: Text
