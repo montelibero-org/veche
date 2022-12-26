@@ -12,6 +12,7 @@ module TestImport
 
 import ClassyPrelude as X hiding (Handler, decodeUtf8, delete, deleteBy, poll)
 
+import Data.Function as X ((&))
 import Data.Proxy as X
 import Data.Text.Encoding qualified
 import Data.Text.Lazy qualified as TextL (Text)
@@ -20,6 +21,7 @@ import Database.Persist.Sql (Single, SqlPersistM, rawExecute, rawSql,
                              runSqlPersistMPool, unSingle)
 import GHC.Stack (withFrozenCallStack)
 import Hedgehog qualified
+import Network.Wai.Test (SResponse (SResponse))
 import Stellar.Horizon.Client qualified as Stellar
 import Test.Hspec as X
 import Text.Blaze.Html as X (Html)
@@ -167,3 +169,6 @@ a === b =
             Hedgehog.check $
             Hedgehog.withTests 1 $ Hedgehog.property $ a Hedgehog.=== b
         unless ok $ liftIO $ expectationFailure ""
+
+getResponseBody :: YesodExample site LByteString
+getResponseBody = withResponse \(SResponse _status _headers body) -> pure body

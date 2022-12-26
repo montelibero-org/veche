@@ -11,15 +11,18 @@ module Authentication.MyMtlWalletBot (authMyMtlWalletBot) where
 
 -- prelude
 import Foundation.Base
-import Import.NoFoundation
+import Import.NoFoundation hiding (ap)
 
 -- global
 import Data.ByteString.Base64 qualified as Base64
 import Data.Text qualified as Text
 import Network.Stellar.Keypair (decodePublicKey)
 import Network.Stellar.Signature (verifyBlob)
-import Yesod.Core (liftHandler)
+import Yesod.Core (badMethod, liftHandler, sendResponse)
 import Yesod.Form (runInputGet)
+
+-- project
+import Stellar.Simple qualified as Stellar
 
 -- component
 import Model.Verifier qualified as Verifier
@@ -46,32 +49,69 @@ login _ = do
     |]
 
 data AuthnParams = AuthnParams
-    { account   :: Text
-    , signature :: Text
+    { account       :: Text
+    , signature_    :: Text
+    , nonce         :: Maybe Text
+        -- ^ Nonce from request.
+        -- If present, is checked against the database and the account.
+        -- If not, nonce is got from session.
     }
+
+getAuthnParams :: Handler AuthnParams
+getAuthnParams =
+    runInputGet do
+        account     <- ireq textField "account"
+        signature_  <- ireq textField "signature"
+        nonce       <- iopt textField "nonce"
+        pure AuthnParams{..}
 
 base64Decode :: MonadHandler m => Text -> m ByteString
 base64Decode =
     either (invalidArgs . pure . Text.pack) pure . Base64.decode . encodeUtf8
 
-getAuthenticatedAccount :: AuthHandler App Text
+getAuthenticatedAccount :: Handler Text
 getAuthenticatedAccount = do
-    AuthnParams{account, signature} <-
-        runInputGet do
-            account   <- ireq textField "account"
-            signature <- ireq textField "signature"
-            pure AuthnParams{..}
-    signatureBs <- base64Decode signature
-    mNonce <- liftHandler Verifier.getAndRemoveKey
-    nonce <- mNonce ?| invalidArgs ["Bad nonce"]
-    let message = encodeUtf8 $ account <> nonce
-    account' <- decodePublicKey account ?| invalidArgs ["Bad public key"]
+    ap <- getAuthnParams
+    signatureBs <- base64Decode ap.signature_
+    nonce <-
+        case ap.nonce of
+            Nothing -> do
+                mNonce <- Verifier.getAndRemoveKey
+                mNonce ?| invalidArgs ["Bad nonce"]
+            Just nonce -> do
+                nonceOk <-
+                    Verifier.checkAndRemoveKey
+                        (Stellar.Address ap.account)
+                        nonce
+                unless nonceOk $ invalidArgs ["Bad nonce"]
+                pure nonce
+    let message = encodeUtf8 $ ap.account <> nonce
+    account' <- decodePublicKey ap.account ?| invalidArgs ["Bad public key"]
     unless (verifyBlob account' message signatureBs) $
         invalidArgs ["Bad signature"]
-    pure account
+    pure ap.account
 
 dispatch :: Method -> [Piece] -> AuthHandler App TypedContent
-dispatch _ _ = do
-    account <- getAuthenticatedAccount
-    setCredsRedirect
-        Creds{credsPlugin = pluginName, credsIdent = account, credsExtra = []}
+dispatch method path =
+    case path of
+        -- authentication
+        [] -> do
+            unless (method == "GET") badMethod
+            account <- liftHandler getAuthenticatedAccount
+            setCredsRedirect $ mkCreds account
+        -- make new nonce
+        ["verifier"] -> do
+            unless (method == "POST") badMethod
+            address <- runInputGet $ ireq textField "account"
+            stellarAddress <- validateAddress address
+            nonce <- liftHandler $ Verifier.getKey stellarAddress
+            sendResponse nonce
+        _ -> notFound
+  where
+
+    mkCreds credsIdent =
+        Creds{credsPlugin = pluginName, credsIdent, credsExtra = []}
+
+    validateAddress text
+        | Just _ <- decodePublicKey text = pure $ Stellar.Address text
+        | otherwise                      = invalidArgs ["Bad account"]

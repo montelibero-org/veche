@@ -42,8 +42,7 @@ import Model.User qualified as User
 spec :: Spec
 spec =
     around_ withMockHorizon $
-    withApp $
-    describe "" do
+    withApp do
 
         describe "initial public key form" $
 

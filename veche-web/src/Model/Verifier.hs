@@ -41,29 +41,37 @@ nonceGenerator = unsafePerformIO Crypto.Nonce.new
 sessionNonceKey :: Text
 sessionNonceKey = "auth.verifier.nonce"
 
-setNonce :: MonadHandler m => Text -> m ()
-setNonce = setSession sessionNonceKey
+setSessionNonce :: MonadHandler m => Text -> m ()
+setSessionNonce = setSession sessionNonceKey
 
-lookupNonce :: MonadHandler m => m (Maybe Text)
-lookupNonce = lookupSession sessionNonceKey
+lookupSessionNonce :: MonadHandler m => m (Maybe Text)
+lookupSessionNonce = lookupSession sessionNonceKey
 
-deleteNonce :: MonadHandler m => m ()
-deleteNonce = deleteSession sessionNonceKey
+deleteSessionNonce :: MonadHandler m => m ()
+deleteSessionNonce = deleteSession sessionNonceKey
 
 getKeyNoAddress :: Handler Text
 getKeyNoAddress = do
-    mSessionNonce <- lookupNonce
+    mSessionNonce <- lookupSessionNonce
     case mSessionNonce of
         Just nonce -> pure nonce
         _ -> do
             nonce <- nonce128urlT nonceGenerator
-            setNonce nonce
+            setSessionNonce nonce
             pure nonce
+
+getAndRemoveKey :: Handler (Maybe Text)
+getAndRemoveKey = do
+    mSessionNonce <- lookupSessionNonce
+    for_ mSessionNonce $ const deleteSessionNonce
+    pure mSessionNonce
+
+-- * Using database
 
 getKey :: Stellar.Address -> Handler Text
 getKey userIdent =
     liftHandler . runDB $ do
-        mSessionNonce <- lookupNonce
+        mSessionNonce <- lookupSessionNonce
         mSavedVerifier <-
             case mSessionNonce of
                 Nothing     -> pure Nothing
@@ -76,7 +84,7 @@ getKey userIdent =
                 nonce <- nonce128urlT nonceGenerator
                 let expires = addUTCTime maxTtl now
                 insert_ Verifier{key = nonce, expires, userIdent}
-                setNonce nonce
+                setSessionNonce nonce
                 pure nonce
   where
     minTtl = secondsToNominalDiffTime   60      --  1 minute
@@ -89,13 +97,7 @@ checkAndRemoveKey verifierUserIdent verifierKey =
         case mVerifier of
             Just (Entity verifierId Verifier{expires}) -> do
                 delete verifierId
-                deleteNonce
+                deleteSessionNonce
                 now <- liftIO getCurrentTime
                 pure $ now <= expires
             Nothing -> pure False
-
-getAndRemoveKey :: Handler (Maybe Text)
-getAndRemoveKey = do
-    mSessionNonce <- lookupNonce
-    for_ mSessionNonce $ const deleteNonce
-    pure mSessionNonce

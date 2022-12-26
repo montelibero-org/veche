@@ -144,6 +144,7 @@ test-suite veche-test
   type:           exitcode-stdio-1.0
   main-is:        Spec.hs
   other-modules:
+    ApiSpec
     Auth.StellarSpec
     Handler.CommonSpec
     Handler.IssueSpec
@@ -174,6 +175,7 @@ test-suite veche-test
     , text               >=0.11    && <2.0
     , veche
     , wai
+    , wai-extra
     , warp
     , xml-conduit
     , yesod              >=1.6     && <1.7
