@@ -45,6 +45,7 @@ import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
                         voteButtons)
+import Templates.Stellar (renderTx)
 import Templates.User (userNameWidget)
 
 -- | Stellar federated address for the issue
@@ -57,7 +58,8 @@ getIssueR issueId = do
     authnUser <- maybeAuthId
     issueMaterialized <- Issue.load issueId
     let IssueMaterialized
-                { body
+                { attachmentTx
+                , body
                 , comments
                 , escrow
                 , forum = Forum{enablePriceOffer, title = forumTitle}

@@ -58,6 +58,7 @@ IssuePriceOffer: Предлагаемая цена
 IssueContacts: Контакты
 IssuePoll: Голосование
 IssuePublish: Опубликовать
+IssueAttachmentTx: Транзакция
 
 # issue
 IssueOpen: Открыта

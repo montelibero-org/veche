@@ -35,7 +35,8 @@ forums =
     Map.fromList
         [   ( ForumKey "FCM-HOLDERS"
             , Forum
-                { enableContacts    = False
+                { enableAttachTx    = False
+                , enableContacts    = False
                 , enablePriceOffer  = False
                 , pollOptions       = [ByAmountOfFcm]
                 , requireRole       = Just HolderOfFcm
@@ -44,7 +45,8 @@ forums =
             )
         ,   ( ForumKey "MTL-HOLDERS"
             , Forum
-                { enableContacts    = False
+                { enableAttachTx    = False
+                , enableContacts    = False
                 , enablePriceOffer  = False
                 , pollOptions       = [ByMtlAmount, BySignerWeight]
                 , requireRole       = Just MtlHolder
@@ -53,7 +55,8 @@ forums =
             )
         ,   ( ForumKey "MTL-SIGNERS"
             , Forum
-                { enableContacts    = False
+                { enableAttachTx    = True
+                , enableContacts    = False
                 , enablePriceOffer  = False
                 , pollOptions       = [BySignerWeight]
                 , requireRole       = Just MtlSigner
@@ -62,7 +65,8 @@ forums =
             )
         ,   ( ForumKey "VECHE-HOLDERS"
             , Forum
-                { enableContacts    = False
+                { enableAttachTx    = False
+                , enableContacts    = False
                 , enablePriceOffer  = False
                 , pollOptions       = [ByAmountOfVeche]
                 , requireRole       = Just HolderOfVeche
@@ -71,7 +75,8 @@ forums =
             )
         ,   ( ForumKey "OFFTOPIC"
             , Forum
-                { enableContacts    = False
+                { enableAttachTx    = False
+                , enableContacts    = False
                 , enablePriceOffer  = False
                 , pollOptions       = []
                 , requireRole       = Nothing
@@ -80,7 +85,8 @@ forums =
             )
         ,   ( ForumKey "FREELANCE"
             , Forum
-                { enableContacts    = True
+                { enableAttachTx    = False
+                , enableContacts    = True
                 , enablePriceOffer  = True
                 , pollOptions       = []
                 , requireRole       = Nothing

@@ -63,6 +63,7 @@ import Model (Comment (Comment), Issue (..), IssueId,
               IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
               User, UserId, Vote (Vote))
 import Model qualified
+import Model.Attachment qualified as Attachment
 import Model.Comment (CommentMaterialized (CommentMaterialized))
 import Model.Comment qualified
 import Model.Escrow qualified as Escrow
@@ -87,7 +88,8 @@ data VoteMaterialized = VoteMaterialized
     }
 
 data IssueMaterialized = IssueMaterialized
-    { body                  :: Text
+    { attachmentTx          :: Maybe TransactionEncoded
+    , body                  :: Text
     , comments              :: Forest CommentMaterialized
     , escrow                :: Map Asset Scientific
     , forum                 :: Forum
@@ -226,6 +228,7 @@ load issueId = do
                 Just userId ->
                     Request.selectActiveByIssueAndRequestedUser issueId userId
                 Nothing     -> pure []
+        attachmentTx <- Attachment.getTx issueId
 
         let issueE = Entity issueId issue
             isEditAllowed = any (isAllowed . EditIssue issueE) mUserId
@@ -237,7 +240,8 @@ load issueId = do
                 authenticated && isAllowed (AddIssueVote issueE roles)
         pure
             IssueMaterialized
-                { body
+                { attachmentTx
+                , body
                 , comments
                 , escrow
                 , forum

@@ -37,6 +37,7 @@ library
     Import
     Import.NoFoundation
     Model
+    Model.Attachment
     Model.Comment
     Model.Escrow
     Model.Event
@@ -59,6 +60,7 @@ library
     Templates.Comment
     Templates.DefaultLayout
     Templates.Issue
+    Templates.Stellar
     Templates.User
     Workers.StellarUpdate
     Workers.Telegram

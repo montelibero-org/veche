@@ -87,6 +87,9 @@ $if isJust authnUser && enablePriceOffer
         $maybe contacts <- contacts
             <dt .col-md-2>_{MsgIssueContacts}
             <dd .col-md-10>#{renderMarkdown contacts}
+        $maybe attachmentTx <- attachmentTx
+            <dt .col-md-2>_{MsgIssueAttachmentTx}
+            <dd .col-md-10>^{renderTx attachmentTx}
 
 <hr>
 ^{pollWidget}

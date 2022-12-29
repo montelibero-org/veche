@@ -58,6 +58,7 @@ IssuePriceOffer: Price offer
 IssueContacts: Contacts
 IssuePoll: Poll
 IssuePublish: Publish
+IssueAttachmentTx: Transaction
 
 # issue
 IssueOpen: Open

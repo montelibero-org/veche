@@ -21,6 +21,7 @@ module Model.Types (
     StellarMultiSigAddress (..),
     Role (..),
     Roles,
+    TransactionEncoded (..),
 ) where
 
 import ClassyPrelude
@@ -125,7 +126,8 @@ instance PathPiece Role where
 type Roles = Set Role
 
 data Forum = Forum
-    { enableContacts    :: Bool
+    { enableAttachTx    :: Bool
+    , enableContacts    :: Bool
     , enablePriceOffer  :: Bool
     , pollOptions       :: [Poll]
     , requireRole       :: Maybe Role
@@ -150,3 +152,8 @@ newtype ForumId = ForumKey Text
     deriving stock (Generic)
 
 type EntityForum = (ForumId, Forum)
+
+-- | Transaction blob. For Stellar, it must be binary XDR of TransactionEnvelope
+newtype TransactionEncoded = TransactionEncoded ByteString
+    deriving newtype (PersistField, PersistFieldSql)
+    deriving stock (Show)
