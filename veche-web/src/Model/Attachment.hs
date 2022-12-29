@@ -14,7 +14,7 @@ import Database.Persist (selectFirst, (==.))
 import Model (AttachmentTx (AttachmentTx), IssueId)
 import Model qualified
 
-getTx :: MonadIO m => IssueId -> SqlPersistT m (Maybe TransactionEncoded)
+getTx :: MonadIO m => IssueId -> SqlPersistT m (Maybe TransactionBin)
 getTx issue = do
     mAttachment <- selectFirst [#issue ==. issue] []
     for mAttachment \(Entity _ AttachmentTx{code}) -> pure code

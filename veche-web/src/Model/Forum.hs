@@ -21,6 +21,7 @@ module Model.Forum (
 ) where
 
 -- prelude
+import Import.Extra
 import Import.NoFoundation hiding (getEntity404)
 
 -- global

@@ -88,7 +88,8 @@ voteButtons isEnabled issueId currentChoice =
 issueForm :: EntityForum -> Maybe IssueContent -> Form IssueContent
 issueForm (forumId, forum) previousContent = (bform aform){header} where
 
-    Forum   { enableContacts
+    Forum   { enableAttachTx
+            , enableContacts
             , enablePriceOffer
             , pollOptions = enabledPollOptions
             , title = forumTitle
@@ -103,21 +104,24 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                     <a href=@{ForumR forumId}>#{forumTitle}
         |]
 
-    (           previousBody
+    (           previousAttachmentTx
+            ,   previousBody
             ,   previousContacts
             ,   previousPoll
             ,   previousPriceOffer
             ,   previousTitle
             ) =
         case previousContent of
-            Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
-            Just IssueContent{body, contacts, poll, priceOffer, title} ->
-                ( Just $ Textarea body
-                , Textarea <$> contacts
-                , Just poll
-                , Textarea <$> priceOffer :: Maybe Textarea
-                , Just title
-                )
+            Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing)
+            Just    IssueContent
+                    {attachmentTx, body, contacts, poll, priceOffer, title}
+                ->  ( Just $ attachmentTx <&> \(TransactionB64 t) -> Textarea t
+                    , Just $ Textarea body
+                    , Textarea <$> contacts
+                    , Just poll
+                    , Textarea <$> priceOffer :: Maybe Textarea
+                    , Just title
+                    )
 
     aform = do
         title <-
@@ -153,7 +157,15 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 (radioField $ mkOptionList <$> pollOptions)
                 (fieldSettingsLabel MsgIssuePoll){fsName = Just "poll"}
                 previousPoll
-        pure IssueContent{body, contacts, poll, priceOffer, title}
+        attachmentTx <-
+            whenMay enableAttachTx $
+                fmap (TransactionB64 . unTextarea)
+                <$> aopt
+                        textareaField
+                        (fieldSettingsLabel MsgIssueAttachmentTx)
+                            {fsName = Just "attachmentTx"}
+                        previousAttachmentTx
+        pure IssueContent{attachmentTx, body, contacts, poll, priceOffer, title}
 
     pollOptions = do
         mr <- getMessageRender

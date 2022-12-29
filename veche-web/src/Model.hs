@@ -45,7 +45,7 @@ import Stellar.Simple qualified as Stellar
 
 -- component
 import Model.Types (Choice, CommentType, ForumId, Poll, Role,
-                    StellarMultiSigAddress, TransactionEncoded)
+                    StellarMultiSigAddress, TransactionBin)
 
 deriving via JsonString Asset instance PersistField    Asset
 deriving via JsonString Asset instance PersistFieldSql Asset

@@ -18,6 +18,7 @@ module Authentication.Stellar (
 
 -- prelude
 import Foundation.Base
+import Import.Extra
 import Import.NoFoundation hiding (assert)
 
 -- global

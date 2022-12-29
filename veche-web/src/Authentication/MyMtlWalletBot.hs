@@ -11,6 +11,7 @@ module Authentication.MyMtlWalletBot (authMyMtlWalletBot) where
 
 -- prelude
 import Foundation.Base
+import Import.Extra
 import Import.NoFoundation hiding (ap)
 
 -- global

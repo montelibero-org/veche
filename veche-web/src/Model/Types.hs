@@ -21,14 +21,20 @@ module Model.Types (
     StellarMultiSigAddress (..),
     Role (..),
     Roles,
-    TransactionEncoded (..),
+    TransactionB64 (..),
+    TransactionBin (..),
+    decodeTxBase64,
+    encodeTxBase64,
 ) where
 
+-- prelude
 import ClassyPrelude
+import Import.Extra
 
 import Data.Aeson (FromJSON, ToJSON, ToJSONKey, camelTo2,
                    constructorTagModifier, defaultOptions)
 import Data.Aeson.TH (deriveJSON)
+import Data.ByteString.Base64 qualified as Base64
 import Data.Text qualified as Text
 import Database.Persist.Sql (PersistField, PersistFieldSql)
 import Database.Persist.TH (derivePersistField)
@@ -153,7 +159,20 @@ newtype ForumId = ForumKey Text
 
 type EntityForum = (ForumId, Forum)
 
--- | Transaction blob. For Stellar, it must be binary XDR of TransactionEnvelope
-newtype TransactionEncoded = TransactionEncoded ByteString
+-- | Transaction binary. For Stellar, it must be XDR of TransactionEnvelope.
+newtype TransactionBin = TransactionBin ByteString
     deriving newtype (PersistField, PersistFieldSql)
     deriving stock (Show)
+
+-- | Transaction binary encoded as Base64.
+-- Must be Base64 equivalent of 'TransactionBin'.
+newtype TransactionB64 = TransactionB64 Text
+    deriving stock (Show)
+
+encodeTxBase64 :: TransactionBin -> TransactionB64
+encodeTxBase64 =
+    TransactionB64 . decodeUtf8Throw . Base64.encode . unwrap TransactionBin
+
+decodeTxBase64 :: TransactionB64 -> Either String TransactionBin
+decodeTxBase64 =
+    fmap TransactionBin . Base64.decode . encodeUtf8 . unwrap TransactionB64

@@ -38,12 +38,14 @@ module Model.Issue (
 -- prelude
 import Authorization
 import Foundation.Base
+import Import.Extra
 import Import.NoFoundation hiding (groupBy, isNothing)
 
 -- global
 import Data.Coerce (coerce)
 import Data.Map.Strict ((!))
 import Data.Map.Strict qualified as Map
+import Data.Text qualified as Text
 import Database.Esqueleto.Experimental (Value (Value), countRows, from, groupBy,
                                         innerJoin, isNothing, just, leftJoin,
                                         not_, on, select, table, val, where_,
@@ -59,9 +61,9 @@ import Stellar.Simple (Asset)
 
 -- component
 import Genesis (forums)
-import Model (Comment (Comment), Issue (..), IssueId,
-              IssueVersion (IssueVersion), Key (CommentKey), Request (Request),
-              User, UserId, Vote (Vote))
+import Model (AttachmentTx (AttachmentTx), Comment (Comment), Issue (..),
+              IssueId, IssueVersion (IssueVersion), Key (CommentKey),
+              Request (Request), User, UserId, Vote (Vote))
 import Model qualified
 import Model.Attachment qualified as Attachment
 import Model.Comment (CommentMaterialized (CommentMaterialized))
@@ -74,7 +76,8 @@ import Model.User (maybeAuthzRoles, requireAuthzRoles)
 import Model.Vote qualified as Vote
 
 data IssueContent = IssueContent
-    { body          :: Text
+    { attachmentTx  :: Maybe TransactionB64
+    , body          :: Text
     , contacts      :: Maybe Text
     , poll          :: Maybe Poll
     , priceOffer    :: Maybe Text
@@ -88,7 +91,7 @@ data VoteMaterialized = VoteMaterialized
     }
 
 data IssueMaterialized = IssueMaterialized
-    { attachmentTx          :: Maybe TransactionEncoded
+    { attachmentTx          :: Maybe TransactionBin
     , body                  :: Text
     , comments              :: Forest CommentMaterialized
     , escrow                :: Map Asset Scientific
@@ -334,9 +337,12 @@ getContentForEdit issueId =
             get versionId
             ?|> constraintFail
                     "Issue.current_version must exist in IssueVersion table"
+        attachmentTx' <- Attachment.getTx issueId
+        let attachmentTx = encodeTxBase64 <$> attachmentTx'
         pure
             ( (forumId, forum)
-            , IssueContent{title, body, poll, contacts, priceOffer}
+            , IssueContent
+                {attachmentTx, title, body, poll, contacts, priceOffer}
             )
 
 create :: EntityForum -> IssueContent -> Handler IssueId
@@ -346,7 +352,7 @@ create forumE@(forumId, _) content = do
     runDB $ dbCreate forumId content userId
 
 dbCreate ::
-    (HasCallStack, MonadUnliftIO m) =>
+    (HasCallStack, MonadUnliftIO m, MonadHandler m) =>
     ForumId -> IssueContent -> UserId -> SqlPersistT m IssueId
 dbCreate forumId issueContent userId = do
     now <- liftIO getCurrentTime
@@ -370,9 +376,17 @@ dbCreate forumId issueContent userId = do
             IssueVersion{issue = issueId, body, created = now, author = userId}
     versionId <- addCallStack $ insert version
     addCallStack $ update issueId [#curVersion =. Just versionId]
+    for_ attachmentTx \tx ->
+        case decodeTxBase64 tx of
+            Left e -> invalidArgs [Text.pack e]
+            Right code ->
+                insert_
+                    AttachmentTx
+                    {issue = issueId, code, updated = now, updatedBy = userId}
     pure issueId
   where
-    IssueContent{body, contacts, poll, priceOffer, title} = issueContent
+    IssueContent{attachmentTx, body, contacts, poll, priceOffer, title} =
+        issueContent
 
 edit :: IssueId -> IssueContent -> Handler ()
 edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do

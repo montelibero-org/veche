@@ -17,6 +17,7 @@ module Foundation where
 
 -- prelude
 import Foundation.Base
+import Import.Extra
 import Import.NoFoundation
 
 -- global

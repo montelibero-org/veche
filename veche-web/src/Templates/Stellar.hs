@@ -9,7 +9,7 @@ import Import
 import Data.ByteString.Base64 qualified as Base64
 -- import Network.Stellar.TransactionXdr (TransactionEnvelope)
 
-renderTx :: TransactionEncoded -> Widget
-renderTx (TransactionEncoded envelopeXdr) = [whamlet|<code>#{envelopeXdrB64}|]
+renderTx :: TransactionBin -> Widget
+renderTx (TransactionBin envelopeXdr) = [whamlet|<code>#{envelopeXdrB64}|]
   where
     envelopeXdrB64 = decodeUtf8Throw $ Base64.encode envelopeXdr

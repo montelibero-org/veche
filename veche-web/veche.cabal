@@ -35,6 +35,7 @@ library
     Handler.Telegram
     Handler.User
     Import
+    Import.Extra
     Import.NoFoundation
     Model
     Model.Attachment

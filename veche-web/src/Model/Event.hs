@@ -128,10 +128,10 @@ getCommentAuthor commentId = do
 instance Event Issue where
 
     dbGetUsersToDeliver _ =
-        selectList [#notifyIssueAdded ==. True] [] <&> map unwrap
+        selectList [#notifyIssueAdded ==. True] [] <&> map unTg
       where
-        unwrap :: Entity Telegram -> (UserId, Telegram)
-        unwrap (Entity (TelegramKey userId) telegram) = (userId, telegram)
+        unTg :: Entity Telegram -> (UserId, Telegram)
+        unTg (Entity (TelegramKey userId) telegram) = (userId, telegram)
 
     makeMessage app (Entity issueId _) =
         pure

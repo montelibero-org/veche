@@ -4,7 +4,7 @@
 
 AttachmentTx
     issue       IssueId
-    code        TransactionEncoded
+    code        TransactionBin
     updated     UTCTime
     updatedBy   UserId
 
