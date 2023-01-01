@@ -21,69 +21,71 @@
 
 #{renderMarkdown body}
 
-$if isJust authnUser && enablePriceOffer
+$if isJust authnUser
     <dl .row>
-        <dt .col-md-2>Escrow
-        <dd .col-md-10>
-            $if not $ null escrow
-                $forall (asset, amount) <- Map.assocs escrow
+        $if enablePriceOffer
+            <dt .col-md-2>Escrow
+            <dd .col-md-10>
+                $if not $ null escrow
+                    $forall (asset, amount) <- Map.assocs escrow
+                        <p>
+                            #{show $ availableToPay amount}
+                            #{showKnownAsset asset}
+                            <a data-bs-toggle=tooltip
+                                    data-bs-title="#{show amount} #{showKnownAsset asset} minus 2% service fee"
+                                    style="text-decoration: underline dotted;">
+                                ℹ️
+                $if open
                     <p>
-                        #{show $ availableToPay amount} #{showKnownAsset asset}
-                        <a data-bs-toggle=tooltip
-                                data-bs-title="#{show amount} #{showKnownAsset asset} minus 2% service fee"
-                                style="text-decoration: underline dotted;">
-                            ℹ️
-            $if open
-                <p>
-                    <button .btn.btn-success
-                            aria-expanded=false
-                            aria-controls=collapseExample
-                            data-bs-toggle=collapse
-                            data-bs-target="#collapseExample"
-                            type=button>
-                        Sponsor
-                    Motivate performers!
-                <div .card .collapse #collapseExample>
-                    <div .card-body>
-                        <p>
-                            Send any amount of EURMTL to address
-                            <tt #addr>#{issueEscrowAddress issueId}
-                            <button .btn.btn-primary
-                                    #copyaddr
-                                    data-bs-toggle=popover
-                                    data-bs-trigger=focus
-                                    data-bs-placement=top
-                                    data-bs-content="Address copied!">
-                                Copy address
-                        <form .g-2 .row>
-                            <div .col-auto .form-floating .mt-0>
-                                <input #escrowCalc_give .form-control
-                                    min=0
-                                    placeholder=""
-                                    step=0.0000001
-                                    type=number
-                                    value=100>
-                                <label for=escrowCalc_give>Sponsor gives
-                            <div .col-auto .mt-4>
-                                <p>&minus; 2% =
-                            <div .col-auto .form-floating .mt-0>
-                                <input #escrowCalc_get .form-control
-                                    min=0
-                                    placeholder=""
-                                    step=0.0000001
-                                    type=number
-                                    value=98>
-                                <label for=escrowCalc_get>Performer gets
-                        <p>
-                            <a #escrowCalc_stellarPay .btn.btn-primary
-                                    role=button>
-                                Pay with app
-                                <small>(Keybase, Lobstr)
-                        <p .mt-3.mb-0>
-                            <a href=@{PagesEscrowR}>Terms and conditions
-        $maybe priceOffer <- priceOffer
-            <dt .col-md-2>_{MsgIssuePriceOffer}
-            <dd .col-md-10>#{renderMarkdown priceOffer}
+                        <button .btn.btn-success
+                                aria-expanded=false
+                                aria-controls=collapseExample
+                                data-bs-toggle=collapse
+                                data-bs-target="#collapseExample"
+                                type=button>
+                            Sponsor
+                        Motivate performers!
+                    <div .card .collapse #collapseExample>
+                        <div .card-body>
+                            <p>
+                                Send any amount of EURMTL to address
+                                <tt #addr>#{issueEscrowAddress issueId}
+                                <button .btn.btn-primary
+                                        #copyaddr
+                                        data-bs-toggle=popover
+                                        data-bs-trigger=focus
+                                        data-bs-placement=top
+                                        data-bs-content="Address copied!">
+                                    Copy address
+                            <form .g-2 .row>
+                                <div .col-auto .form-floating .mt-0>
+                                    <input #escrowCalc_give .form-control
+                                        min=0
+                                        placeholder=""
+                                        step=0.0000001
+                                        type=number
+                                        value=100>
+                                    <label for=escrowCalc_give>Sponsor gives
+                                <div .col-auto .mt-4>
+                                    <p>&minus; 2% =
+                                <div .col-auto .form-floating .mt-0>
+                                    <input #escrowCalc_get .form-control
+                                        min=0
+                                        placeholder=""
+                                        step=0.0000001
+                                        type=number
+                                        value=98>
+                                    <label for=escrowCalc_get>Performer gets
+                            <p>
+                                <a #escrowCalc_stellarPay .btn.btn-primary
+                                        role=button>
+                                    Pay with app
+                                    <small>(Keybase, Lobstr)
+                            <p .mt-3.mb-0>
+                                <a href=@{PagesEscrowR}>Terms and conditions
+            $maybe priceOffer <- priceOffer
+                <dt .col-md-2>_{MsgIssuePriceOffer}
+                <dd .col-md-10>#{renderMarkdown priceOffer}
         $maybe contacts <- contacts
             <dt .col-md-2>_{MsgIssueContacts}
             <dd .col-md-10>#{renderMarkdown contacts}

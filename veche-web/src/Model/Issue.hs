@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedLabels #-}
@@ -389,7 +390,7 @@ dbCreate forumId issueContent userId = do
         issueContent
 
 edit :: IssueId -> IssueContent -> Handler ()
-edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
+edit issueId issueContent = do
     now <- liftIO getCurrentTime
     user <- requireAuthId
     runDB do
@@ -417,7 +418,11 @@ edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
         when (body /= oldBody) $ addVersion now user
         when (poll /= oldPoll) $ updatePoll old
         when (title /= oldTitle || body /= oldBody) $ addVersionComment now user
+        updateAttachmentTx now user
   where
+
+    IssueContent{attachmentTx, body, contacts, poll, priceOffer, title} =
+        issueContent
 
     addVersion now user = do
         let version =
@@ -447,6 +452,26 @@ edit issueId IssueContent{body, contacts, poll, priceOffer, title} = do
         update
             issueId
             [#contacts =. contacts, #priceOffer =. priceOffer, #title =. title]
+
+    updateAttachmentTx now user = do
+        oldAttachmentTx <- Attachment.getTx issueId
+        attachmentTx' <-
+            for attachmentTx $
+            decodeTxBase64 >>> \case
+                Left e -> invalidArgs [Text.pack e]
+                Right tx -> pure tx
+        when (attachmentTx' /= oldAttachmentTx)
+            case attachmentTx' of
+                Nothing -> Attachment.deleteTx issueId
+                Just tx ->
+                    Attachment.replaceTx
+                        AttachmentTx
+                        { issue     = issueId
+                        , code      = tx
+                        , updated   = now
+                        , updatedBy = user
+                        }
+
 
 closeReopen :: IssueId -> StateAction -> Handler ()
 closeReopen issueId stateAction = do

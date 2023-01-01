@@ -112,7 +112,8 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
             ,   previousTitle
             ) =
         case previousContent of
-            Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing, Nothing)
+            Nothing ->
+                (Nothing, Nothing, Nothing, Just Nothing, Nothing, Nothing)
             Just    IssueContent
                     {attachmentTx, body, contacts, poll, priceOffer, title}
                 ->  ( Just $ attachmentTx <&> \(TransactionB64 t) -> Textarea t
@@ -162,8 +163,7 @@ issueForm (forumId, forum) previousContent = (bform aform){header} where
                 fmap (TransactionB64 . unTextarea)
                 <$> aopt
                         textareaField
-                        (fieldSettingsLabel MsgIssueAttachmentTx)
-                            {fsName = Just "attachmentTx"}
+                        (bfs MsgIssueAttachmentTx){fsName = Just "attachmentTx"}
                         previousAttachmentTx
         pure IssueContent{attachmentTx, body, contacts, poll, priceOffer, title}
 

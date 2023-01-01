@@ -8,6 +8,8 @@ AttachmentTx
     updated     UTCTime
     updatedBy   UserId
 
+    UniqueTx issue
+
 
 Comment
     author          UserId

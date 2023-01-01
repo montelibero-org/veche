@@ -161,13 +161,13 @@ type EntityForum = (ForumId, Forum)
 
 -- | Transaction binary. For Stellar, it must be XDR of TransactionEnvelope.
 newtype TransactionBin = TransactionBin ByteString
-    deriving newtype (PersistField, PersistFieldSql)
+    deriving newtype (Eq, PersistField, PersistFieldSql)
     deriving stock (Show)
 
 -- | Transaction binary encoded as Base64.
 -- Must be Base64 equivalent of 'TransactionBin'.
 newtype TransactionB64 = TransactionB64 Text
-    deriving stock (Show)
+    deriving stock (Eq, Show)
 
 encodeTxBase64 :: TransactionBin -> TransactionB64
 encodeTxBase64 =
