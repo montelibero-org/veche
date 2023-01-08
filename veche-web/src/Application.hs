@@ -77,7 +77,7 @@ import Handler.Dashboard (getDashboardR)
 import Handler.Forum (getForumIssues, getForumR, getForumsR)
 import Handler.Issue (getForumIssueNewR, getIssueEditR, getIssueR,
                       postForumIssuesR, postIssueCloseR, postIssueR,
-                      postIssueReopenR, postIssueVoteR)
+                      postIssueReopenR, postIssueTxR, postIssueVoteR)
 import Handler.Pages (getPagesEscrowR)
 import Handler.Root (getRootR)
 import Handler.Settings (postSettingsLanguageR)

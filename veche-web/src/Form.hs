@@ -142,3 +142,6 @@ actionButton route classes label isEnabled =
 addAttr :: Text -> Text -> FieldSettings site -> FieldSettings site
 addAttr name value fs@FieldSettings{fsAttrs} = fs{fsAttrs = fsAttrs'} where
     fsAttrs' = (name, value) : fsAttrs
+
+fsAddClass :: Text -> FieldSettings site -> FieldSettings site
+fsAddClass cls fs@FieldSettings{fsAttrs} = fs{fsAttrs = addClass cls fsAttrs}

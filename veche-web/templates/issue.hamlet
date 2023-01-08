@@ -91,7 +91,7 @@ $if isJust authnUser
             <dd .col-md-10>#{renderMarkdown contacts}
         $maybe attachmentTx <- attachmentTx
             <dt .col-md-2>_{MsgIssueAttachmentTx}
-            <dd .col-md-10>^{renderTx attachmentTx}
+            <dd .col-md-10>^{makeTxWidget issueId attachmentTx}
 
 <hr>
 ^{pollWidget}

@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
@@ -7,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Handler.Issue
     ( getIssueEditR
@@ -16,6 +18,7 @@ module Handler.Issue
     , postForumIssuesR
     , postIssueCloseR
     , postIssueReopenR
+    , postIssueTxR
     , postIssueVoteR
     ) where
 
@@ -26,10 +29,13 @@ import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
 import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
+import Yesod.Core (HandlerSite)
+import Yesod.Form.Bootstrap5 (BootstrapSubmit, bfs, bootstrapSubmit)
 
 -- component
 import Genesis (escrowAddress, escrowFederatedHost, fcmAsset, mtlAsset, mtlFund,
                 mtlIssuer, showKnownAsset, vecheAsset)
+import Model.Attachment qualified as Attachment
 import Model.Forum qualified as Forum
 import Model.Issue (Issue (Issue), IssueId,
                     IssueMaterialized (IssueMaterialized),
@@ -45,7 +51,6 @@ import Model.Vote qualified as Vote
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
                         voteButtons)
-import Templates.Stellar (renderTx)
 import Templates.User (userNameWidget)
 
 -- | Stellar federated address for the issue
@@ -150,6 +155,37 @@ showChoice = \case
     Approve -> "👍 Approve"
     Reject  -> "👎 Against"
     Abstain -> "◯ Abstain"
+
+txForm ::
+    (MonadHandler m, HandlerSite m ~ App) =>
+    IssueId -> Maybe TransactionBin -> BForm m TransactionB64
+txForm issue txBin =
+    (bform $
+        (TransactionB64 . unTextarea <$> areq textareaField fs deflt)
+        <* bootstrapSubmit ("Save" :: BootstrapSubmit Text) -- TODO l10n
+    )
+    {action = Just $ IssueTxR issue}
+  where
+    fs = (bfs ("" :: Text)){fsName = Just "tx"} & fsAddClass "font-monospace"
+    deflt =
+        txBin
+        <&> (   encodeTxBase64
+                >>> \(TransactionB64 envelopeXdrBase64) ->
+                        Textarea envelopeXdrBase64
+            )
+
+makeTxWidget :: IssueId -> TransactionBin -> Widget
+makeTxWidget issue txBin = join $ generateFormPostB $ txForm issue $ Just txBin
+
+postIssueTxR :: IssueId -> Handler Void
+postIssueTxR issue = do
+    user <- requireAuthId
+    -- TODO allow required signers only
+    (result, _) <- runFormPostB $ txForm issue Nothing
+    case result of
+        FormSuccess newEnvelopeXdrBase64 ->
+            Attachment.updateTx user issue newEnvelopeXdrBase64
+        _ -> invalidArgs [tshow result]
 
 getForumIssueNewR :: ForumId -> Handler Html
 getForumIssueNewR forumId = do

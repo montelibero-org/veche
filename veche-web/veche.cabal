@@ -61,7 +61,6 @@ library
     Templates.Comment
     Templates.DefaultLayout
     Templates.Issue
-    Templates.Stellar
     Templates.User
     Workers.StellarUpdate
     Workers.Telegram
