@@ -27,9 +27,15 @@ import Import
 -- global
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
+import Network.ONCRPC.XDR (xdrDeserialize)
+import Network.Stellar.TransactionXdr (TransactionEnvelope)
 import Stellar.Simple qualified as Stellar
+import Text.Pretty.Simple (pShowNoColor)
 import Text.Printf (printf)
-import Yesod.Core (HandlerSite)
+import Yesod.Core (HandlerSite, RenderMessage)
+import Yesod.Form (FieldView (FieldView), FormMessage, convertField,
+                   formToAForm)
+import Yesod.Form qualified
 import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm),
                               BootstrapSubmit, bfs, bootstrapSubmit)
 
@@ -157,23 +163,51 @@ showChoice = \case
     Reject  -> "👎 Against"
     Abstain -> "◯ Abstain"
 
+txField ::
+    (Monad m, RenderMessage (HandlerSite m) FormMessage) =>
+    Field m TransactionB64
+txField =
+    convertField
+        (TransactionB64 . unTextarea)
+        (Textarea . unwrap TransactionB64)
+        textareaField
+
+aformWidget :: (MonadHandler m, HandlerSite m ~ App) => Widget -> AForm m ()
+aformWidget widget = formToAForm $ pure (FormSuccess (), [fv]) where
+    fv =
+        FieldView
+        { fvErrors   = Nothing
+        , fvId       = ""
+        , fvInput    = widget
+        , fvLabel    = ""
+        , fvRequired = False
+        , fvTooltip  = Nothing
+        }
+
 txForm ::
     (MonadHandler m, HandlerSite m ~ App) =>
     IssueId -> Maybe TransactionBin -> BForm m TransactionB64
 txForm issue txBin =
-    (bform $
-        (TransactionB64 . unTextarea <$> areq textareaField fs deflt)
-        <* bootstrapSubmit ("Save" :: BootstrapSubmit Text) -- TODO l10n
+    (bform do
+        aformWidget envelopeView
+        tx <- areq txField fs (encodeTxBase64 <$> txBin)
+        bootstrapSubmit ("Save" :: BootstrapSubmit Text) -- TODO l10n
+        pure tx
     )
     {action = Just $ IssueTxR issue, layout = BootstrapBasicForm}
   where
     fs = (bfs ("" :: Text)){fsName = Just "tx"} & fsAddClass "font-monospace"
-    deflt =
-        txBin
-        <&> (   encodeTxBase64
-                >>> \(TransactionB64 envelopeXdrBase64) ->
-                        Textarea envelopeXdrBase64
-            )
+    envelopeView =
+        case txBin of
+            Nothing -> mempty
+            Just (TransactionBin envelopeXdr) ->
+                case xdrDeserialize envelopeXdr of
+                    Left e -> [whamlet|<p .text-danger>#{e}|]
+                    Right (envelope :: TransactionEnvelope) ->
+                        [whamlet|
+                            <pre>
+                                <code>#{pShowNoColor envelope}
+                        |]
 
 makeTxWidget :: IssueId -> TransactionBin -> Widget
 makeTxWidget issue txBin = join $ generateFormPostB $ txForm issue $ Just txBin

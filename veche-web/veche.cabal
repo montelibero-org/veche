@@ -96,6 +96,7 @@ library
     , path-pieces
     , persistent
     , persistent-sqlite
+    , pretty-simple
     , random
     , scientific
     , servant
