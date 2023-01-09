@@ -22,6 +22,7 @@ module Handler.Issue
     , postIssueVoteR
     ) where
 
+-- prelude
 import Import
 
 -- global
@@ -30,7 +31,6 @@ import Network.HTTP.Types (badRequest400)
 import Network.ONCRPC.XDR (xdrDeserialize)
 import Network.Stellar.TransactionXdr (TransactionEnvelope)
 import Stellar.Simple qualified as Stellar
-import Text.Pretty.Simple (pShowNoColor)
 import Text.Printf (printf)
 import Yesod.Core (HandlerSite, RenderMessage)
 import Yesod.Form (FieldView (FieldView), FormMessage, convertField,
@@ -55,6 +55,7 @@ import Model.StellarSigner qualified as StellarSigner
 import Model.User (User (User))
 import Model.User qualified
 import Model.Vote qualified as Vote
+import Pretty (prettyEnvelope)
 import Templates.Comment (commentForestWidget, commentForm)
 import Templates.Issue (closeReopenButton, editIssueForm, newIssueForm,
                         voteButtons)
@@ -206,7 +207,7 @@ txForm issue txBin =
                     Right (envelope :: TransactionEnvelope) ->
                         [whamlet|
                             <pre>
-                                <code>#{pShowNoColor envelope}
+                                <code>#{prettyEnvelope envelope}
                         |]
 
 makeTxWidget :: IssueId -> TransactionBin -> Widget

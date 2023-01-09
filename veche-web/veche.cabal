@@ -54,6 +54,7 @@ library
     Model.Verifier
     Model.Vote
     Paths_veche
+    Pretty
     RPC
     Settings
     Settings.StaticFiles
@@ -96,7 +97,6 @@ library
     , path-pieces
     , persistent
     , persistent-sqlite
-    , pretty-simple
     , random
     , scientific
     , servant

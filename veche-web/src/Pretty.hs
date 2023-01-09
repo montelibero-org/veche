@@ -1,0 +1,157 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+module Pretty (prettyEnvelope) where
+
+-- prelude
+import Import hiding (Key)
+import Network.Stellar.TransactionXdr
+
+-- global
+import Data.Aeson (Key, Object, Value (Null, Object, String))
+import Data.Aeson.Key (fromText)
+import Data.Aeson.KeyMap (insert)
+import Data.Aeson.KeyMap qualified as KeyMap
+import Data.Scientific (FPFormat (Fixed), formatScientific, scientific)
+import Data.Text qualified as Text
+import Data.Yaml.Pretty (defConfig, encodePretty)
+import Network.ONCRPC.XDR (Array, XDRDiscriminant, XDRUnion, unLengthArray,
+                           xdrSplitUnion)
+import Network.Stellar.Keypair (encodePublic)
+
+prettyEnvelope :: TransactionEnvelope -> Text
+prettyEnvelope =
+    decodeUtf8Throw
+    . encodePretty defConfig
+    . \case
+        TransactionEnvelope'ENVELOPE_TYPE_TX_V0 (TransactionV0Envelope tx _) ->
+            Object $ {- insert "type" "v0" $ -} prettyTransactionV0 tx
+        TransactionEnvelope'ENVELOPE_TYPE_TX (TransactionV1Envelope tx _) ->
+            Object $ {- insert "type" "v1" $ -} prettyTransactionV1 tx
+        TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP
+                (FeeBumpTransactionEnvelope tx _)
+            -> String $ tshow tx
+
+prettyTransactionV0 :: TransactionV0 -> Object
+prettyTransactionV0
+        TransactionV0
+        { transactionV0'fee
+        , transactionV0'memo
+        , transactionV0'operations
+        , transactionV0'sourceAccountEd25519
+        , transactionV0'timeBounds
+        }
+    =   KeyMap.filter (/= Null) $
+        KeyMap.fromList
+            [ "account" .= prettyPublicKey' transactionV0'sourceAccountEd25519
+            , "fee" .= prettyFee transactionV0'fee
+            , "memo" .= prettyMemo transactionV0'memo
+            , "operations" .= prettyOperations transactionV0'operations
+            , "time bounds" .= show transactionV0'timeBounds
+            ]
+
+prettyTransactionV1 :: Transaction -> Object
+prettyTransactionV1
+        Transaction
+        { transaction'cond
+        , transaction'fee
+        , transaction'memo
+        , transaction'operations
+        , transaction'sourceAccount
+        }
+    =   KeyMap.filter (/= Null) $
+        KeyMap.fromList
+            [ "account"    .= prettyMuxedAddress transaction'sourceAccount
+            , "cond"       .= prettyCond transaction'cond
+            , "fee"        .= prettyFee transaction'fee
+            , "memo"       .= prettyMemo transaction'memo
+            , "operations" .= prettyOperations transaction'operations
+            ]
+
+prettyOperations :: Array 100 Operation -> [Object]
+prettyOperations = map prettyOperation . toList . unLengthArray
+
+prettyCond :: Preconditions -> Value
+prettyCond = \case
+    Preconditions'PRECOND_NONE -> Null
+    c -> String $ tshow c
+
+prettyMemo :: Memo -> Value
+prettyMemo = \case
+    Memo'MEMO_NONE -> Null
+    m -> String $ tshow m
+
+prettyOperation :: Operation -> Object
+prettyOperation (Operation sourceAccount body) =
+    maybe identity (insert "sourceAccount" . String . prettyPublicKey) sourceAccount $
+    fromText (tshow $ xdrUnionType body) .= prettyOperationBody body
+
+prettyOperationBody :: OperationBody -> Object
+prettyOperationBody = \case
+    OperationBody'SET_OPTIONS op -> prettySetOptions op
+    unknown -> KeyMap.fromList ["unknown" .= show unknown]
+
+xdrUnionType :: XDRUnion a => a -> XDRDiscriminant a
+xdrUnionType = toEnum . fromIntegral . fst . xdrSplitUnion
+
+prettySetOptions :: SetOptionsOp -> Object
+prettySetOptions
+        SetOptionsOp
+        { setOptionsOp'clearFlags
+        , setOptionsOp'highThreshold
+        , setOptionsOp'homeDomain
+        , setOptionsOp'inflationDest
+        , setOptionsOp'lowThreshold
+        , setOptionsOp'masterWeight
+        , setOptionsOp'medThreshold
+        , setOptionsOp'setFlags
+        , setOptionsOp'signer
+        }
+    =   KeyMap.filter (/= Null) $
+        KeyMap.fromList
+            [ "clear flags"        .= setOptionsOp'clearFlags
+            , "set high threshold" .= setOptionsOp'highThreshold
+            , "set home domain"    .= (show <$> setOptionsOp'homeDomain)
+            , "set inflation dest" .= (show <$> setOptionsOp'inflationDest)
+            , "set low threshold"  .= setOptionsOp'lowThreshold
+            , "set master weight"  .= setOptionsOp'masterWeight
+            , "set med threshold"  .= setOptionsOp'medThreshold
+            , "set flags"          .= setOptionsOp'setFlags
+            , maybe ("NO SET SIGNER" .= Null) prettySigner setOptionsOp'signer
+            ]
+
+prettySigner :: Signer -> (Key, Value)
+prettySigner = \case
+    Signer (SignerKey'SIGNER_KEY_TYPE_ED25519 account) 0 ->
+        "remove signer" .= prettyPublicKey' account
+    Signer (SignerKey'SIGNER_KEY_TYPE_ED25519 account) weight ->
+        "add/change signer"
+        .= object ["account" .= prettyPublicKey' account, "weight" .= weight]
+    Signer key 0 -> "remove signer" .= show key
+    Signer key weight ->
+        "add/change signer" .= object ["key" .= show key, "weight" .= weight]
+
+prettyPublicKey :: PublicKey -> Text
+prettyPublicKey (PublicKey'PUBLIC_KEY_TYPE_ED25519 account) =
+    prettyPublicKey' account
+
+prettyPublicKey' :: Uint256 -> Text
+prettyPublicKey' = encodePublic . unLengthArray
+
+prettyMuxedAddress :: MuxedAccount -> Value
+prettyMuxedAddress = \case
+    MuxedAccount'KEY_TYPE_ED25519 account -> String $ prettyPublicKey' account
+    m -> String $ tshow m
+
+prettyFee :: Uint32 -> Text
+prettyFee stroops =
+    mconcat
+        [ tshow stroops
+        , " stroops ("
+        , Text.pack $
+            formatScientific Fixed Nothing $ scientific (toInteger stroops) (-7)
+        , " XLM)"
+        ]
