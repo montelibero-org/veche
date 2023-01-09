@@ -15,12 +15,13 @@ import Data.Foldable (toList)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import GHC.Stack (HasCallStack)
+import Text.Blaze.Html (Markup)
 import Yesod.Core (HandlerFor, HandlerSite, MonadHandler, RenderMessage, Route,
                    WidgetFor, getUrlRender, whamlet)
 import Yesod.Form (AForm, Enctype, FieldSettings (FieldSettings), FormMessage,
-                   FormRender, FormResult, addClass, areq, fsAttrs, fsName,
-                   generateFormGet', generateFormPost, renderDivsNoLabels,
-                   runFormPostNoToken, textField)
+                   FormRender, FormResult, MForm, addClass, areq, fsAttrs,
+                   fsName, generateFormGet', generateFormPost,
+                   renderDivsNoLabels, runFormPostNoToken, textField)
 import Yesod.Form qualified
 import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapHorizontalForm),
                               BootstrapGridOptions (ColSm), renderBootstrap5)
@@ -32,6 +33,7 @@ data BForm m a = BForm
     , classes           :: [Text]
     , header, footer    :: WidgetFor (HandlerSite m) ()
     , id                :: Maybe Text
+    , layout            :: BootstrapFormLayout
     }
 
 bform :: AForm m a -> BForm m a
@@ -43,7 +45,12 @@ bform aform =
         , footer    = mempty
         , header    = mempty
         , id        = Nothing
+        , layout    = horizontalLayout2and10
         }
+
+horizontalLayout2and10 :: BootstrapFormLayout
+horizontalLayout2and10 =
+    BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10)
 
 makeFormWidget ::
     Text ->
@@ -70,29 +77,32 @@ makeFormWidget method form fields enctype = do
 -- TODO(2022-11-27, cblp) remove m as WidgetFor is already a MonadHandler
 generateFormGetB ::
     MonadHandler m => BForm m a -> m (WidgetFor (HandlerSite m) ())
-generateFormGetB b@BForm{aform} = do
-    (fields, enctype) <- generateFormGet' $ renderForm aform
+generateFormGetB b = do
+    (fields, enctype) <- generateFormGet' $ renderForm b
     pure $ makeFormWidget "get" b fields enctype
 
 -- TODO(2022-11-27, cblp) remove m as WidgetFor is already a MonadHandler
 generateFormPostB ::
     (MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>
     BForm m a -> m (WidgetFor (HandlerSite m) ())
-generateFormPostB b@BForm{aform} = do
-    (fields, enctype) <- generateFormPost $ renderForm aform
+generateFormPostB b = do
+    (fields, enctype) <- generateFormPost $ renderForm b
     pure $ makeFormWidget "post" b fields enctype
 
 runFormPostB ::
     (MonadHandler m) =>
     BForm m a -> m (FormResult a, WidgetFor (HandlerSite m) ())
-runFormPostB b@BForm{aform} = do
-    ((result, fields), enctype) <- runFormPostNoToken $ renderForm aform
+runFormPostB b = do
+    ((result, fields), enctype) <- runFormPostNoToken $ renderForm b
     pure (result, makeFormWidget "post" b fields enctype)
 
-renderForm :: Monad m => FormRender m a
-renderForm =
-    renderBootstrap5 $
-    BootstrapHorizontalForm (ColSm 0) (ColSm 2) (ColSm 0) (ColSm 10)
+renderForm ::
+    Monad m =>
+    BForm m a -> Markup -> MForm m (FormResult a, WidgetFor (HandlerSite m) ())
+renderForm BForm{aform, layout} = renderBootstrap5 layout aform
+
+renderFormHorizontal :: Monad m => FormRender m a
+renderFormHorizontal = renderBootstrap5 horizontalLayout2and10
 
 actionForm ::
     (HasCallStack, MonadHandler m, RenderMessage (HandlerSite m) FormMessage) =>

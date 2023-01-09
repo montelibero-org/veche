@@ -30,7 +30,8 @@ import Network.HTTP.Types (badRequest400)
 import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
 import Yesod.Core (HandlerSite)
-import Yesod.Form.Bootstrap5 (BootstrapSubmit, bfs, bootstrapSubmit)
+import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm),
+                              BootstrapSubmit, bfs, bootstrapSubmit)
 
 -- component
 import Genesis (escrowAddress, escrowFederatedHost, fcmAsset, mtlAsset, mtlFund,
@@ -164,7 +165,7 @@ txForm issue txBin =
         (TransactionB64 . unTextarea <$> areq textareaField fs deflt)
         <* bootstrapSubmit ("Save" :: BootstrapSubmit Text) -- TODO l10n
     )
-    {action = Just $ IssueTxR issue}
+    {action = Just $ IssueTxR issue, layout = BootstrapBasicForm}
   where
     fs = (bfs ("" :: Text)){fsName = Just "tx"} & fsAddClass "font-monospace"
     deflt =

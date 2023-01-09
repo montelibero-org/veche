@@ -56,7 +56,7 @@ commentForm ::
     -- | Just if known (for rendering), Nothing if unknown (for reading)
     Maybe (IssueId, [IssueRequestMaterialized]) ->
     (Html -> MForm Handler (FormResult CommentInput, Widget))
-commentForm = renderForm . commentAForm
+commentForm = renderFormHorizontal . commentAForm
 
 commentAForm ::
     -- | Just if known (for rendering), Nothing if unknown (for reading)
