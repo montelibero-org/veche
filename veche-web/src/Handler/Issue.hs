@@ -26,16 +26,18 @@ module Handler.Issue
 import Import
 
 -- global
+import Data.ByteString qualified as BS
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
-import Network.ONCRPC.XDR (xdrDeserialize)
+import Network.ONCRPC.XDR (LengthArray (unLengthArray), lengthArray',
+                           xdrDeserialize, xdrSerialize)
+import Network.Stellar.Keypair (decodePublic')
 import Network.Stellar.TransactionXdr (TransactionEnvelope)
+import Network.Stellar.TransactionXdr qualified as XDR
 import Stellar.Simple qualified as Stellar
 import Text.Printf (printf)
-import Yesod.Core (HandlerSite, RenderMessage)
-import Yesod.Form (FieldView (FieldView), FormMessage, convertField,
-                   formToAForm)
-import Yesod.Form qualified
+import Yesod.Core (HandlerSite, RenderMessage, liftHandler)
+import Yesod.Form (FormMessage, convertField)
 import Yesod.Form.Bootstrap5 (BootstrapFormLayout (BootstrapBasicForm),
                               BootstrapSubmit, bfs, bootstrapSubmit)
 
@@ -173,24 +175,23 @@ txField =
         (Textarea . unwrap TransactionB64)
         textareaField
 
-aformWidget :: (MonadHandler m, HandlerSite m ~ App) => Widget -> AForm m ()
-aformWidget widget = formToAForm $ pure (FormSuccess (), [fv]) where
-    fv =
-        FieldView
-        { fvErrors   = Nothing
-        , fvId       = ""
-        , fvInput    = widget
-        , fvLabel    = ""
-        , fvRequired = False
-        , fvTooltip  = Nothing
-        }
+-- aformWidget :: (MonadHandler m, HandlerSite m ~ App) => Widget -> AForm m ()
+-- aformWidget widget = formToAForm $ pure (FormSuccess (), [fv]) where
+--     fv =
+--         FieldView
+--         { fvErrors   = Nothing
+--         , fvId       = ""
+--         , fvInput    = widget
+--         , fvLabel    = ""
+--         , fvRequired = False
+--         , fvTooltip  = Nothing
+--         }
 
 txForm ::
     (MonadHandler m, HandlerSite m ~ App) =>
     IssueId -> Maybe TransactionBin -> BForm m TransactionB64
 txForm issue txBin =
     (bform do
-        aformWidget envelopeView
         tx <- areq txField fs (encodeTxBase64 <$> txBin)
         bootstrapSubmit ("Save" :: BootstrapSubmit Text) -- TODO l10n
         pure tx
@@ -198,20 +199,75 @@ txForm issue txBin =
     {action = Just $ IssueTxR issue, layout = BootstrapBasicForm}
   where
     fs = (bfs ("" :: Text)){fsName = Just "tx"} & fsAddClass "font-monospace"
-    envelopeView =
-        case txBin of
-            Nothing -> mempty
-            Just (TransactionBin envelopeXdr) ->
-                case xdrDeserialize envelopeXdr of
-                    Left e -> [whamlet|<p .text-danger>#{e}|]
-                    Right (envelope :: TransactionEnvelope) ->
-                        [whamlet|
-                            <pre>
-                                <code>#{prettyEnvelope envelope}
-                        |]
+
+signatureHints :: TransactionEnvelope -> [ByteString]
+signatureHints = \case
+    XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_V0
+            (XDR.TransactionV0Envelope _ signatures) ->
+        go signatures
+    XDR.TransactionEnvelope'ENVELOPE_TYPE_TX
+            (XDR.TransactionV1Envelope _ signatures) ->
+        go signatures
+    XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP
+            (XDR.FeeBumpTransactionEnvelope _ signatures) ->
+        go signatures
+  where
+    go signatures =
+        [ unLengthArray hint
+        | XDR.DecoratedSignature hint _ <- toList $ unLengthArray signatures
+        ]
+
+keyHint :: ByteString -> ByteString
+keyHint = BS.takeEnd 4
 
 makeTxWidget :: IssueId -> TransactionBin -> Widget
-makeTxWidget issue txBin = join $ generateFormPostB $ txForm issue $ Just txBin
+makeTxWidget issue txBin = do
+    signersE <- liftHandler $ StellarSigner.getAll mtlFund
+    let signers =
+            [ (account, weight)
+            | Entity _ StellarSigner{key = Stellar.Address account, weight} <-
+                signersE
+            ]
+        totalWeight = sum $ map snd signers
+    case xdrDeserialize envelopeXdr of
+        Left e -> [whamlet|<p .text-danger>#{e}|]
+        Right envelope -> do
+            let hints = signatureHints envelope
+                signaturePresents signer =
+                    keyHint (decodePublic' signer) `elem` hints
+                signersSigs =
+                    sortOn
+                        Down
+                        [ (signaturePresents signer, signer, weight)
+                        | (signer, weight) <- signers
+                        ]
+                signedWeight = sum [w | (True, _, w) <- signersSigs]
+            [whamlet|
+                <pre>
+                    <code>#{prettyEnvelope envelope}
+                <table .table>
+                    <thead>
+                        <tr>
+                            <th>Signer
+                            <th>Weight
+                            <th>Signed
+                    <tbody .table-group-divider>
+                        $forall (sigPresents, signer, weight) <- signersSigs
+                            <tr>
+                                <td .font-monospace>#{signer}
+                                <td>#{weight}
+                                <td>
+                                    $if sigPresents
+                                        ✅
+                    <tfoot .table-group-divider>
+                        <tr>
+                            <th>Total
+                            <td>#{totalWeight}
+                            <td>#{signedWeight}
+            |]
+    join $ generateFormPostB $ txForm issue $ Just txBin
+  where
+    TransactionBin envelopeXdr = txBin
 
 postIssueTxR :: IssueId -> Handler Void
 postIssueTxR issue = do

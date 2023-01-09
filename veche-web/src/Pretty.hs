@@ -46,7 +46,8 @@ prettyTransactionV0
         }
     =   KeyMap.filter (/= Null) $
         KeyMap.fromList
-            [ "account" .= prettyPublicKey' transactionV0'sourceAccountEd25519
+            [ "main account"
+                .= prettyPublicKey' transactionV0'sourceAccountEd25519
             , "fee" .= prettyFee transactionV0'fee
             , "memo" .= prettyMemo transactionV0'memo
             , "operations" .= prettyOperations transactionV0'operations
@@ -64,11 +65,11 @@ prettyTransactionV1
         }
     =   KeyMap.filter (/= Null) $
         KeyMap.fromList
-            [ "account"    .= prettyMuxedAddress transaction'sourceAccount
-            , "cond"       .= prettyCond transaction'cond
-            , "fee"        .= prettyFee transaction'fee
-            , "memo"       .= prettyMemo transaction'memo
-            , "operations" .= prettyOperations transaction'operations
+            [ "main account"  .= prettyMuxedAddress transaction'sourceAccount
+            , "preconditions" .= prettyCond transaction'cond
+            , "fee"           .= prettyFee transaction'fee
+            , "memo"          .= prettyMemo transaction'memo
+            , "operations"    .= prettyOperations transaction'operations
             ]
 
 prettyOperations :: Array 100 Operation -> [Object]
@@ -86,8 +87,11 @@ prettyMemo = \case
 
 prettyOperation :: Operation -> Object
 prettyOperation (Operation sourceAccount body) =
-    maybe identity (insert "sourceAccount" . String . prettyPublicKey) sourceAccount $
     fromText (tshow $ xdrUnionType body) .= prettyOperationBody body
+    & maybe
+        identity
+        (insert "for account" . String . prettyPublicKey)
+        sourceAccount
 
 prettyOperationBody :: OperationBody -> Object
 prettyOperationBody = \case
@@ -129,7 +133,7 @@ prettySigner = \case
         "remove signer" .= prettyPublicKey' account
     Signer (SignerKey'SIGNER_KEY_TYPE_ED25519 account) weight ->
         "add/change signer"
-        .= object ["account" .= prettyPublicKey' account, "weight" .= weight]
+        .= object [fromText (prettyPublicKey' account) .= weight]
     Signer key 0 -> "remove signer" .= show key
     Signer key weight ->
         "add/change signer" .= object ["key" .= show key, "weight" .= weight]
