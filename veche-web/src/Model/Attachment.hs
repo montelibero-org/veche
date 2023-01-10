@@ -118,7 +118,7 @@ updateTx authenticatedUser issue newEnvelopeXdrBase64 = do
     mergeSignatures oldSignatures newSignatures =
         maybe (Left "Too many signatures") Right . XDR.lengthArray $
         foldl
-            (\acc sig -> if sig `elem` old then acc `snoc` sig else acc)
+            (\acc sig -> if sig `notElem` old then acc `snoc` sig else acc)
             old
             (XDR.unLengthArray newSignatures)
       where
