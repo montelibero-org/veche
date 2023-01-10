@@ -26,12 +26,9 @@ module Handler.Issue
 import Import
 
 -- global
-import Data.ByteString qualified as BS
 import Data.Map.Strict qualified as Map
 import Network.HTTP.Types (badRequest400)
-import Network.ONCRPC.XDR (LengthArray (unLengthArray), lengthArray',
-                           xdrDeserialize, xdrSerialize)
-import Network.Stellar.Keypair (decodePublic')
+import Network.ONCRPC.XDR (unLengthArray, xdrDeserialize)
 import Network.Stellar.TransactionXdr (TransactionEnvelope)
 import Network.Stellar.TransactionXdr qualified as XDR
 import Stellar.Simple qualified as Stellar
@@ -217,29 +214,24 @@ signatureHints = \case
         | XDR.DecoratedSignature hint _ <- toList $ unLengthArray signatures
         ]
 
-keyHint :: ByteString -> ByteString
-keyHint = BS.takeEnd 4
-
 makeTxWidget :: IssueId -> TransactionBin -> Widget
 makeTxWidget issue txBin = do
     signersE <- liftHandler $ StellarSigner.getAll mtlFund
     let signers =
-            [ (account, weight)
-            | Entity _ StellarSigner{key = Stellar.Address account, weight} <-
-                signersE
+            [ (account, Attachment.signerKeyHint signer, weight)
+            | Entity _ signer <- signersE
+            , let StellarSigner{key = Stellar.Address account, weight} = signer
             ]
-        totalWeight = sum $ map snd signers
+        totalWeight = sum [w | (_, _, w) <- signers]
     case xdrDeserialize envelopeXdr of
         Left e -> [whamlet|<p .text-danger>#{e}|]
         Right envelope -> do
             let hints = signatureHints envelope
-                signaturePresents signer =
-                    keyHint (decodePublic' signer) `elem` hints
                 signersSigs =
                     sortOn
                         Down
-                        [ (signaturePresents signer, signer, weight)
-                        | (signer, weight) <- signers
+                        [ (hint `elem` hints, signer, weight)
+                        | (signer, hint, weight) <- signers
                         ]
                 signedWeight = sum [w | (True, _, w) <- signersSigs]
             [whamlet|

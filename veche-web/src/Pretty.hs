@@ -15,11 +15,12 @@ import Data.Aeson (Key, Object, Value (Null, Object, String))
 import Data.Aeson.Key (fromText)
 import Data.Aeson.KeyMap (insert)
 import Data.Aeson.KeyMap qualified as KeyMap
+import Data.ByteString.Base32 (encodeBase32)
 import Data.Scientific (FPFormat (Fixed), formatScientific, scientific)
 import Data.Text qualified as Text
 import Data.Yaml.Pretty (defConfig, encodePretty)
-import Network.ONCRPC.XDR (Array, XDRDiscriminant, XDRUnion, unLengthArray,
-                           xdrSplitUnion)
+import Network.ONCRPC.XDR (Array, LengthArray (unLengthArray), XDRDiscriminant,
+                           XDRUnion, unLengthArray, xdrSplitUnion)
 import Network.Stellar.Keypair (encodePublic)
 
 prettyEnvelope :: TransactionEnvelope -> Text
@@ -27,13 +28,33 @@ prettyEnvelope =
     decodeUtf8Throw
     . encodePretty defConfig
     . \case
-        TransactionEnvelope'ENVELOPE_TYPE_TX_V0 (TransactionV0Envelope tx _) ->
-            Object $ {- insert "type" "v0" $ -} prettyTransactionV0 tx
-        TransactionEnvelope'ENVELOPE_TYPE_TX (TransactionV1Envelope tx _) ->
-            Object $ {- insert "type" "v1" $ -} prettyTransactionV1 tx
+        TransactionEnvelope'ENVELOPE_TYPE_TX_V0 (TransactionV0Envelope tx sigs)
+            ->  Object $
+                insert "type" "v0" $
+                insert "signatures" (prettySignatures sigs) $
+                prettyTransactionV0 tx
+        TransactionEnvelope'ENVELOPE_TYPE_TX (TransactionV1Envelope tx sigs) ->
+            Object $
+            insert "type" "v1" $
+            insert "signatures" (prettySignatures sigs) $
+            prettyTransactionV1 tx
         TransactionEnvelope'ENVELOPE_TYPE_TX_FEE_BUMP
-                (FeeBumpTransactionEnvelope tx _)
-            -> String $ tshow tx
+                (FeeBumpTransactionEnvelope tx sigs)
+            ->  object
+                    [ "type"        .= String "fee bump"
+                    , "transaction" .= tshow tx
+                    , "signatures"  .= prettySignatures sigs
+                    ]
+
+prettySignatures :: Array 20 DecoratedSignature -> Value
+prettySignatures = array . map prettySignature . toList . unLengthArray
+
+prettySignature :: DecoratedSignature -> Value
+prettySignature (DecoratedSignature hint _) =
+    String $
+        "G..."
+        <> take 5 (drop 7 $ encodeBase32 $ "\0\0\0\0" <> unLengthArray hint)
+        <> "..."
 
 prettyTransactionV0 :: TransactionV0 -> Object
 prettyTransactionV0

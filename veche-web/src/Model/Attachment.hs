@@ -6,23 +6,31 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Model.Attachment (deleteTx, getTx, replaceTx, updateTx) where
+module Model.Attachment (
+    deleteTx, getTx, replaceTx, updateTx, signerKeyHint
+) where
 
 -- prelude
 import Import hiding (deleteBy)
 
 -- global
+import Data.ByteString qualified as BS
 import Data.Foldable (foldl)
 import Data.Text qualified as Text
 import Database.Persist (deleteBy, selectFirst, upsertBy, (=.), (==.))
-import Network.ONCRPC.XDR (xdrDeserialize, xdrSerialize)
+import Network.ONCRPC.XDR (unLengthArray, xdrDeserialize, xdrSerialize)
 import Network.ONCRPC.XDR qualified as XDR
+import Network.Stellar.Keypair (decodePublic')
 import Network.Stellar.TransactionXdr qualified as XDR
+import Stellar.Simple qualified as Stellar
 import Yesod.Persist (runDB)
 
 -- component
-import Model (AttachmentTx (AttachmentTx), IssueId, Unique (UniqueTx), UserId)
+import Genesis (mtlFund)
+import Model (AttachmentTx (AttachmentTx), IssueId, StellarSigner,
+              Unique (UniqueTx), UserId)
 import Model qualified
+import Model.StellarSigner qualified as StellarSigner
 
 getTx :: MonadIO m => IssueId -> SqlPersistT m (Maybe TransactionBin)
 getTx issue = do
@@ -41,6 +49,10 @@ deleteTx :: MonadIO m => IssueId -> SqlPersistT m ()
 deleteTx issue = deleteBy $ UniqueTx issue
 
 type Signatures = XDR.Array 20 XDR.DecoratedSignature
+
+signerKeyHint :: StellarSigner -> ByteString
+signerKeyHint =
+    BS.takeEnd 4 . decodePublic' . unwrap Stellar.Address . StellarSigner.key
 
 updateTx :: UserId -> IssueId -> TransactionB64 -> Handler Void
 updateTx authenticatedUser issue newEnvelopeXdrBase64 = do
@@ -64,6 +76,15 @@ updateTx authenticatedUser issue newEnvelopeXdrBase64 = do
             Left e  -> invalidArgs [Text.pack e]
 
     (oldSignatures, newSignatures) <- checkTxsEqual (oldEnvelope, newEnvelope)
+    signersHints <-
+        map (signerKeyHint . entityVal) <$> StellarSigner.getAll mtlFund
+    let haveExtraSignatures =
+            or  [ unLengthArray hint `notElem` signersHints
+                | XDR.DecoratedSignature hint _ <-
+                    toList $ unLengthArray newSignatures
+                ]
+    when haveExtraSignatures $ invalidArgs ["Non-signer is not allowed"]
+
     resultSignatures <-
         case mergeSignatures oldSignatures newSignatures of
             Right r -> pure r
@@ -120,9 +141,9 @@ updateTx authenticatedUser issue newEnvelopeXdrBase64 = do
         foldl
             (\acc sig -> if sig `notElem` old then acc `snoc` sig else acc)
             old
-            (XDR.unLengthArray newSignatures)
+            (unLengthArray newSignatures)
       where
-        old = XDR.unLengthArray oldSignatures
+        old = unLengthArray oldSignatures
 
     updateSignatures signatures = \case
         XDR.TransactionEnvelope'ENVELOPE_TYPE_TX_V0

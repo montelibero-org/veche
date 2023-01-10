@@ -71,6 +71,7 @@ library
     , aeson
     , base                       >=4.9.1.0 && <5
     , base16-bytestring
+    , base32
     , base64-bytestring
     , blaze-html
     , bytestring
