@@ -65,5 +65,5 @@ makeCreds AuthorizationData{id, username} =
     Creds
         { credsPlugin   = pluginName
         , credsIdent    = tshow id
-        , credsExtra    = [("username", username)]
+        , credsExtra    = [("username", u) | u <- toList username]
         }

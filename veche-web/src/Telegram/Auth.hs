@@ -22,7 +22,7 @@ import Yesod.Form (FormInput, FormMessage, runInputGet)
 
 data AuthorizationData = AuthorizationData
     { id        :: Int64
-    , username  :: Text
+    , username  :: Maybe Text
     }
 
 authorizationDataForm ::
@@ -30,7 +30,7 @@ authorizationDataForm ::
     FormInput m AuthorizationData
 authorizationDataForm = do
     id          <- ireq intField    "id"
-    username    <- ireq textField   "username"
+    username    <- iopt textField   "username"
     pure AuthorizationData{..}
 
 verifyAuthorizationData :: MonadHandler m => ByteString -> m ()

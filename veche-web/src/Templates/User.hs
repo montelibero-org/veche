@@ -41,7 +41,8 @@ userNameText User{name = mName, stellarAddress = Stellar.Address address} =
     abbreviatedAddress = "*" <> Text.takeEnd 4 address
 
 telegramUsernameWidget :: Telegram -> Widget
-telegramUsernameWidget Telegram{username} = [whamlet|<samp>@#{username}|]
+telegramUsernameWidget Telegram{username} =
+    for_ username \u -> [whamlet|<samp>@#{u}|]
 
 unbindTeleram :: Widget
 unbindTeleram =

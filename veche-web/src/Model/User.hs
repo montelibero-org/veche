@@ -97,18 +97,23 @@ setName id mname = runDB $ update id [#name =. mname]
 getTelegram :: PersistSql app => UserId -> HandlerFor app (Maybe Telegram)
 getTelegram uid = runDB $ get (TelegramKey uid)
 
-dbSetTelegram :: MonadIO m => UserId -> Int64 -> Text -> SqlPersistT m ()
+dbSetTelegram :: MonadIO m => UserId -> Int64 -> Maybe Text -> SqlPersistT m ()
 dbSetTelegram uid chatid username =
     repsert key Telegram{chatid, notifyIssueAdded, username}
   where
     key = TelegramKey uid
     notifyIssueAdded = False -- default
 
-setTelegram :: PersistSql app => UserId -> Int64 -> Text -> HandlerFor app ()
+setTelegram ::
+    PersistSql app => UserId -> Int64 -> Maybe Text -> HandlerFor app ()
 setTelegram uid chatid username = runDB $ dbSetTelegram uid chatid username
 
 setTelegramUsername ::
-    (MonadHandler m, PersistSql (HandlerSite m)) => UserId -> Text -> m ()
+    (MonadHandler m, PersistSql (HandlerSite m)) =>
+    UserId ->
+    -- | A user may have absent username
+    Maybe Text ->
+    m ()
 setTelegramUsername id username =
     liftHandler . runDB $ update (TelegramKey id) [#username =. username]
 

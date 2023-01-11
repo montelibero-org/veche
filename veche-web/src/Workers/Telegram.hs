@@ -194,7 +194,7 @@ deliver (SomeEvent eventE@(Entity id event)) = do
     filterWhitelist
         | [] <- whitelist = identity
         | otherwise =
-            filter \(_, Telegram{username}) -> username `elem` whitelist
+            filter \(_, Telegram{username}) -> any (`elem` whitelist) username
 
 randomDelay :: MonadIO m => m ()
 randomDelay =

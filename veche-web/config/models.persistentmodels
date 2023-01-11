@@ -110,8 +110,8 @@ User json
 -- | Telegram binding
 Telegram
     Id                  UserId
-    chatid              Int64   -- unique, but we don't want to enforce it
-    username            Text    -- unique, but we don't want to enforce it
+    chatid              Int64       -- unique, but we don't want to enforce it
+    username            Text Maybe  -- unique, but we don't want to enforce it
     notifyIssueAdded    Bool
 
     deriving Eq

@@ -116,7 +116,7 @@ createUser :: Text -> Maybe (Int64, Text) -> YesodExample App (Entity User)
 createUser ident mTelegram =
     runDB do
         uid <- insert usr
-        for_ mTelegram $ uncurry $ User.dbSetTelegram uid
+        for_ mTelegram \(tid, name) -> User.dbSetTelegram uid tid $ Just name
         pure $ Entity uid usr
   where
     usr = User{name = Nothing, stellarAddress = Stellar.Address ident}

@@ -253,7 +253,7 @@ authenticateTelegram credsIdent credsExtra = do
             pure $ Authenticated userId
   where
     telegramId = either error identity $ readEither $ Text.unpack credsIdent
-    authenticatedUsername = lookup "username" credsExtra & fromMaybe (error "")
+    authenticatedUsername = lookup "username" credsExtra
 
 authnStellarConfig :: AuthnStellar.Flavor -> App -> AuthnStellar.Config
 authnStellarConfig flavor App{appStellarHorizon} =
