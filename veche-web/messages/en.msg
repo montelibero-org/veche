@@ -6,6 +6,7 @@ Issues: Issues
 Profile: Profile
 LogIn: Log in
 LogOut: Log out
+TelegramNotBound: This Telegram account is not bound to any registered user. Please register via Stellar first.
 
 # alerts
 LogInToComment: Log in to see full publication and add comments

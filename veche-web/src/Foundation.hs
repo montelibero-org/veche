@@ -26,9 +26,9 @@ import Data.Text qualified as Text
 import Database.Persist.Sql (SqlBackend)
 import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
-import Yesod.Auth.Message (AuthMessage (LoginTitle, NowLoggedIn))
+import Yesod.Auth.Message (AuthMessage (LoginTitle))
 import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
-                   HandlerSite, SessionBackend, Yesod, addMessage, addMessageI,
+                   HandlerSite, SessionBackend, Yesod, addMessageI, badMethod,
                    defaultClientSessionBackend, defaultCsrfMiddleware,
                    defaultYesodMiddleware, getApprootText, getRouteToParent,
                    guessApproot, unauthorizedI)
@@ -54,7 +54,6 @@ import Model.User qualified as User
 import Model.Verifier qualified as Verifier
 import Templates.DefaultLayout (isAuthRMay)
 import Templates.DefaultLayout qualified
-import Yesod (lookupSession)
 
 -- | A convenient synonym for database access functions.
 type DB a = forall m. (MonadUnliftIO m) => ReaderT SqlBackend m a
@@ -245,10 +244,7 @@ authenticateTelegram credsIdent credsExtra = do
     mUserTelegram <- User.getByTelegramId telegramId
     case mUserTelegram of
         Nothing -> do
-            addMessage
-                "danger"
-                "This telegram account is not bound to any registered user.\
-                    \ Please register via Stellar first."
+            addMessageI "danger" MsgTelegramNotBound
             redirect $ AuthR LoginR
         Just (Entity (TelegramKey userId) Telegram{username}) -> do
             when (username /= authenticatedUsername) $
