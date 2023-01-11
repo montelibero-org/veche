@@ -107,10 +107,7 @@ getTables =
 -- Foundation.hs
 authenticateAs :: HasCallStack => Entity User -> YesodExample App ()
 authenticateAs (Entity _ User{stellarAddress = Stellar.Address ident}) = do
-    request do
-        setMethod "POST"
-        addPostParam "ident" ident
-        setUrl $ AuthR $ PluginR "dummy" []
+    post' (AuthR $ PluginR "dummy" []) [("ident", ident)]
     statusIs 303
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
