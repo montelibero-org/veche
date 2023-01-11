@@ -40,12 +40,8 @@ navbarLeftMenu isAuthenticated =
 
 navbarRightMenu :: Bool -> [(AppMessage, Route App)]
 navbarRightMenu isAuthenticated
-    | isAuthenticated =
-        [ (MsgProfile, UserR        )
-        , (MsgLogOut , AuthR LogoutR)
-        ]
-    | otherwise =
-        [(MsgLogIn, AuthR LoginR)]
+    | isAuthenticated = [(MsgProfile, UserR       )]
+    | otherwise       = [(MsgLogIn  , AuthR LoginR)]
 
 -- | Translate a 'MonadHandler'-like action, e.g. a 'Widget'.
 tr :: MonadHandler m => (Text, m a) -> [(Text, m a)] -> m a
