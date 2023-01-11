@@ -24,6 +24,7 @@ import Import.NoFoundation
 import Control.Monad.Logger (LogLevel (LevelWarn), LogSource)
 import Data.Text qualified as Text
 import Database.Persist.Sql (SqlBackend)
+import Network.Wai (requestMethod)
 import Text.Jasmine (minifym)
 import Yesod.Auth.Dummy (authDummy)
 import Yesod.Auth.Message (AuthMessage (LoginTitle))
@@ -31,7 +32,7 @@ import Yesod.Core (Approot (ApprootRequest), AuthResult (Authorized),
                    HandlerSite, SessionBackend, Yesod, addMessageI, badMethod,
                    defaultClientSessionBackend, defaultCsrfMiddleware,
                    defaultYesodMiddleware, getApprootText, getRouteToParent,
-                   guessApproot, unauthorizedI)
+                   guessApproot, unauthorizedI, waiRequest)
 import Yesod.Core qualified
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -270,7 +271,6 @@ isAuthorized :: Route App -> HandlerFor App AuthResult
 isAuthorized = \case
     -- Routes not requiring authentication.
     AboutR{}                -> authorized
-    AuthR{}                 -> authorized
     FaviconR                -> authorized
     ForumsR{}               -> authorized
     IssueR{}                -> authorized
@@ -280,6 +280,14 @@ isAuthorized = \case
     StaticR{}               -> authorized
     StellarFederationR{}    -> authorized
     WellKnownR{}            -> authorized
+    -- Work around buggy GET-based Yesod's logging out
+    -- https://github.com/yesodweb/yesod/issues/1788
+    AuthR LogoutR -> do
+        method <- requestMethod <$> waiRequest
+        case method of
+            "POST"  -> authorizedIfAuthenticated
+            _       -> badMethod
+    AuthR _ -> authorized
     -- Some forums are public
     ForumR id
         | Forum.isPublic id -> authorized
