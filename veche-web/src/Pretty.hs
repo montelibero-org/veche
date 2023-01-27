@@ -9,14 +9,16 @@ module Pretty (prettyEnvelope) where
 
 -- prelude
 import Import hiding (Key)
-import Network.Stellar.TransactionXdr
+import Network.Stellar.TransactionXdr hiding (Int64)
 
 -- global
-import Data.Aeson (Key, Object, Value (Null, Object, String))
+import Data.Aeson (Key, Object, Value (Null, Object, String), toJSON)
+import Data.Aeson qualified as Aeson
 import Data.Aeson.Key (fromText)
 import Data.Aeson.KeyMap (insert)
 import Data.Aeson.KeyMap qualified as KeyMap
 import Data.ByteString.Base32 (encodeBase32)
+import Data.Char (ord)
 import Data.Scientific (FPFormat (Fixed), formatScientific, scientific)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8With)
@@ -63,7 +65,7 @@ prettyTransactionV0 :: TransactionV0 -> Object
 prettyTransactionV0 TransactionV0{..} = KeyMap.filter (/= Null) $
     KeyMap.fromList
         [ "main account" .= prettyPublicKey' transactionV0'sourceAccountEd25519
-        , "fee"          .= prettyFee transactionV0'fee
+        , "fee"          .= prettyStroops transactionV0'fee
         , "memo"         .= prettyMemo transactionV0'memo
         , "operations"   .= prettyOperations transactionV0'operations
         , "time bounds"  .= show transactionV0'timeBounds
@@ -75,7 +77,7 @@ prettyTransactionV1 Transaction{..} =
     KeyMap.fromList
         [ "main account"  .= prettyMuxedAddress transaction'sourceAccount
         , "preconditions" .= prettyCond transaction'cond
-        , "fee"           .= prettyFee transaction'fee
+        , "fee"           .= prettyStroops transaction'fee
         , "memo"          .= prettyMemo transaction'memo
         , "operations"    .= prettyOperations transaction'operations
         ]
@@ -98,13 +100,14 @@ prettyOperation (Operation sourceAccount body) =
     fromText (tshow $ xdrUnionType body) .= prettyOperationBody body
     & maybe
         identity
-        (insert "for account" . String . prettyPublicKey)
+        (insert "source account" . String . prettyPublicKey)
         sourceAccount
 
 prettyOperationBody :: OperationBody -> Object
 prettyOperationBody = \case
     OperationBody'CHANGE_TRUST   op -> prettyChangeTrust   op
     OperationBody'CREATE_ACCOUNT op -> prettyCreateAccount op
+    OperationBody'PAYMENT        op -> prettyPayment       op
     OperationBody'SET_OPTIONS    op -> prettySetOptions    op
     unknown -> KeyMap.fromList ["unknown_op" .= show unknown]
 
@@ -115,7 +118,11 @@ prettyChangeTrust :: ChangeTrustOp -> Object
 prettyChangeTrust ChangeTrustOp{..} =
     KeyMap.fromList
         [ "line"  .= prettyAsset changeTrustOp'line
-        , "limit" .= changeTrustOp'limit
+        , "limit" .=
+            if changeTrustOp'limit == maxBound then
+                "UNLIMITED"
+            else
+                toJSON changeTrustOp'limit
         ]
 
 prettyAsset :: Asset -> Text
@@ -136,7 +143,15 @@ prettyCreateAccount :: CreateAccountOp -> Object
 prettyCreateAccount CreateAccountOp{..} =
     KeyMap.fromList
         [ "destination"      .= prettyPublicKey createAccountOp'destination
-        , "starting balance" .= createAccountOp'startingBalance
+        , "starting balance" .= prettyStroops createAccountOp'startingBalance
+        ]
+
+prettyPayment :: PaymentOp -> Object
+prettyPayment PaymentOp{..} =
+    KeyMap.fromList
+        [ "destination" .= prettyMuxedAddress paymentOp'destination
+        , "asset"       .= prettyAsset paymentOp'asset
+        , "amount"      .= prettyAssetAmount paymentOp'amount
         ]
 
 prettySetOptions :: SetOptionsOp -> Object
@@ -180,12 +195,22 @@ prettyMuxedAddress = \case
     MuxedAccount'KEY_TYPE_ED25519 account -> String $ prettyPublicKey' account
     m -> String $ tshow m
 
-prettyFee :: Uint32 -> Text
-prettyFee stroops =
+prettyStroops :: (Integral i, Show i) => i -> Text
+prettyStroops stroops =
     mconcat
-        [ tshow stroops
-        , " stroops ("
-        , Text.pack $
+        [ Text.pack $
             formatScientific Fixed Nothing $ scientific (toInteger stroops) (-7)
-        , " XLM)"
+        , " XLM ("
+        , tshow stroops
+        , " stroops)"
+        ]
+
+prettyAssetAmount :: Int64 -> Text
+prettyAssetAmount amount =
+    mconcat
+        [ Text.pack $
+            formatScientific Fixed Nothing $ scientific (toInteger amount) (-7)
+        , " (raw: "
+        , tshow amount
+        , ")"
         ]
