@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Pretty (prettyEnvelope) where
 
@@ -18,6 +19,8 @@ import Data.Aeson.KeyMap qualified as KeyMap
 import Data.ByteString.Base32 (encodeBase32)
 import Data.Scientific (FPFormat (Fixed), formatScientific, scientific)
 import Data.Text qualified as Text
+import Data.Text.Encoding (decodeUtf8With)
+import Data.Text.Encoding.Error (replace)
 import Data.Yaml.Pretty (defConfig, encodePretty)
 import Network.ONCRPC.XDR (Array, LengthArray (unLengthArray), XDRDiscriminant,
                            XDRUnion, unLengthArray, xdrSplitUnion)
@@ -57,41 +60,25 @@ prettySignature (DecoratedSignature hint _) =
         <> "..."
 
 prettyTransactionV0 :: TransactionV0 -> Object
-prettyTransactionV0
-        TransactionV0
-        { transactionV0'fee
-        , transactionV0'memo
-        , transactionV0'operations
-        , transactionV0'sourceAccountEd25519
-        , transactionV0'timeBounds
-        }
-    =   KeyMap.filter (/= Null) $
-        KeyMap.fromList
-            [ "main account"
-                .= prettyPublicKey' transactionV0'sourceAccountEd25519
-            , "fee" .= prettyFee transactionV0'fee
-            , "memo" .= prettyMemo transactionV0'memo
-            , "operations" .= prettyOperations transactionV0'operations
-            , "time bounds" .= show transactionV0'timeBounds
-            ]
+prettyTransactionV0 TransactionV0{..} = KeyMap.filter (/= Null) $
+    KeyMap.fromList
+        [ "main account" .= prettyPublicKey' transactionV0'sourceAccountEd25519
+        , "fee"          .= prettyFee transactionV0'fee
+        , "memo"         .= prettyMemo transactionV0'memo
+        , "operations"   .= prettyOperations transactionV0'operations
+        , "time bounds"  .= show transactionV0'timeBounds
+        ]
 
 prettyTransactionV1 :: Transaction -> Object
-prettyTransactionV1
-        Transaction
-        { transaction'cond
-        , transaction'fee
-        , transaction'memo
-        , transaction'operations
-        , transaction'sourceAccount
-        }
-    =   KeyMap.filter (/= Null) $
-        KeyMap.fromList
-            [ "main account"  .= prettyMuxedAddress transaction'sourceAccount
-            , "preconditions" .= prettyCond transaction'cond
-            , "fee"           .= prettyFee transaction'fee
-            , "memo"          .= prettyMemo transaction'memo
-            , "operations"    .= prettyOperations transaction'operations
-            ]
+prettyTransactionV1 Transaction{..} =
+    KeyMap.filter (/= Null) $
+    KeyMap.fromList
+        [ "main account"  .= prettyMuxedAddress transaction'sourceAccount
+        , "preconditions" .= prettyCond transaction'cond
+        , "fee"           .= prettyFee transaction'fee
+        , "memo"          .= prettyMemo transaction'memo
+        , "operations"    .= prettyOperations transaction'operations
+        ]
 
 prettyOperations :: Array 100 Operation -> [Object]
 prettyOperations = map prettyOperation . toList . unLengthArray
@@ -116,37 +103,37 @@ prettyOperation (Operation sourceAccount body) =
 
 prettyOperationBody :: OperationBody -> Object
 prettyOperationBody = \case
-    OperationBody'SET_OPTIONS op -> prettySetOptions op
-    unknown -> KeyMap.fromList ["unknown" .= show unknown]
+    OperationBody'CREATE_ACCOUNT op -> prettyCreateAccount op
+    OperationBody'SET_OPTIONS    op -> prettySetOptions    op
+    unknown -> KeyMap.fromList ["unknown_op" .= show unknown]
 
 xdrUnionType :: XDRUnion a => a -> XDRDiscriminant a
 xdrUnionType = toEnum . fromIntegral . fst . xdrSplitUnion
 
+prettyCreateAccount :: CreateAccountOp -> Object
+prettyCreateAccount CreateAccountOp{..} =
+    KeyMap.fromList
+        [ "destination"      .= prettyPublicKey createAccountOp'destination
+        , "starting balance" .= createAccountOp'startingBalance
+        ]
+
 prettySetOptions :: SetOptionsOp -> Object
-prettySetOptions
-        SetOptionsOp
-        { setOptionsOp'clearFlags
-        , setOptionsOp'highThreshold
-        , setOptionsOp'homeDomain
-        , setOptionsOp'inflationDest
-        , setOptionsOp'lowThreshold
-        , setOptionsOp'masterWeight
-        , setOptionsOp'medThreshold
-        , setOptionsOp'setFlags
-        , setOptionsOp'signer
-        }
-    =   KeyMap.filter (/= Null) $
-        KeyMap.fromList
-            [ "clear flags"        .= setOptionsOp'clearFlags
-            , "set high threshold" .= setOptionsOp'highThreshold
-            , "set home domain"    .= (show <$> setOptionsOp'homeDomain)
-            , "set inflation dest" .= (show <$> setOptionsOp'inflationDest)
-            , "set low threshold"  .= setOptionsOp'lowThreshold
-            , "set master weight"  .= setOptionsOp'masterWeight
-            , "set med threshold"  .= setOptionsOp'medThreshold
-            , "set flags"          .= setOptionsOp'setFlags
-            , maybe ("NO SET SIGNER" .= Null) prettySigner setOptionsOp'signer
-            ]
+prettySetOptions SetOptionsOp{..} =
+    KeyMap.filter (/= Null) $
+    KeyMap.fromList
+        [ "clear flags"        .= setOptionsOp'clearFlags
+        , "set high threshold" .= setOptionsOp'highThreshold
+        , "set home domain"    .=
+            (   decodeUtf8With (replace '�') . unLengthArray
+            <$> setOptionsOp'homeDomain
+            )
+        , "set inflation dest" .= (show <$> setOptionsOp'inflationDest)
+        , "set low threshold"  .= setOptionsOp'lowThreshold
+        , "set master weight"  .= setOptionsOp'masterWeight
+        , "set med threshold"  .= setOptionsOp'medThreshold
+        , "set flags"          .= setOptionsOp'setFlags
+        , maybe ("NO SET SIGNER" .= Null) prettySigner setOptionsOp'signer
+        ]
 
 prettySigner :: Signer -> (Key, Value)
 prettySigner = \case
