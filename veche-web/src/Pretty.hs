@@ -103,12 +103,34 @@ prettyOperation (Operation sourceAccount body) =
 
 prettyOperationBody :: OperationBody -> Object
 prettyOperationBody = \case
+    OperationBody'CHANGE_TRUST   op -> prettyChangeTrust   op
     OperationBody'CREATE_ACCOUNT op -> prettyCreateAccount op
     OperationBody'SET_OPTIONS    op -> prettySetOptions    op
     unknown -> KeyMap.fromList ["unknown_op" .= show unknown]
 
 xdrUnionType :: XDRUnion a => a -> XDRDiscriminant a
 xdrUnionType = toEnum . fromIntegral . fst . xdrSplitUnion
+
+prettyChangeTrust :: ChangeTrustOp -> Object
+prettyChangeTrust ChangeTrustOp{..} =
+    KeyMap.fromList
+        [ "line"  .= prettyAsset changeTrustOp'line
+        , "limit" .= changeTrustOp'limit
+        ]
+
+prettyAsset :: Asset -> Text
+prettyAsset = \case
+    Asset'ASSET_TYPE_NATIVE                                   -> "XLM"
+    Asset'ASSET_TYPE_CREDIT_ALPHANUM4  (AlphaNum4  code issr) -> go code issr
+    Asset'ASSET_TYPE_CREDIT_ALPHANUM12 (AlphaNum12 code issr) -> go code issr
+  where
+    go code issuer =
+        decodeAsciizOptimistically (unLengthArray code)
+        <> "-"
+        <> prettyPublicKey issuer
+
+decodeAsciizOptimistically :: ByteString -> Text
+decodeAsciizOptimistically = decodeUtf8With (replace '�') . takeWhile (/= 0)
 
 prettyCreateAccount :: CreateAccountOp -> Object
 prettyCreateAccount CreateAccountOp{..} =
@@ -124,7 +146,7 @@ prettySetOptions SetOptionsOp{..} =
         [ "clear flags"        .= setOptionsOp'clearFlags
         , "set high threshold" .= setOptionsOp'highThreshold
         , "set home domain"    .=
-            (   decodeUtf8With (replace '�') . unLengthArray
+            (   decodeAsciizOptimistically . unLengthArray
             <$> setOptionsOp'homeDomain
             )
         , "set inflation dest" .= (show <$> setOptionsOp'inflationDest)
