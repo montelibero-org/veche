@@ -13,12 +13,10 @@ import Network.Stellar.TransactionXdr hiding (Int64)
 
 -- global
 import Data.Aeson (Key, Object, Value (Null, Object, String), toJSON)
-import Data.Aeson qualified as Aeson
 import Data.Aeson.Key (fromText)
 import Data.Aeson.KeyMap (insert)
 import Data.Aeson.KeyMap qualified as KeyMap
 import Data.ByteString.Base32 (encodeBase32)
-import Data.Char (ord)
 import Data.Scientific (FPFormat (Fixed), formatScientific, scientific)
 import Data.Text qualified as Text
 import Data.Text.Encoding (decodeUtf8With)
@@ -197,20 +195,12 @@ prettyMuxedAddress = \case
 
 prettyStroops :: (Integral i, Show i) => i -> Text
 prettyStroops stroops =
-    mconcat
-        [ Text.pack $
-            formatScientific Fixed Nothing $ scientific (toInteger stroops) (-7)
-        , " XLM ("
-        , tshow stroops
-        , " stroops)"
-        ]
+    mconcat [formatTenmillionths stroops, " XLM (", tshow stroops, " stroops)"]
 
 prettyAssetAmount :: Int64 -> Text
 prettyAssetAmount amount =
-    mconcat
-        [ Text.pack $
-            formatScientific Fixed Nothing $ scientific (toInteger amount) (-7)
-        , " (raw: "
-        , tshow amount
-        , ")"
-        ]
+    mconcat [formatTenmillionths amount, " (raw: ", tshow amount, ")"]
+
+formatTenmillionths :: Integral i => i -> Text
+formatTenmillionths x =
+    Text.pack $ formatScientific Fixed Nothing $ scientific (toInteger x) (-7)
