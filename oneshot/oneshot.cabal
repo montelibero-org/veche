@@ -26,6 +26,10 @@ executable escrow-award
   import:  common
   main-is: escrow-award.hs
 
+executable nft-to-dvl
+  import:  common
+  main-is: nft-to-dvl.hs
+
 executable pay
   import:        common
   build-depends: time
