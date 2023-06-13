@@ -90,6 +90,7 @@ data Accounts m = Accounts
         :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Account)
     , getAccount :: m :- Capture "account_id" Address :> Get '[HalJson] Account
+    -- , getAccountOperations :: m :- Capture "account_id" Address :> Get '[HalJson] (Records Operation)
     , getAccountTransactionsDto :: m
         :- Capture "account_id" Address
         :> "transactions"

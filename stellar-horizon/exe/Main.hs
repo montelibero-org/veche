@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -18,9 +19,13 @@ import System.Exit (exitFailure)
 import System.IO (stderr)
 import Text.Pretty.Simple (pHPrint, pPrint)
 
-import Stellar.Horizon.Client (Address (Address), Asset, assetFromText,
-                               getAccount, getAccountsList, getFeeStats,
-                               publicServerBase)
+import Stellar.Horizon.Client (Address (Address), Asset, TransactionOnChain,
+                               assetFromText, getAccount,
+                               getAccountTransactionsDto, getAccountsList,
+                               getFeeStats, publicServerBase,
+                               transactionFromDto)
+import Stellar.Horizon.DTO (Record (Record), Records (Records))
+import Stellar.Horizon.DTO qualified
 
 instance ParseField Address where
     readField = maybeReader $ (\t -> Address t <$ decodePublicKey t) . Text.pack
@@ -38,15 +43,22 @@ data Input
     = Account Address
     | Accounts{asset :: Asset}
     | Fee_stats
+    | Transactions{account :: Address}
     deriving (Generic)
 
 instance ParseRecord Input
 
 cli :: Input -> ClientM ()
 cli = \case
-    Account account -> getAccount account    >>= pPrint
-    Accounts{asset} -> getAccountsList asset >>= pPrint
-    Fee_stats       -> getFeeStats           >>= pPrint
+    Account account         -> getAccount account               >>= pPrint
+    Accounts{asset}         -> getAccountsList asset            >>= pPrint
+    Fee_stats               -> getFeeStats                      >>= pPrint
+    Transactions{account}   -> getAccountTransactions' account  >>= pPrint
+
+getAccountTransactions' :: Address -> ClientM [TransactionOnChain]
+getAccountTransactions' account = do
+    Records records <- getAccountTransactionsDto account Nothing Nothing
+    pure $ map (\Record{value} -> transactionFromDto value) records
 
 main :: IO ()
 main = do

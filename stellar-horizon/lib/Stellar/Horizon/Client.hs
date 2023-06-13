@@ -106,7 +106,12 @@ getAccountTransactionsDto ::
 getFeeStats :: ClientM FeeStats
 submitTransaction :: TxText -> ClientM DTO.Transaction
 Horizon { accounts =
-            Accounts{getAccount, getAccounts, getAccountTransactionsDto}
+            Accounts
+            { getAccount
+            -- , getAccountOperations
+            , getAccounts
+            , getAccountTransactionsDto
+            }
         , getFeeStats
         , submitTransaction
         } =
@@ -114,6 +119,9 @@ Horizon { accounts =
 
 getAccountsList :: Asset -> ClientM [Account]
 getAccountsList = recordsToList . getAccounts . Just
+
+-- getAccountOperationsList :: Address -> ClientM [Operation]
+-- getAccountOperationsList = recordsToList . getAccountOperations
 
 getAccountTransactionsDtoList :: Address -> ClientM [DTO.Transaction]
 getAccountTransactionsDtoList = recordsToList . getAccountTransactionsDto
