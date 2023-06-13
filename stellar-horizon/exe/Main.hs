@@ -20,11 +20,11 @@ import System.IO (stderr)
 import Text.Pretty.Simple (pHPrint, pPrint)
 
 import Stellar.Horizon.Client (Address (Address), Asset, TransactionOnChain,
-                               assetFromText, getAccount,
+                               assetFromText, getAccount, getAccountOperations,
                                getAccountTransactionsDto, getAccountsList,
                                getFeeStats, publicServerBase,
                                transactionFromDto)
-import Stellar.Horizon.DTO (Record (Record), Records (Records))
+import Stellar.Horizon.DTO (Operation, Record (Record), Records (Records))
 import Stellar.Horizon.DTO qualified
 
 instance ParseField Address where
@@ -43,6 +43,7 @@ data Input
     = Account Address
     | Accounts{asset :: Asset}
     | Fee_stats
+    | Operations{account :: Address}
     | Transactions{account :: Address}
     deriving (Generic)
 
@@ -53,7 +54,13 @@ cli = \case
     Account account         -> getAccount account               >>= pPrint
     Accounts{asset}         -> getAccountsList asset            >>= pPrint
     Fee_stats               -> getFeeStats                      >>= pPrint
+    Operations{account}     -> getAccountOperations'   account  >>= pPrint
     Transactions{account}   -> getAccountTransactions' account  >>= pPrint
+
+getAccountOperations' :: Address -> ClientM [Operation]
+getAccountOperations' account = do
+    Records records <- getAccountOperations account Nothing Nothing Nothing
+    pure $ map (\Record{value} -> value) records
 
 getAccountTransactions' :: Address -> ClientM [TransactionOnChain]
 getAccountTransactions' account = do

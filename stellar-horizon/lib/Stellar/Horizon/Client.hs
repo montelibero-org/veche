@@ -34,6 +34,7 @@ module Stellar.Horizon.Client (
     testServerBase,
     -- * Methods
     getAccount,
+    getAccountOperations,
     getAccounts,
     getAccountsList,
     getAccountTransactionsDto,
@@ -98,9 +99,15 @@ testServerBase =
     unsafePerformIO $ parseBaseUrl "https://horizon-testnet.stellar.org/"
 {-# NOINLINE testServerBase #-}
 
+getAccount :: Address -> ClientM Account
+getAccountOperations ::
+    Address ->
+    Maybe Text ->
+    Maybe Natural ->
+    Maybe Bool ->
+    ClientM (Records DTO.Operation)
 getAccounts ::
     Maybe Asset -> Maybe Text -> Maybe Natural -> ClientM (Records Account)
-getAccount :: Address -> ClientM Account
 getAccountTransactionsDto ::
     Address -> Maybe Text -> Maybe Natural -> ClientM (Records DTO.Transaction)
 getFeeStats :: ClientM FeeStats
@@ -108,7 +115,7 @@ submitTransaction :: TxText -> ClientM DTO.Transaction
 Horizon { accounts =
             Accounts
             { getAccount
-            -- , getAccountOperations
+            , getAccountOperations
             , getAccounts
             , getAccountTransactionsDto
             }
@@ -119,9 +126,6 @@ Horizon { accounts =
 
 getAccountsList :: Asset -> ClientM [Account]
 getAccountsList = recordsToList . getAccounts . Just
-
--- getAccountOperationsList :: Address -> ClientM [Operation]
--- getAccountOperationsList = recordsToList . getAccountOperations
 
 getAccountTransactionsDtoList :: Address -> ClientM [DTO.Transaction]
 getAccountTransactionsDtoList = recordsToList . getAccountTransactionsDto

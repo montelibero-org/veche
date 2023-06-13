@@ -15,6 +15,7 @@ module Stellar.Horizon.DTO
     , Balance (..)
     , FeeDistribution
     , FeeStats (..)
+    , Operation (..)
     , Record (..)
     , Records (..)
     , Signer (..)
@@ -37,6 +38,7 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Traversable (for)
 import GHC.Generics (Generic)
+import Numeric.Natural (Natural)
 import Servant.API (FromHttpApiData, ToHttpApiData)
 import Web.PathPieces (PathPiece)
 
@@ -77,6 +79,17 @@ type FeeDistribution = Map Text Text
 data FeeStats = FeeStats
     { fee_charged   :: FeeDistribution
     , max_fee       :: FeeDistribution
+    }
+    deriving (Show)
+
+data Operation = Operation
+    { created_at                :: Text
+    , id                        :: Text
+    , source_account            :: Text
+    , transaction_hash          :: Text
+    , transaction_successful    :: Bool
+    , type_                     :: Text
+    , type_i                    :: Natural
     }
     deriving (Show)
 
@@ -187,6 +200,7 @@ traverse
     [ ''Account
     , ''Balance
     , ''FeeStats
+    , ''Operation
     , ''Signer
     , ''SignerType
     , ''Transaction

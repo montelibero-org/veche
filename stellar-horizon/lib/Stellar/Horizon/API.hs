@@ -42,7 +42,8 @@ import Servant.Docs (DocCapture (DocCapture), DocQueryParam (DocQueryParam),
 import Servant.Docs qualified
 
 -- component
-import Stellar.Horizon.DTO (Account, Address, FeeStats, Records, Transaction)
+import Stellar.Horizon.DTO (Account, Address, FeeStats, Operation, Records,
+                            Transaction)
 import Stellar.Simple.Types (Asset)
 
 data HalJson
@@ -90,7 +91,13 @@ data Accounts m = Accounts
         :> QueryParam "limit" Natural
         :> Get '[HalJson] (Records Account)
     , getAccount :: m :- Capture "account_id" Address :> Get '[HalJson] Account
-    -- , getAccountOperations :: m :- Capture "account_id" Address :> Get '[HalJson] (Records Operation)
+    , getAccountOperations :: m
+        :- Capture "account_id" Address
+        :> "operations"
+        :> QueryParam "cursor" Text
+        :> QueryParam "limit" Natural
+        :> QueryParam "include_failed" Bool
+        :> Get '[HalJson] (Records Operation)
     , getAccountTransactionsDto :: m
         :- Capture "account_id" Address
         :> "transactions"
