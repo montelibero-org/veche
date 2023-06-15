@@ -38,7 +38,6 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Traversable (for)
 import GHC.Generics (Generic)
-import Numeric.Natural (Natural)
 import Servant.API (FromHttpApiData, ToHttpApiData)
 import Web.PathPieces (PathPiece)
 
@@ -89,7 +88,7 @@ data Operation = Operation
     , transaction_hash          :: Text
     , transaction_successful    :: Bool
     , type_                     :: Text
-    , type_i                    :: Natural
+    , type_i                    :: Word
     }
     deriving (Show)
 

@@ -13,7 +13,9 @@ main = do
     envelope <-
         transactionBuilder (Address smithy)
         & tx_feePerOp_guess
-        &.. [op_payment dvl (mkToken a) 1 | a <- [1..8]]
+        &.. [ op_payment (mkToken a) 1 ! #destination dvl ! defaults
+            | a <- [1..8]
+            ]
         & build client
 
     Text.putStrLn $ "envelope: " <> xdrSerializeBase64T envelope

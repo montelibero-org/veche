@@ -13,8 +13,8 @@ main = do
         transactionBuilder escrow
         & tx_feePerOp_guess
         & tx_memoText "E12"
-        & op_payment performer eurmtl 0.98e7
-        & op_payment veche     eurmtl 0.02e7
+        & op_payment eurmtl 0.98e7 ! #destination performer ! defaults
+        & op_payment eurmtl 0.02e7 ! #destination veche     ! defaults
         & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     Text.putStrLn $ signWithSecret secret t & xdrSerializeBase64T

@@ -4,6 +4,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
@@ -108,6 +109,7 @@ mkAsset :: Text -> Text -> Asset
 mkAsset code issuer = Asset{code, issuer = Just issuer}
 
 data Guess a = Already a | Guess
+    deriving (Show)
 
 data TransactionBuilder = TransactionBuilder
     { account       :: Address
@@ -116,6 +118,7 @@ data TransactionBuilder = TransactionBuilder
     , operations    :: Seq XDR.Operation
     , seqNum        :: Guess Int64
     }
+    deriving (Show)
 
 getPublicClient :: "responseTimeout" :? ResponseTimeout -> IO ClientEnv
 getPublicClient (ArgF responseTimeout) = do
@@ -218,31 +221,44 @@ runClientThrow action env = do
     either throwWithCallStackIO pure e
 
 op_payment ::
-    Address -> Asset -> Int64 -> TransactionBuilder -> TransactionBuilder
-op_payment address asset amount =
-    addOperation $
+    Asset ->
+    Int64 ->
+    "destination" :! Address ->
+    "source" :? Address ->
+    TransactionBuilder ->
+    TransactionBuilder
+op_payment asset amount (Arg destination) (ArgF source) =
+    addOperation source $
     XDR.OperationBody'PAYMENT $
     XDR.PaymentOp
     { paymentOp'destination =
-        XDR.MuxedAccount'KEY_TYPE_ED25519 $ addressToXdr address
+        XDR.MuxedAccount'KEY_TYPE_ED25519 $ addressToXdr destination
     , paymentOp'asset = assetToXdr asset
     , paymentOp'amount = amount
     }
 
 op_manageData :: Text -> Maybe Text -> TransactionBuilder -> TransactionBuilder
 op_manageData key mvalue =
-    addOperation $
+    addOperation Nothing $
     XDR.OperationBody'MANAGE_DATA $
     XDR.ManageDataOp
         (XDR.lengthArray' $ encodeUtf8 key)
         (XDR.lengthArray' . encodeUtf8 <$> mvalue)
 
-addOperation :: XDR.OperationBody -> TransactionBuilder -> TransactionBuilder
-addOperation operation'body TransactionBuilder{..} =
+addOperation ::
+    Maybe Address ->
+    XDR.OperationBody ->
+    TransactionBuilder ->
+    TransactionBuilder
+addOperation msource operation'body TransactionBuilder{..} =
     TransactionBuilder
     { operations =
         operations
-        |> XDR.Operation{operation'sourceAccount = Nothing, operation'body}
+        |> XDR.Operation
+            { operation'sourceAccount =
+                XDR.PublicKey'PUBLIC_KEY_TYPE_ED25519 . addressToXdr <$> msource
+            , operation'body
+            }
     , ..
     }
 
@@ -252,18 +268,20 @@ priceToXdr :: Ratio Int32 -> XDR.Price
 priceToXdr r = XDR.Price{price'n = numerator r, price'd = denominator r}
 
 op_manageSellOffer ::
-    "selling" :! Asset ->
-    "buying"  :! Asset ->
-    Int64 ->
-    Price ->
-    TransactionBuilder ->
+    "selling"   :! Asset    ->
+    "unit"      :! Asset    ->
+    "amount"    :! Int64    ->
+    "price"     :! Price    ->
+    "source"    :? Address  ->
+    TransactionBuilder          ->
     TransactionBuilder
-op_manageSellOffer (Arg selling) (Arg buying) amount price =
-    addOperation $
+op_manageSellOffer
+        (Arg selling) (Arg unit) (Arg amount) (Arg price) (ArgF source) =
+    addOperation source $
     XDR.OperationBody'MANAGE_SELL_OFFER $
     XDR.ManageSellOfferOp
         { manageSellOfferOp'amount  = amount
-        , manageSellOfferOp'buying  = assetToXdr buying
+        , manageSellOfferOp'buying  = assetToXdr unit
         , manageSellOfferOp'offerID = 0
         , manageSellOfferOp'price   = priceToXdr price
         , manageSellOfferOp'selling = assetToXdr selling
@@ -317,7 +335,7 @@ defaultOptions =
 
 op_setHomeDomain :: Text -> TransactionBuilder -> TransactionBuilder
 op_setHomeDomain domain =
-    addOperation $
+    addOperation Nothing $
     XDR.OperationBody'SET_OPTIONS $
     defaultOptions
     {XDR.setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain}
@@ -327,7 +345,7 @@ op_setSigners =
     appEndo
     . Map.foldMapWithKey \address weight ->
         Endo $
-        addOperation $
+        addOperation Nothing $
         XDR.OperationBody'SET_OPTIONS $
         defaultOptions
         { XDR.setOptionsOp'signer =
@@ -346,7 +364,7 @@ op_setThresholds ::
     TransactionBuilder ->
     TransactionBuilder
 op_setThresholds (ArgF low) (ArgF med) (ArgF high) =
-    addOperation $
+    addOperation Nothing $
     XDR.OperationBody'SET_OPTIONS $
     defaultOptions
     { XDR.setOptionsOp'lowThreshold  = low

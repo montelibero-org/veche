@@ -23,7 +23,12 @@ main = do
     tx <-
         transactionBuilder distibutor
         & tx_feePerOp 1_000
-        & op_manageSellOffer (#selling vecheToken) (#buying eurmtl) 146e7 1
+        & op_manageSellOffer
+            (#selling vecheToken)
+            (#unit eurmtl)
+            (#amount 146e7)
+            (#price 1)
+            ! defaults
         & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = signWithSecret secret tx

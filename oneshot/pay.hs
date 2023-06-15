@@ -16,7 +16,7 @@ main = do
             transactionBuilder (Address issuer)
             & tx_seqNum 186___0
             & tx_feePerOp_guess
-            & op_payment user token 200e7
+            & op_payment token 200e7 ! #destination user ! defaults
             & build client
 
         secret <- Text.strip <$> Text.readFile "/tmp/secret"
