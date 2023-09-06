@@ -26,6 +26,14 @@ executable escrow-award
   import:  common
   main-is: escrow-award.hs
 
+executable fest
+  import:        common
+  build-depends:
+    , containers
+    , time
+
+  main-is:       fest.hs
+
 executable nft-to-dvl
   import:  common
   main-is: nft-to-dvl.hs
