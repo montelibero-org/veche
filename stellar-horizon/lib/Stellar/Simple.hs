@@ -4,7 +4,6 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
@@ -23,6 +22,7 @@ module Stellar.Simple (
     transactionBuilder,
     op_payment,
     op_setHomeDomain,
+    op_setMasterWeight,
     op_setSigners,
     op_setThresholds,
     op_manageData,
@@ -336,9 +336,17 @@ defaultOptions =
 op_setHomeDomain :: Text -> TransactionBuilder -> TransactionBuilder
 op_setHomeDomain domain =
     addOperation Nothing $
-    XDR.OperationBody'SET_OPTIONS $
-    defaultOptions
-    {XDR.setOptionsOp'homeDomain = Just $ XDR.lengthArray' $ encodeUtf8 domain}
+    XDR.OperationBody'SET_OPTIONS
+        defaultOptions
+        { XDR.setOptionsOp'homeDomain =
+            Just $ XDR.lengthArray' $ encodeUtf8 domain
+        }
+
+op_setMasterWeight :: Word32 -> TransactionBuilder -> TransactionBuilder
+op_setMasterWeight w =
+    addOperation Nothing $
+    XDR.OperationBody'SET_OPTIONS
+    defaultOptions{XDR.setOptionsOp'masterWeight = Just w}
 
 op_setSigners :: Map Address Word8 -> TransactionBuilder -> TransactionBuilder
 op_setSigners =
@@ -346,16 +354,16 @@ op_setSigners =
     . Map.foldMapWithKey \address weight ->
         Endo $
         addOperation Nothing $
-        XDR.OperationBody'SET_OPTIONS $
-        defaultOptions
-        { XDR.setOptionsOp'signer =
-            Just
-            XDR.Signer
-            { signer'key =
-                XDR.SignerKey'SIGNER_KEY_TYPE_ED25519 $ addressToXdr address
-            , signer'weight = fromIntegral weight
+        XDR.OperationBody'SET_OPTIONS
+            defaultOptions
+            { XDR.setOptionsOp'signer =
+                Just
+                XDR.Signer
+                { signer'key =
+                    XDR.SignerKey'SIGNER_KEY_TYPE_ED25519 $ addressToXdr address
+                , signer'weight = fromIntegral weight
+                }
             }
-        }
 
 op_setThresholds ::
     "low"  :? Word32 ->
