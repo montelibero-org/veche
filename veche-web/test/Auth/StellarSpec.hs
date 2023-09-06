@@ -147,12 +147,15 @@ horizonTestApp = serve (Proxy @API) horizonTestServer where
     horizonTestServer =
         Horizon
         { accounts =
-            Accounts{getAccounts, getAccount, getAccountTransactionsDto}
+            Accounts
+            { getAccount
+            , getAccountOperations
+            , getAccounts
+            , getAccountTransactionsDto
+            }
         , getFeeStats
         , submitTransaction
         }
-
-    getAccounts _ _ _ = throwError err404
 
     getAccount :: Stellar.Address -> Servant.Handler Account
     getAccount account_id
@@ -162,6 +165,10 @@ horizonTestApp = serve (Proxy @API) horizonTestServer where
       where
         balances = []
         signers = [signer account_id]
+
+    getAccountOperations _ _ _ _ = throwError err404
+
+    getAccounts _ _ _ = throwError err404
 
     getAccountTransactionsDto _ _ _ = throwError err404
 
