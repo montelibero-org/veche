@@ -34,7 +34,6 @@ stack test
 
 ```sh
 # service keter stop
-# certbot certonly --standalone
-> veche.montelibero.org
+# certbot certonly --standalone -d veche.montelibero.org
 # service keter start
 ```
