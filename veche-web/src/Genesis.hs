@@ -27,8 +27,9 @@ eurmtl = mkAsset "EURMTL" mtlIssuer
 
 mtlFund :: StellarMultiSigAddress
 mtlFund =
-    StellarMultiSigAddress $
-    Stellar.Address "GDX23CPGMQ4LN55VGEDVFZPAJMAUEHSHAMJ2GMCU2ZSHN5QF4TMZYPIS"
+    StellarMultiSigAddress
+        $ Stellar.Address
+            "GACKTN5DAZGWXRWB2WLM6OPBDHAMT6SJNGLJZPQMEZBUR4JUGBX2UK7V"
 
 forums :: Map ForumId Forum
 forums =
