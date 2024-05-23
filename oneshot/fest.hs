@@ -40,6 +40,7 @@ main = do
         submit envelope client >>= print
 
 issuerPub = "GCGWAPG6PKBMHEEAHRLTWHFCAGZTQZDOXDMWBUBCXHLQBSBNWFRYFEST"
+issuerSec = undefined
 
 -- token = mkAsset "MTLFEST" issuerPub
 
