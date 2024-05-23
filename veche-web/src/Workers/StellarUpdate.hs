@@ -143,7 +143,7 @@ updateHoldersCache app@App{appConnPool} asset = do
     holders <- runHorizonClient app $ getAccountsList asset
     let actual =
             Map.fromList
-                [ (account_id, realToFrac amount)
+                [ (account_id, amount)
                 | Account{account_id, balances} <- holders
                 , let amount = getAmount asset balances
                 , amount > 0
