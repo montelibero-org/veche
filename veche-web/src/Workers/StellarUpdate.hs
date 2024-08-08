@@ -1,13 +1,15 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Workers.StellarUpdate (stellarDataUpdater) where
 
@@ -17,28 +19,47 @@ import Import
 -- global
 import Control.Concurrent (threadDelay)
 import Data.Aeson qualified as Aeson
+import Data.Function (on)
 import Data.List (cycle)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Database.Persist.Sql (runSqlPool)
-import Servant.Client (ClientM, mkClientEnv, runClientM)
+import Network.HTTP.Types (notFound404)
+import Servant.Client (
+    ClientError (FailureResponse),
+    ClientM,
+    ResponseF (Response),
+    mkClientEnv,
+    responseStatusCode,
+    runClientM,
+ )
 import System.Random (randomRIO)
 import Yesod.Core (messageLoggerSource)
 
 -- project
-import Stellar.Horizon.Client (Account (Account), Asset (Asset),
-                               Operation (OperationPayment),
-                               Transaction (Transaction),
-                               TransactionOnChain (TransactionOnChain),
-                               getAccount, getAccountTransactionsList,
-                               getAccountsList)
+import Stellar.Horizon.Client (
+    Account (Account),
+    Asset (Asset),
+    Operation (OperationPayment),
+    Transaction (Transaction),
+    TransactionOnChain (TransactionOnChain),
+    getAccount,
+    getAccountTransactionsList,
+    getAccountsList,
+ )
 import Stellar.Horizon.Client qualified as Stellar
 import Stellar.Horizon.DTO (Balance (Balance), SignerType (Ed25519PublicKey))
 import Stellar.Horizon.DTO qualified
 
 -- component
-import Genesis (escrowAddress, fcmAsset, mtlAsset, mtlFund, showKnownAsset,
-                vecheAsset)
+import Genesis (
+    escrowAddress,
+    fcmAsset,
+    mtlAsset,
+    mtlFund,
+    showKnownAsset,
+    vecheAsset,
+ )
 import Model.Escrow qualified as Escrow
 import Model.Issue qualified as Issue
 import Model.StellarHolder (StellarHolder (StellarHolder))
@@ -48,12 +69,11 @@ import Model.StellarSigner qualified as StellarSigner
 
 stellarDataUpdater :: App -> IO ()
 stellarDataUpdater app@App{appLogger} =
-    runLogger $
-    for_ (cycle actions) \action -> do
-        action
-        randomDelay
+    runLogger
+        $ for_ (cycle actions) \action -> do
+            action
+            randomDelay
   where
-
     runLogger = (`runLoggingT` messageLoggerSource app appLogger)
 
     actions =
@@ -64,23 +84,25 @@ stellarDataUpdater app@App{appLogger} =
         , do
             $logInfo "stellarDataUpdater: Updating MTL signers"
             n <- liftIO $ updateSignersCache app
-            $logInfo $
-                "stellarDataUpdater: Updated " <> tshow n <> " MTL signers"
+            $logInfo
+                $ "stellarDataUpdater: Updated "
+                <> tshow n
+                <> " MTL signers"
         , updateHoldersCache' fcmAsset
         , updateHoldersCache' mtlAsset
         , updateHoldersCache' vecheAsset
         ]
 
     updateHoldersCache' asset = do
-        $logInfo $
-            unwords
+        $logInfo
+            $ unwords
                 [ "stellarDataUpdater: Updating"
                 , showKnownAsset asset
                 , "holders"
                 ]
         n <- liftIO $ updateHoldersCache app asset
-        $logInfo $
-            unwords
+        $logInfo
+            $ unwords
                 [ "stellarDataUpdater: Updated"
                 , tshow n
                 , showKnownAsset asset
@@ -123,7 +145,6 @@ updateSignersCache app@App{appConnPool} = do
         when (cached /= actual) Issue.dbUpdateAllIssueApprovals
     pure $ length actual
   where
-
     target = mtlFund
 
     StellarMultiSigAddress address = target
@@ -173,27 +194,40 @@ updateHoldersCache app@App{appConnPool} asset = do
 runHorizonClient :: App -> ClientM a -> IO a
 runHorizonClient App{appHttpManager, appStellarHorizon} action =
     runClientM action (mkClientEnv appHttpManager appStellarHorizon)
-    >>= either throwIO pure
+        >>= either throwIO pure
 
 getAmount :: Asset -> [Balance] -> Scientific
 getAmount Asset{code, issuer} balances =
-    fromMaybe 0 $
-    asum
-        [ readMaybe @Scientific $ Text.unpack balance
-        | Balance{balance, asset_code, asset_issuer} <- balances
-        , asset_code == Just code
-        , asset_issuer == issuer
-        ]
+    fromMaybe 0
+        $ asum
+            [ readMaybe @Scientific $ Text.unpack balance
+            | Balance{balance, asset_code, asset_issuer} <- balances
+            , asset_code == Just code
+            , asset_issuer == issuer
+            ]
 
 updateEscrow :: App -> IO ()
 updateEscrow app@App{appEscrow, appSettings = AppSettings{appEscrowFile}} = do
-    txs <- runHorizonClient app $ getAccountTransactionsList escrowAddress
-    let payments = filterPaymentTxs txs
+    txs <-
+        runHorizonClient app (getAccountTransactionsList escrowAddress)
+            `catch404` \_ -> pure []
+    let newPayments = filterPaymentTxs txs
+    oldPayments <-
+        Aeson.eitherDecodeFileStrict appEscrowFile >>= either error pure
+    let payments = mergePayments oldPayments newPayments
     Aeson.encodeFile appEscrowFile payments
     let escrow = Escrow.buildEscrow escrowCorrections payments
     atomicWriteIORef appEscrow escrow
   where
+    catch404 =
+        catchIf \case
+            FailureResponse _ Response{responseStatusCode} ->
+                responseStatusCode == notFound404
+            _ -> False
 
+    catchIf cond = catchJust $ guard . cond
+
+    -- Take only escrow in/out payment ops from txs
     filterPaymentTxs txs =
         [ toc{Stellar.tx = tx{Stellar.operations = operations'}}
         | toc <- txs
@@ -204,9 +238,22 @@ updateEscrow app@App{appEscrow, appSettings = AppSettings{appEscrowFile}} = do
         , not $ null operations'
         ]
 
+    -- Take only escrow in/out payment ops (from ops)
     filterPaymentOps txSource ops =
         [ op
         | op@(Right OperationPayment{source = opSource, destination}) <- ops
         , let source = fromMaybe txSource opSource
         , destination == escrowAddress || source == escrowAddress
         ]
+
+    mergePayments ::
+        [TransactionOnChain] -> [TransactionOnChain] -> [TransactionOnChain]
+    mergePayments = go `on` sortWith (.time)
+      where
+        go [] news = news
+        go olds [] = olds
+        go (old : olds) (new : news) =
+            case compare old.time new.time of
+                GT -> new : go (old : olds) news
+                EQ | old.id == new.id -> old : go olds news
+                _ -> old : go olds (new : news)
