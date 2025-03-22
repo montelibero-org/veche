@@ -15,7 +15,7 @@ module Handler.Admin (
     getAdminUpdateDatabaseR,
 ) where
 
-{- HLINT ignore "Fuse on/on" -}
+{- HLINT ignore "Use on once" -}
 
 -- prelude
 import Authorization

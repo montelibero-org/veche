@@ -14,7 +14,7 @@ module Model.Request (
     selectActiveByUser,
 ) where
 
-{- HLINT ignore "Fuse on/on" -}
+{- HLINT ignore "Use on once" -}
 
 import Import.NoFoundation
 
