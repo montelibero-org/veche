@@ -83,7 +83,7 @@ instance FromJSON Memo where
         v               -> Aeson.typeMismatch "Memo" v
 
 data PaymentType = DirectPayment | PathPayment
-    deriving (FromJSON, Generic, Read, Show, ToJSON)
+    deriving (Eq, FromJSON, Generic, Read, Show, ToJSON)
 
 data Operation
     = OperationManageData Text (Maybe Text)

@@ -14,6 +14,7 @@ common common
     BlockArguments
     DisambiguateRecordFields
     ImportQualifiedPost
+    LambdaCase
     NamedFieldPuns
     NumDecimals
     OverloadedLabels
@@ -25,6 +26,11 @@ common common
 executable escrow-award
   import:  common
   main-is: escrow-award.hs
+
+executable escrow-destroy
+  import:        common
+  build-depends: pretty-simple
+  main-is:       escrow-destroy.hs
 
 executable fest
   import:        common
