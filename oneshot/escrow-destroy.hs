@@ -1,53 +1,36 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 
+import Control.Exception (SomeException (SomeException), try)
 import Data.Function ((&))
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
+import Data.Typeable (cast)
 import Named (defaults, (!))
+import Servant.Client (ClientError (FailureResponse))
+import Stellar.Horizon.DTO (Transaction)
 import Stellar.Simple (
     Address (Address),
     Asset,
     build,
     getPublicClient,
     mkAsset,
+    op_accountMerge,
+    op_deleteTrust,
     op_payment,
     signWithSecret,
     submit,
     transactionBuilder,
     tx_feePerOp_guess,
-    tx_memoText,
     xdrSerializeBase64T,
  )
-import Text.Pretty.Simple (pPrint)
-
---  18  40.1
---  20  10.0
---  25  10.0
---  26  50.0
-
--- main :: IO ()
--- main = do
---     [escrowFile] <- getArgs
---     escrowE <- eitherDecodeFileStrict' @[TransactionOnChain] escrowFile
---     escrow <- either fail pure escrowE
---     for_ escrow \toc ->
---         withCallContext ("toc = " <> TextL.unpack (pShow toc)) do
---             let tx = toc.tx
---             for_ tx.operations \opE -> do
---                 Right op@OperationPayment{} <- pure opE
---                 op.asset === eurmtl
---                 let (amount, donor)
---                         | op.destination == escrowAddress =
---                             (op.amount, fromMaybe tx.source op.source)
---                         | (tx.source, op.source)
---                             == (escrowAddress, Nothing) =
---                             (-op.amount, op.destination)
---                         | otherwise = undefined
---                 let issue = correct toc.id $ memoToText tx.memo
---                 when (issue `elem` ["18", "20", "25", "26"]) $
---                     pPrint (issue, donor, amount)
+import System.Exit (exitFailure)
+import System.IO (hPrint, stderr)
+import Text.Pretty.Simple (pHPrint, pPrint)
+import WithCallStack (WithCallStack (WithCallStack))
+import WithCallStack qualified
 
 main :: IO ()
 main = do
@@ -55,20 +38,36 @@ main = do
     t <-
         transactionBuilder escrowAddress
             & tx_feePerOp_guess
-            & tx_memoText ("E" <> issue)
-            & op_payment eurmtl amount
-                ! #destination destination
-                ! defaults
+            & op_payment eurmtl 2497870 ! #destination destination ! defaults
+            & op_deleteTrust ! #line eurmtl
+            & op_accountMerge ! #destination destination
             & build client
     secret <- Text.strip <$> Text.readFile "/tmp/secret"
     let envelope = signWithSecret secret t
     Text.putStrLn $ xdrSerializeBase64T envelope
-    submit envelope client >>= pPrint
+    submitResult <- try $ submit envelope client
+    printSubmitResult submitResult
   where
-    issue = "26"
     destination =
-        Address ""
-    amount = 50e7
+        Address "GCPT3X4FJBMUBR5AIB7SEUQX7HJ4XX3K4TNI2J7WIHMHMFGDMRRJJVWL"
+
+printSubmitResult :: Either SomeException Transaction -> IO ()
+printSubmitResult = \case
+    Right res -> pPrint res
+    Left someException -> do
+        unwrap someException
+        exitFailure
+  where
+    unwrap (SomeException se)
+        | Just WithCallStack{parent} <- cast se = unwrap parent
+        | Just (FailureResponse _ response) <- cast se = pEPrint response
+        | otherwise = ePrint se
+
+ePrint :: (Show a) => a -> IO ()
+ePrint = hPrint stderr
+
+pEPrint :: (Show a) => a -> IO ()
+pEPrint = pHPrint stderr
 
 eurmtl :: Asset
 eurmtl =
@@ -96,25 +95,3 @@ escrowAddress =
 --     MemoNone -> Nothing
 --     MemoText t -> Just $ Text.unpack t
 --     MemoOther _ -> undefined
-
--- correct :: (HasCallStack) => TxId -> Maybe String -> String
--- correct
---     (TxId "d673b5f0697686bf764bca37f8357ded645b62e63e7e78b5c40fa15e506015e6")
---     _ =
---         "EXCLUDE"
--- correct
---     (TxId "fd420c7803da760e6d0bc4cb4bde1fa42287c4f20ef6d70ba607671aff403f05")
---     _ =
---         "EXCLUDE"
--- correct
---     (TxId "2e4f2bda359022d4a6184da8f1a595f22d07df0d331c05d1eb4743b142ed6ec3")
---     _ =
---         "17"
--- correct
---     (TxId "a74ea166cc02214345e23ab86c6d45abf37efba3f1827759459b076952db1b4c")
---     _ =
---         "25"
--- correct _ (Just memo)
---     | 'E' : eid <- memo = eid
---     | "Key Rate " `isPrefixOf` memo = "KEYRATE"
--- correct txid memo = error $ show (txid, memo)

@@ -29,7 +29,11 @@ executable escrow-award
 
 executable escrow-destroy
   import:        common
-  build-depends: pretty-simple
+  build-depends:
+    , pretty-simple
+    , servant-client
+    , withcallstack
+
   main-is:       escrow-destroy.hs
 
 executable fest
